@@ -65,11 +65,17 @@ export function setOnTokensRotated(
   onTokensRotated = cb;
 }
 
+// Par de tokens resultante de una rotación exitosa del refresh.
+interface RotatedTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
 // Único refresh en vuelo: si varios requests reciben 401 a la vez, comparten
 // el mismo refresh en lugar de disparar N llamadas concurrentes.
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<RotatedTokens | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+async function refreshAccessToken(): Promise<RotatedTokens | null> {
   try {
     const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
     if (!refreshToken) return null;
@@ -80,14 +86,15 @@ async function refreshAccessToken(): Promise<string | null> {
       { timeout: 10000 },
     );
 
-    if (data?.accessToken) {
+    if (data?.accessToken && data?.refreshToken) {
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, data.accessToken);
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
       // Mantiene el estado React de AuthContext sincronizado con la rotación.
-      if (data.refreshToken) {
-        onTokensRotated?.(data.accessToken, data.refreshToken);
-      }
-      return data.accessToken;
+      onTokensRotated?.(data.accessToken, data.refreshToken);
+      return {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      };
     }
     return null;
   } catch {
@@ -100,6 +107,14 @@ async function clearSession(): Promise<void> {
   await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
   await SecureStore.deleteItemAsync(USER_KEY);
   onSessionExpired?.();
+}
+
+// Identifica de forma exacta el request de logout. El URL en `config` es
+// relativo a baseURL, por lo que se compara contra el path exacto para evitar
+// falsos positivos de otros endpoints que contengan "logout".
+function isLogoutRequest(config: InternalAxiosRequestConfig): boolean {
+  const url = config.url ?? "";
+  return url === "/auth/logout" || url.endsWith("/auth/logout");
 }
 
 api.interceptors.response.use(
@@ -128,9 +143,20 @@ api.interceptors.response.use(
         });
       }
 
-      const newToken = await refreshPromise;
-      if (newToken) {
-        original.headers.Authorization = `Bearer ${newToken}`;
+      const tokens = await refreshPromise;
+      if (tokens) {
+        original.headers.Authorization = `Bearer ${tokens.accessToken}`;
+
+        // Si el 401 provino de un logout (access expirado), el refresh ya rotó
+        // la sesión: el retry debe revocar la sesión NUEVA, no la anterior ya
+        // revocada durante el refresh. Se reemplaza el refreshToken del body
+        // por el rotado para evitar dejar una sesión zombie activa.
+        if (isLogoutRequest(original)) {
+          original.data = JSON.stringify({
+            refreshToken: tokens.refreshToken,
+          });
+        }
+
         return api(original);
       }
 

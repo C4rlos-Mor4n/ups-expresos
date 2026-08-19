@@ -179,6 +179,58 @@ describe("HTTP client", () => {
   });
 });
 
+describe("HTTP client — logout retry after expired access (RC2)", () => {
+  it("retries /auth/logout with the rotated tokens (Bearer A3 + refreshToken R3)", async () => {
+    // SecureStore: access A2 (expirado), refresh R2 (vigente antes del refresh).
+    // Secuencia de getItemAsync:
+    //  1. request interceptor del logout inicial → access_token → A2
+    //  2. refreshAccessToken → refresh_token → R2
+    //  3. request interceptor del retry logout → access_token → A3
+    mockGetItem
+      .mockResolvedValueOnce("A2")
+      .mockResolvedValueOnce("R2")
+      .mockResolvedValueOnce("A3");
+
+    // El refresh responde con la sesión rotada A3/R3.
+    const postSpy = jest.spyOn(axios, "post").mockResolvedValue({
+      data: { accessToken: "A3", refreshToken: "R3" },
+    } as any);
+
+    let calls = 0;
+    useMockAdapter(async (config: any) => {
+      calls += 1;
+      const body = JSON.parse(config.data);
+      if (calls === 1) {
+        // Logout inicial: sesión anterior (A2 + R2), access expirado → 401.
+        expect(config.headers.Authorization).toBe("Bearer A2");
+        expect(body.refreshToken).toBe("R2");
+        throw { status: 401, data: { message: "Unauthorized" } };
+      }
+      // Retry del logout: debe revocar la sesión ROTADA (A3 + R3), no la anterior.
+      expect(config.headers.Authorization).toBe("Bearer A3");
+      expect(body.refreshToken).toBe("R3");
+      return { data: { message: "Logged out" }, status: 200 };
+    });
+
+    await api.post("/auth/logout", { refreshToken: "R2" });
+
+    // Un único refresh compartido para todo el flujo.
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(postSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      { refreshToken: "R2" },
+      expect.any(Object),
+    );
+
+    // La rotación quedó persistida.
+    expect(mockSetItem).toHaveBeenCalledWith("access_token", "A3");
+    expect(mockSetItem).toHaveBeenCalledWith("refresh_token", "R3");
+    // El logout inicial + el retry = 2 envíos.
+    expect(calls).toBe(2);
+    postSpy.mockRestore();
+  });
+});
+
 describe("validateApiUrl (fail-fast config)", () => {
   it("accepts a valid absolute http URL", () => {
     expect(validateApiUrl("https://api.example.com")).toBe("https://api.example.com");
