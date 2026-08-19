@@ -178,3 +178,26 @@ describe("HTTP client", () => {
     await expect(api.get("/mobile/routes")).rejects.toBeTruthy();
   });
 });
+
+describe("validateApiUrl (fail-fast config)", () => {
+  it("accepts a valid absolute http URL", () => {
+    expect(validateApiUrl("https://api.example.com")).toBe("https://api.example.com");
+  });
+
+  it("accepts a valid absolute https URL", () => {
+    expect(validateApiUrl("http://10.0.2.2:3000")).toBe("http://10.0.2.2:3000");
+  });
+
+  it("throws for a missing URL", () => {
+    expect(() => validateApiUrl(undefined)).toThrow(/EXPO_PUBLIC_API_URL/);
+  });
+
+  it("throws for an empty URL", () => {
+    expect(() => validateApiUrl("")).toThrow(/EXPO_PUBLIC_API_URL/);
+  });
+
+  it("throws for a non-absolute / non-http(s) URL", () => {
+    expect(() => validateApiUrl("/relative/path")).toThrow(/EXPO_PUBLIC_API_URL/);
+    expect(() => validateApiUrl("ftp://example.com")).toThrow(/EXPO_PUBLIC_API_URL/);
+  });
+});

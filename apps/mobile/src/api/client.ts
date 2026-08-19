@@ -2,16 +2,20 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import * as SecureStore from "expo-secure-store";
 
 // ── Configuración de la API ────────────────────────────────────────────────
-// La URL debe venir de configuración explícita. No hay fallback a túneles
-// obsoletos: si falta la variable, fallamos claro en lugar de enviar tráfico
-// de producción a un endpoint incorrecto.
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-if (!API_URL && __DEV__) {
-  console.warn(
-    "EXPO_PUBLIC_API_URL no está definida. Configúrala en apps/mobile/.env",
-  );
+// La URL debe venir de configuración explícita y es fail-fast: si falta o no es
+// una URL http(s) absoluta, el módulo lanza un error claro en cualquier entorno
+// (dev y prod). No hay fallback a túneles ni a un origin relativo ambiguo.
+export function validateApiUrl(rawUrl: string | undefined): string {
+  if (!rawUrl || !/^https?:\/\//.test(rawUrl)) {
+    throw new Error(
+      "API configuration missing or invalid: EXPO_PUBLIC_API_URL must be an absolute http(s) URL. " +
+        "Set it in apps/mobile/.env",
+    );
+  }
+  return rawUrl;
 }
+
+const API_URL = validateApiUrl(process.env.EXPO_PUBLIC_API_URL);
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
