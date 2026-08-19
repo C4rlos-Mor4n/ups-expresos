@@ -2,6 +2,7 @@ import React, { useRef, forwardRef, useImperativeHandle } from "react";
 import { View, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { RouteStop } from "../types/route";
+import { escapeScriptJson } from "../utils/scriptJson";
 
 export interface LeafletMapHandle {
   fitToStops: () => void;
@@ -27,8 +28,10 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
       },
     }));
 
-    // Serialize stops for injection into the HTML
-    const stopsJson = JSON.stringify(
+    // Serialize stops for injection into the HTML.
+    // El escapado evita que un dato (p.ej. un nombre de parada) con "</script>"
+    // cierre el bloque de script e inyecte HTML/JS arbitrario en el WebView.
+    const stopsJson = escapeScriptJson(
       stops.map((s) => ({
         lat: Number(s.stop.latitude),
         lng: Number(s.stop.longitude),
@@ -187,8 +190,10 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           scrollEnabled={false}
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
-          // Allow mixed content (http leaflet tiles on https page in some Android versions)
-          mixedContentMode="always"
+          // Todos los recursos (Leaflet, tiles CARTO, OSRM) son https: no se
+          // permite contenido mixto. El valor por defecto de la plataforma
+          // ("never") es suficiente y evita cargas http inseguras.
+          mixedContentMode="never"
           allowsInlineMediaPlayback
           onError={(e) => console.warn("LeafletMap WebView error:", e.nativeEvent)}
         />
