@@ -1,4 +1,5 @@
 import api from "../api/client";
+import { AuthUser } from "@/types/auth";
 
 export interface RequestCodeResponse {
   message: string;
@@ -8,14 +9,7 @@ export interface RequestCodeResponse {
 export interface VerifyCodeResponse {
   accessToken: string;
   refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: string;
-    emailVerified: boolean;
-    isActive: boolean;
-  };
+  user: AuthUser;
 }
 
 export const authService = {
@@ -48,8 +42,8 @@ export const authService = {
     return response.data;
   },
 
-  getMe: async (): Promise<VerifyCodeResponse['user']> => {
-    const response = await api.get<VerifyCodeResponse['user']>('/auth/me');
+  getMe: async (): Promise<AuthUser> => {
+    const response = await api.get<AuthUser>('/auth/me');
     return response.data;
   },
 };

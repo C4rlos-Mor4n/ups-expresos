@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import * as SecureStore from 'expo-secure-store';
+import { setOnSessionExpired } from "../api/client";
 import { authService } from '../services/auth.service';
 
 import { AuthUser } from "@/types/auth";
@@ -36,6 +37,20 @@ export function AuthProvider({ children }: Props) {
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const clearSessionState = useCallback(() => {
+    setUser(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+  }, []);
+
+  // Registra el callback que el cliente HTTP invoca cuando una sesión ya no
+  // puede refrescarse (refresh falló). Limpia el estado React; la navegación
+  // la maneja el guard de rutas (isAuthenticated pasa a false).
+  useEffect(() => {
+    setOnSessionExpired(clearSessionState);
+    return () => setOnSessionExpired(null);
+  }, [clearSessionState]);
+
   useEffect(() => {
     loadSession();
   }, []);
@@ -46,10 +61,32 @@ export function AuthProvider({ children }: Props) {
       const refresh = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
       const userJson = await SecureStore.getItemAsync(USER_KEY);
 
-      if (token && refresh && userJson) {
-        setAccessToken(token);
-        setRefreshToken(refresh);
-        setUser(JSON.parse(userJson));
+      if (!token || !refresh) {
+        return;
+      }
+
+      // Restaura la sesión de forma optimista para evitar un flash de login.
+      let storedUser: AuthUser | null = null;
+      if (userJson) {
+        try {
+          storedUser = JSON.parse(userJson) as AuthUser;
+        } catch {
+          storedUser = null;
+        }
+      }
+      setAccessToken(token);
+      setRefreshToken(refresh);
+      setUser(storedUser);
+
+      // Valida contra el backend: si el access token expiró, el cliente HTTP
+      // refresca automáticamente. Si el refresh falla, onSessionExpired limpia.
+      try {
+        const me = await authService.getMe();
+        setUser(me);
+        await SecureStore.setItemAsync(USER_KEY, JSON.stringify(me));
+      } catch {
+        // Error de red: se conserva la sesión optimista (onSessionExpired solo
+        // se dispara en fallo real de refresh, no en problemas de conexión).
       }
     } catch (error) {
       console.error("Error cargando sesión", error);
@@ -72,23 +109,26 @@ export function AuthProvider({ children }: Props) {
     setUser(authUser);
   }
 
-async function logout() {
-  try {
-    if (refreshToken) {
-      await authService.logout(refreshToken);
+  async function logout() {
+    // 1. Revoca la sesión en el backend (el cliente HTTP inyecta el Bearer).
+    try {
+      if (refreshToken) {
+        await authService.logout(refreshToken);
+      }
+    } catch (error) {
+      // 2. Si el backend no está disponible, no dejar al usuario atrapado.
+      console.log("Logout del backend falló, procediendo a cerrar sesión localmente.");
     }
-  } catch (error) {
-    console.log("Logout del backend falló, procediendo a cerrar sesión localmente.");
+
+    // 3. Limpia SecureStore y estado local siempre.
+    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(USER_KEY);
+
+    setUser(null);
+    setAccessToken(null);
+    setRefreshToken(null);
   }
-
-  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(USER_KEY);
-
-  setUser(null);
-  setAccessToken(null);
-  setRefreshToken(null);
-}
 
   const value = React.useMemo(
     () => ({

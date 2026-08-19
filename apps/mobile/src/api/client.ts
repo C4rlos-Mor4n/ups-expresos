@@ -45,7 +45,7 @@ api.interceptors.request.use(async (config) => {
 // Notifica al AuthContext cuando una sesión deja de ser válida (refresh falló),
 // para que limpie el estado React y navegue al flujo público.
 let onSessionExpired: (() => void) | null = null;
-export function setOnSessionExpired(cb: () => void): void {
+export function setOnSessionExpired(cb: (() => void) | null): void {
   onSessionExpired = cb;
 }
 
