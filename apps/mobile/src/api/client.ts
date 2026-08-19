@@ -49,6 +49,18 @@ export function setOnSessionExpired(cb: (() => void) | null): void {
   onSessionExpired = cb;
 }
 
+// Notifica al AuthContext cuando el refresh rota los tokens (nuevos access y
+// refresh). El estado React expuesto por useAuth (accessToken/refreshToken) debe
+// reflejar los valores vigentes de SecureStore, no quedar stale tras una rotación.
+let onTokensRotated:
+  | ((accessToken: string, refreshToken: string) => void)
+  | null = null;
+export function setOnTokensRotated(
+  cb: ((accessToken: string, refreshToken: string) => void) | null,
+): void {
+  onTokensRotated = cb;
+}
+
 // Único refresh en vuelo: si varios requests reciben 401 a la vez, comparten
 // el mismo refresh en lugar de disparar N llamadas concurrentes.
 let refreshPromise: Promise<string | null> | null = null;
@@ -67,6 +79,10 @@ async function refreshAccessToken(): Promise<string | null> {
     if (data?.accessToken) {
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, data.accessToken);
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
+      // Mantiene el estado React de AuthContext sincronizado con la rotación.
+      if (data.refreshToken) {
+        onTokensRotated?.(data.accessToken, data.refreshToken);
+      }
       return data.accessToken;
     }
     return null;

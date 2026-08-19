@@ -1,4 +1,4 @@
-import api, { API_BASE_URL, setOnSessionExpired } from "./client";
+import api, { API_BASE_URL, setOnSessionExpired, setOnTokensRotated, validateApiUrl } from "./client";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 
@@ -87,7 +87,35 @@ describe("HTTP client", () => {
     const res = await api.get("/mobile/routes");
     expect(res.data).toEqual({ ok: true });
     expect(postSpy).toHaveBeenCalledTimes(1);
+    // La rotación persiste tanto el nuevo access como el nuevo refresh token.
     expect(mockSetItem).toHaveBeenCalledWith("access_token", "new-token");
+    expect(mockSetItem).toHaveBeenCalledWith("refresh_token", "new-refresh-token");
+    postSpy.mockRestore();
+  });
+
+  it("notifies AuthContext of the rotated tokens so React state stays in sync", async () => {
+    mockGetItem
+      .mockResolvedValueOnce("expired-token") // request interceptor (original)
+      .mockResolvedValueOnce("refresh-token") // refreshAccessToken
+      .mockResolvedValueOnce("new-token"); // request interceptor (retry)
+
+    const postSpy = jest.spyOn(axios, "post").mockResolvedValue({
+      data: { accessToken: "new-token", refreshToken: "new-refresh-token" },
+    } as any);
+
+    const onRotated = jest.fn();
+    setOnTokensRotated(onRotated);
+
+    let calls = 0;
+    useMockAdapter(async () => {
+      calls += 1;
+      if (calls === 1) throw { status: 401, data: { message: "Unauthorized" } };
+      return { data: { ok: true }, status: 200 };
+    });
+
+    await api.get("/mobile/routes");
+    expect(onRotated).toHaveBeenCalledWith("new-token", "new-refresh-token");
+    setOnTokensRotated(null);
     postSpy.mockRestore();
   });
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";import * as SecureStore from 'expo-secure-store';
-import { setOnSessionExpired } from "../api/client";
+import { setOnSessionExpired, setOnTokensRotated } from "../api/client";
 import { authService } from '../services/auth.service';
 
 import { AuthUser } from "@/types/auth";
@@ -42,13 +42,28 @@ export function AuthProvider({ children }: Props) {
     setRefreshToken(null);
   }, []);
 
+  // Cuando el cliente HTTP rota los tokens (401 → refresh), actualiza el estado
+  // React para que accessToken/refreshToken de useAuth reflejen los valores
+  // vigentes de SecureStore, evitando tokens stale tras una renovación.
+  const onTokensRotated = useCallback(
+    (newAccess: string, newRefresh: string) => {
+      setAccessToken(newAccess);
+      setRefreshToken(newRefresh);
+    },
+    []
+  );
+
   // Registra el callback que el cliente HTTP invoca cuando una sesión ya no
   // puede refrescarse (refresh falló). Limpia el estado React; la navegación
   // la maneja el guard de rutas (isAuthenticated pasa a false).
   useEffect(() => {
     setOnSessionExpired(clearSessionState);
-    return () => setOnSessionExpired(null);
-  }, [clearSessionState]);
+    setOnTokensRotated(onTokensRotated);
+    return () => {
+      setOnSessionExpired(null);
+      setOnTokensRotated(null);
+    };
+  }, [clearSessionState, onTokensRotated]);
 
   const loadSession = useCallback(async () => {
     try {
@@ -95,25 +110,30 @@ export function AuthProvider({ children }: Props) {
     loadSession();
   }, [loadSession]);
 
-  async function login(
-    access: string,
-    refresh: string,
-    authUser: AuthUser
-  ) {
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, access);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refresh);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(authUser));
+  const login = useCallback(
+    async (access: string, refresh: string, authUser: AuthUser) => {
+      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, access);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refresh);
+      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(authUser));
 
-    setAccessToken(access);
-    setRefreshToken(refresh);
-    setUser(authUser);
-  }
+      setAccessToken(access);
+      setRefreshToken(refresh);
+      setUser(authUser);
+    },
+    []
+  );
 
   const logout = useCallback(async () => {
+    // El refresh token puede haberse rotado por el cliente HTTP (401 → refresh)
+    // sin que el estado React se actualice. Leemos siempre el valor vigente de
+    // SecureStore (fuente de verdad) para revocar la sesión actual, no el state
+    // potencialmente stale.
+    const currentRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+
     // 1. Revoca la sesión en el backend (el cliente HTTP inyecta el Bearer).
     try {
-      if (refreshToken) {
-        await authService.logout(refreshToken);
+      if (currentRefreshToken) {
+        await authService.logout(currentRefreshToken);
       }
     } catch {
       // 2. Si el backend no está disponible, no dejar al usuario atrapado.
@@ -128,7 +148,7 @@ export function AuthProvider({ children }: Props) {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
-  }, [refreshToken]);
+  }, []);
 
   const value = React.useMemo(
     () => ({
@@ -140,7 +160,7 @@ export function AuthProvider({ children }: Props) {
       login,
       logout,
     }),
-    [user, accessToken, refreshToken, loading, logout]
+    [user, accessToken, refreshToken, loading, login, logout]
   );
 
   return (
