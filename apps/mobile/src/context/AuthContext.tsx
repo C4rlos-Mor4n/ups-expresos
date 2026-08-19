@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import * as SecureStore from 'expo-secure-store';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";import * as SecureStore from 'expo-secure-store';
 import { setOnSessionExpired } from "../api/client";
 import { authService } from '../services/auth.service';
 
@@ -51,17 +50,14 @@ export function AuthProvider({ children }: Props) {
     return () => setOnSessionExpired(null);
   }, [clearSessionState]);
 
-  useEffect(() => {
-    loadSession();
-  }, []);
-
-  async function loadSession() {
+  const loadSession = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
       const refresh = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
       const userJson = await SecureStore.getItemAsync(USER_KEY);
 
       if (!token || !refresh) {
+        setLoading(false);
         return;
       }
 
@@ -93,7 +89,11 @@ export function AuthProvider({ children }: Props) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
 
   async function login(
     access: string,
@@ -109,13 +109,13 @@ export function AuthProvider({ children }: Props) {
     setUser(authUser);
   }
 
-  async function logout() {
+  const logout = useCallback(async () => {
     // 1. Revoca la sesión en el backend (el cliente HTTP inyecta el Bearer).
     try {
       if (refreshToken) {
         await authService.logout(refreshToken);
       }
-    } catch (error) {
+    } catch {
       // 2. Si el backend no está disponible, no dejar al usuario atrapado.
       console.log("Logout del backend falló, procediendo a cerrar sesión localmente.");
     }
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: Props) {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
-  }
+  }, [refreshToken]);
 
   const value = React.useMemo(
     () => ({
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: Props) {
       login,
       logout,
     }),
-    [user, accessToken, refreshToken, loading]
+    [user, accessToken, refreshToken, loading, logout]
   );
 
   return (
