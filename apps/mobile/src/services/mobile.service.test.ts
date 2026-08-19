@@ -1,7 +1,7 @@
 import { mobileService } from "./mobile.service";
-import api from "./api";
+import api from "../api/client";
 
-jest.mock("./api", () => ({
+jest.mock("../api/client", () => ({
   __esModule: true,
   default: {
     get: jest.fn(),
