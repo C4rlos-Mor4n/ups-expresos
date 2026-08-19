@@ -110,6 +110,39 @@ describe("HTTP client", () => {
     expect(onExpired).toHaveBeenCalled();
   });
 
+  it("shares a single in-flight refresh across simultaneous 401s", async () => {
+    // Primer request: access token. refreshAccessToken: refresh token.
+    mockGetItem
+      .mockResolvedValueOnce("expired-token") // request interceptor (req A)
+      .mockResolvedValueOnce("expired-token") // request interceptor (req B)
+      .mockResolvedValueOnce("refresh-token") // refreshAccessToken (single)
+      .mockResolvedValueOnce("new-token") // retry interceptor (A)
+      .mockResolvedValueOnce("new-token"); // retry interceptor (B)
+
+    const postSpy = jest.spyOn(axios, "post").mockResolvedValue({
+      data: { accessToken: "new-token", refreshToken: "new-refresh-token" },
+    } as any);
+
+    let calls = 0;
+    useMockAdapter(async (config) => {
+      calls += 1;
+      if (calls <= 2) throw { status: 401, data: { message: "Unauthorized" } };
+      expect(config.headers.Authorization).toBe("Bearer new-token");
+      return { data: { ok: true }, status: 200 };
+    });
+
+    const [resA, resB] = await Promise.all([
+      api.get("/mobile/routes"),
+      api.get("/mobile/routes"),
+    ]);
+
+    expect(resA.data).toEqual({ ok: true });
+    expect(resB.data).toEqual({ ok: true });
+    // Solo un refresh compartido para ambos 401 simultáneos.
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    postSpy.mockRestore();
+  });
+
   it("handles network errors without a response", async () => {
     useMockAdapter(async () => {
       throw { isAxiosError: true, message: "Network Error" };
