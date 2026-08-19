@@ -12,16 +12,19 @@ Ready for Phase 4:           GO
 ## 2. Baseline
 
 ```text
-Baseline SHA:
+Phase 2 baseline SHA:
 15d4da039eb2822352acd833d3f7c82c943f4030
 
 Branch:
 fix/mobile-functional-stabilization-phase-3
 
-Final SHA:
-662894fbc0c9e76412c6a1df9fd47a2c220ae76e
+Phase 3 RC2 functional code SHA:
+21e7a34 fix(mobile): revoke rotated session when logout retries after refresh
 
-Commits:
+Report revision:
+RC2
+
+Commits (desde baseline Fase 2):
 b7fa8ca fix(mobile): align route detail with backend contract
 99e5686 refactor(mobile): consolidate HTTP client
 2301b21 fix(mobile): revoke backend session on logout and harden session restoration
@@ -33,9 +36,15 @@ abddf33 fix(mobile): remove unsafe API fallback and sensitive logging
 93a6af4 refactor(mobile): eliminate remaining any casts and tighten types
 662894f test(mobile): expand functional stabilization coverage
 e048796 docs(mobile): add phase 3 functional stabilization report
+2bd8869 fix(mobile): synchronize rotated tokens for logout            (RC1)
+705921c fix(mobile): enforce explicit API configuration              (RC1)
+03ec813 security(mobile): escape Leaflet HTML content                (RC1)
+0a9f97f docs(mobile): document phase 3 RC1 review fixes              (RC1)
+21e7a34 fix(mobile): revoke rotated session when logout retries      (RC2)
 ```
 
-(11 commits en total desde el baseline `15d4da0` hasta el head.)
+Conteo de commits calculado desde Git (`git rev-list --count
+`15d4da039eb2822352acd833d3f7c82c943f4030..HEAD``) al momento de RC1: **15**.
 
 ## 3. Findings Addressed
 
@@ -267,8 +276,8 @@ fue seguro y coherente.
 
 ```text
 Suites:  11
-Tests:   62
-Passed:  62
+Tests:   63
+Passed:  63
 Failed:  0
 ```
 
@@ -283,6 +292,7 @@ refresh         → client.test.ts (401 retry, refresh failure limpia sesión,
                   concurrency, notify rotation)
 logout          → auth.service.test.ts + client.test.ts + AuthContext.test.tsx
                   (Bearer + body; usa el refresh token vigente de SecureStore)
+                  + RC2: retry de logout usa los tokens rotados (A3/R3)
 navigation      → utils/routes.test.ts (rutas privadas/públicas)
 business logic  → utils/schedule.test.ts (próximo horario)
 pagination      → utils/pagination.test.ts + mobile.service.test.ts
@@ -347,7 +357,8 @@ Corrección:
 
 ### 16.4 — Conteo de commits
 
-Reporte alineado con Git: 11 commits desde el baseline `15d4da0` hasta el head.
+Reporte alineado con Git: 15 commits desde el baseline `15d4da0` hasta el head RC1
+(`git rev-list --count 15d4da039eb2822352acd833d3f7c82c943f4030..HEAD`).
 
 ### 16.5 — Veredicto
 
@@ -357,19 +368,96 @@ Backend / contratos / DB:  NO TOCADOS
 Resultado requerido:       MERGE GO RC1 (tras validación automatizada)
 ```
 
-## 17. Automated Validation
+## 17. RC2 — Logout después de expiración del access token
+
+Bug HIGH detectado en el review técnico: la secuencia `logout` + `access
+expirado` + `refresh` + `retry` podía dejar una sesión zombie.
+
+### 17.1 — Problema
+
+```text
+logout con access A2 expirado y refresh R2:
+  POST /auth/logout (Bearer A2, refreshToken R2)
+      ↓ backend responde 401 (A2 expiró)
+  interceptor hace refresh:
+      POST /auth/refresh (refreshToken R2)
+      → backend revoca sesión R2 y crea una nueva → A3/R3
+  retry del logout:
+      Bearer A3
+      PERO body seguía refreshToken: R2  ❌
+      → R2 ya revocado, el backend responde "Logged out"
+      → pero R3 (sesión nueva) seguía activa → SESIÓN ZOMBIE
+```
+
+### 17.2 — Causa raíz
+
+`refreshAccessToken()` devolvía únicamente el nuevo access token, y el retry
+del interceptor solo reemplazaba el `Authorization`. Para `/auth/logout`, cuyo
+body lleva el refresh token, el retry continuaba enviando el refresh token
+anterior (ya revocado durante el refresh), por lo que la sesión rotada quedaba
+activa.
+
+### 17.3 — Solución
+
+```text
+- refreshAccessToken() ahora retorna RotatedTokens { accessToken, refreshToken }
+  en lugar de solo el access token. refreshPromise comparte ambos tokens entre
+  todos los callers concurrentes.
+- Se añadió isLogoutRequest() que identifica de forma exacta /auth/logout.
+- En el retry tras refresh, además de actualizar Authorization con el nuevo
+  access token, si el request es logout se reemplaza el body por:
+      { "refreshToken": <nuevo refresh token rotado> }
+  (original.data es un string JSON en este punto, confirmado empíricamente).
+- La rotación sigue persistida en SecureStore y sincronizada vía
+  setOnTokensRotated() (solución RC1 intacta).
+- Protección _retry y refresh único en vuelo intactas (sin loop).
+```
+
+### 17.4 — Test agregado
+
+`client.test.ts` — "retries /auth/logout with the rotated tokens (Bearer A3 +
+refreshToken R3)":
+
+```text
+1. SecureStore: access A2, refresh R2
+2. POST /auth/logout: Bearer A2 + refreshToken R2 → 401
+3. interceptor hace refresh exactamente UNA VEZ (R2 → A3/R3)
+4. persiste access_token=A3, refresh_token=R3
+5. retry logout: Bearer A3 + refreshToken R3 → 200
+6. assert: refresh calls = 1, logout calls = 2 (inicial + retry),
+   refresh token del retry = R3 (no R2)
+```
+
+Este test atraviesa los interceptores reales del cliente HTTP (no mockea
+`authService.logout`) y falla con la implementación RC1.
+
+### 17.5 — Resultado
+
+```text
+Logout expired-access flow:  PASS
+Initial logout:              Bearer A2 + R2
+Refresh:                     R2 → A3/R3
+Retried logout:              Bearer A3 + R3
+Session zombie:              PREVENTED
+Refresh calls:               1
+Loop protection:             PASS
+Refresh concurrency:         PASS
+Token state synchronization: PASS
+```
+
+## 18. Automated Validation
 
 | Gate        | Result                       |
 | ----------- | ---------------------------- |
 | npm ci      | PASS                         |
 | Typecheck   | PASS                         |
 | Lint        | PASS (0 errors, 26 warnings) |
-| Tests       | PASS (62/62)                 |
+| Tests       | PASS (63/63)                 |
 | Expo config | PASS                         |
 | Expo Doctor | WARN (2 preexisting: Hermes V1 memory regression + package patch versions) |
 | Expo export | PASS                         |
 
-## 18. Android QA
+## 19. Android QA
 
 ```text
 Runtime QA:
@@ -391,7 +479,7 @@ Flujos QA previstos (no ejecutables por entorno):
   expired access / refresh / logout / restart post-logout / deep links.
 ```
 
-## 19. Backend Impact
+## 20. Backend Impact
 
 ```text
 apps/api modified:
@@ -404,7 +492,7 @@ Database changed:
 NO
 ```
 
-## 20. Security Repository Gate
+## 21. Security Repository Gate
 
 ```text
 .env tracked:
@@ -422,7 +510,7 @@ NO
 
 `.env.example` creado en `apps/mobile/.env.example` con placeholder seguro.
 
-## 21. Deferred Work
+## 22. Deferred Work
 
 ```text
 Phase 4 (controlada):
@@ -442,7 +530,7 @@ M5 backend (fuera de fase):
   GET /mobile/stops/:id/routes (o equivalente) para eliminar el N+1
 ```
 
-## 22. Regression Comparison
+## 23. Regression Comparison
 
 Contra `15d4da039eb2822352acd833d3f7c82c943f4030`:
 
@@ -460,17 +548,18 @@ New Expo Doctor issues:
 0  (los 2 fallos de doctor son los PREEXISTENTES de la Fase 2)
 ```
 
-## 23. MERGE GO / NO-GO
+## 24. MERGE GO / NO-GO
 
 ```text
-MERGE GO RC1  (tras correcciones de review técnico; ver §16)
+MERGE GO RC2  (tras correcciones de review técnico RC1 y RC2; ver §16 y §17)
 ```
 
 Criterios P0 cumplidos:
 
 ```text
 H1 contract                 FIXED
-H2 logout                   FIXED (incl. rotación de refresh token, §16.1)
+H2 logout                   FIXED (incl. rotación de refresh token, §16.1
+                              y retry de logout con sesión rotada, §17)
 M2 HTTP client              FIXED
 session lifecycle           FIXED (estado React sincronizado tras rotación)
 H4 guard                    FIXED
@@ -478,11 +567,12 @@ M8 next schedule            FIXED
 M3 logging                  FIXED
 M4 API fallback             FIXED (fail-fast en dev y prod, §16.2)
 WebView HTML injection      FIXED (§16.3)
+Logout tras access expirado FIXED (§17)
 
 npm ci                      PASS
 typecheck                   PASS
 lint                        PASS — 0 errors
-tests                       PASS (62/62)
+tests                       PASS (63/63)
 expo config                 PASS
 expo export                 PASS
 
