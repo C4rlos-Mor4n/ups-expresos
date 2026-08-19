@@ -73,9 +73,8 @@ export default function RouteDetailScreen() {
   const loadRouteDetail = async (routeId: string) => {
     try {
       setLoading(true);
-      const data = await mobileService.getRouteDetail(routeId);
-      const rd = data as any;
-      setRoute({ ...rd.route, stops: rd.stops, schedules: rd.schedules } as RouteDetail);
+      const { route: routeData, stops, schedules } = await mobileService.getRouteDetail(routeId);
+      setRoute({ ...routeData, stops, schedules });
     } catch (error) {
       console.error("Error loading route details", error);
       const offline = getFavoriteDetail(routeId);
