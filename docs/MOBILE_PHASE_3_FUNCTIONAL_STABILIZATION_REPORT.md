@@ -32,7 +32,10 @@ abddf33 fix(mobile): remove unsafe API fallback and sensitive logging
 606ff63 security(mobile): harden Leaflet WebView payload handling
 93a6af4 refactor(mobile): eliminate remaining any casts and tighten types
 662894f test(mobile): expand functional stabilization coverage
+e048796 docs(mobile): add phase 3 functional stabilization report
 ```
+
+(11 commits en total desde el baseline `15d4da0` hasta el head.)
 
 ## 3. Findings Addressed
 
@@ -263,9 +266,9 @@ fue seguro y coherente.
 ## 15. Tests
 
 ```text
-Suites:  9
-Tests:   45
-Passed:  45
+Suites:  11
+Tests:   62
+Passed:  62
 Failed:  0
 ```
 
@@ -274,30 +277,99 @@ Por categoría:
 ```text
 contract        → mobile.service.test.ts, auth.service.test.ts
 HTTP            → client.test.ts (baseURL, Bearer, 401 refresh, concurrency,
-                  network error)
+                  network error, fail-fast config, token rotation notify)
 auth/session    → auth.service.test.ts (request/verify/logout body/me)
 refresh         → client.test.ts (401 retry, refresh failure limpia sesión,
-                  concurrency)
-logout          → auth.service.test.ts + client.test.ts (Bearer + body)
+                  concurrency, notify rotation)
+logout          → auth.service.test.ts + client.test.ts + AuthContext.test.tsx
+                  (Bearer + body; usa el refresh token vigente de SecureStore)
 navigation      → utils/routes.test.ts (rutas privadas/públicas)
 business logic  → utils/schedule.test.ts (próximo horario)
 pagination      → utils/pagination.test.ts + mobile.service.test.ts
-security        → utils/scriptJson.test.ts (escapado WebView)
+security        → utils/scriptJson.test.ts + utils/htmlEscape.test.ts
+                  (escapado WebView + escapado HTML contextual)
 ```
 
-## 16. Automated Validation
+## 16. RC1 — Correcciones de review técnico
+
+Tres correcciones solicitadas en el review externo antes del merge, sin tocar
+backend, contratos, DB ni UI:
+
+### 16.1 HIGH — refresh → logout tras rotación de tokens
+
+El cliente HTTP rota access y refresh token en un 401 y los persiste en
+SecureStore, pero el estado React de `AuthContext` quedaba stale. El backend
+revoca la sesión antigua durante refresh y crea una nueva, por lo que un logout
+posterior podía enviar el refresh token anterior y dejar la sesión nueva activa.
+
+Corrección:
+
+```text
+- logout() lee SIEMPRE el refresh token vigente de SecureStore (fuente de
+  verdad) en lugar de confiar en el estado React potencialmente stale.
+- Se añadió setOnTokensRotated: el cliente HTTP notifica a AuthContext cuando
+  el refresh rota los tokens, de modo que accessToken/refreshToken expuestos
+  por useAuth reflejan los valores vigentes de SecureStore.
+- Test obligatorio añadido: login R1 → refresh produce R2 → logout usa R2
+  (no R1). Cobertura: AuthContext.test.tsx + client.test.ts (notify rotation).
+```
+
+### 16.2 MEDIUM — API URL fail-fast
+
+Antes, `EXPO_PUBLIC_API_URL` ausente solo producía un `console.warn` en dev; en
+prod no avisaba y Axios se creaba igual con `baseURL` undefined (en web podía
+caer en un origin relativo ambiguo).
+
+Corrección:
+
+```text
+- validateApiUrl() lanza un error explícito en cualquier entorno (dev y prod)
+  si la URL falta, está vacía o no es http(s) absoluta. Sin fallback.
+- Tests añadidos para URL válida / ausente / vacía / relativa / protocolo no
+  http(s).
+```
+
+### 16.3 MEDIUM — Escapado HTML contextual en Leaflet
+
+`escapeScriptJson()` evita cerrar el bloque `<script>`, pero los valores
+(`stop.name`, `stop.reference`, `stop.order`) se concatenaban después en HTML
+para `L.divIcon` y `bindPopup`, permitiendo inyección de HTML (p. ej.
+`<img onerror=...>`).
+
+Corrección:
+
+```text
+- Se añadió escapeHtml() (utils/htmlEscape.ts) y su variante JavaScript
+  (ESCAPE_HTML_JS) inyectada en el WebView, aplicada a order/name/reference
+  antes de construir iconHtml y popup.
+- Tests para < > & " ' y payloads maliciosos (<img>, <script>, </script>).
+```
+
+### 16.4 — Conteo de commits
+
+Reporte alineado con Git: 11 commits desde el baseline `15d4da0` hasta el head.
+
+### 16.5 — Veredicto
+
+```text
+Fase 3 funcional:          PASS CON CORRECCIONES
+Backend / contratos / DB:  NO TOCADOS
+Resultado requerido:       MERGE GO RC1 (tras validación automatizada)
+```
+
+## 17. Automated Validation
 
 | Gate        | Result                       |
 | ----------- | ---------------------------- |
 | npm ci      | PASS                         |
 | Typecheck   | PASS                         |
 | Lint        | PASS (0 errors, 26 warnings) |
-| Tests       | PASS (45/45)                 |
+| Tests       | PASS (62/62)                 |
 | Expo config | PASS                         |
 | Expo Doctor | WARN (2 preexisting: Hermes V1 memory regression + package patch versions) |
 | Expo export | PASS                         |
 
-## 17. Android QA
+## 18. Android QA
 
 ```text
 Runtime QA:
@@ -319,7 +391,7 @@ Flujos QA previstos (no ejecutables por entorno):
   expired access / refresh / logout / restart post-logout / deep links.
 ```
 
-## 18. Backend Impact
+## 19. Backend Impact
 
 ```text
 apps/api modified:
@@ -332,7 +404,7 @@ Database changed:
 NO
 ```
 
-## 19. Security Repository Gate
+## 20. Security Repository Gate
 
 ```text
 .env tracked:
@@ -350,7 +422,7 @@ NO
 
 `.env.example` creado en `apps/mobile/.env.example` con placeholder seguro.
 
-## 20. Deferred Work
+## 21. Deferred Work
 
 ```text
 Phase 4 (controlada):
@@ -370,7 +442,7 @@ M5 backend (fuera de fase):
   GET /mobile/stops/:id/routes (o equivalente) para eliminar el N+1
 ```
 
-## 21. Regression Comparison
+## 22. Regression Comparison
 
 Contra `15d4da039eb2822352acd833d3f7c82c943f4030`:
 
@@ -388,28 +460,29 @@ New Expo Doctor issues:
 0  (los 2 fallos de doctor son los PREEXISTENTES de la Fase 2)
 ```
 
-## 22. MERGE GO / NO-GO
+## 23. MERGE GO / NO-GO
 
 ```text
-MERGE GO
+MERGE GO RC1  (tras correcciones de review técnico; ver §16)
 ```
 
 Criterios P0 cumplidos:
 
 ```text
 H1 contract                 FIXED
-H2 logout                   FIXED
+H2 logout                   FIXED (incl. rotación de refresh token, §16.1)
 M2 HTTP client              FIXED
-session lifecycle           FIXED
+session lifecycle           FIXED (estado React sincronizado tras rotación)
 H4 guard                    FIXED
 M8 next schedule            FIXED
 M3 logging                  FIXED
-M4 API fallback             FIXED
+M4 API fallback             FIXED (fail-fast en dev y prod, §16.2)
+WebView HTML injection      FIXED (§16.3)
 
 npm ci                      PASS
 typecheck                   PASS
 lint                        PASS — 0 errors
-tests                       PASS (45/45)
+tests                       PASS (62/62)
 expo config                 PASS
 expo export                 PASS
 
