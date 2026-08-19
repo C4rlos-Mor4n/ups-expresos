@@ -6,6 +6,7 @@ import { useRoutes } from "../../context/RoutesContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { mobileService } from "../../services/mobile.service";
+import { getNextSchedule } from "../../utils/schedule";
 import { Route } from "../../types/route";
 
 import {
@@ -33,9 +34,8 @@ export default function HomeScreen() {
         setFirstRoute(route);
         try {
           const schedules = await mobileService.getRouteSchedules(route.id);
-          if (schedules && schedules.length > 0) {
-            setNextSchedule(schedules[0].departureTime.substring(0, 5));
-          }
+          const next = getNextSchedule(schedules, new Date());
+          setNextSchedule(next ? next.departureTime.substring(0, 5) : "--:--");
         } catch (error) {
           console.error("Error fetching schedules for home:", error);
         } finally {
