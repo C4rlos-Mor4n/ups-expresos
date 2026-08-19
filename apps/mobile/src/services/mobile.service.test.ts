@@ -75,3 +75,29 @@ describe("mobileService.getRouteDetail (backend contract)", () => {
     expect(result.stops[0].estimatedArrivalMinutes).toBe(15);
   });
 });
+
+describe("mobileService pagination contract", () => {
+  beforeEach(() => {
+    apiGet.mockReset();
+  });
+
+  it("getRoutes sends page and limit params", async () => {
+    apiGet.mockResolvedValue({ data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } } });
+    await mobileService.getRoutes({ page: 2, limit: 20 });
+    expect(apiGet).toHaveBeenCalledWith("/mobile/routes", { params: { page: 2, limit: 20 } });
+  });
+
+  it("getRoutes returns data and meta", async () => {
+    const meta = { page: 1, limit: 20, total: 1, totalPages: 1 };
+    apiGet.mockResolvedValue({ data: { data: [{ id: "route-1" }], meta } });
+    const result = await mobileService.getRoutes({ page: 1, limit: 20 });
+    expect(result.data).toHaveLength(1);
+    expect(result.meta.totalPages).toBe(1);
+  });
+
+  it("getNotices sends page and limit params", async () => {
+    apiGet.mockResolvedValue({ data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } } });
+    await mobileService.getNotices({ page: 3, limit: 20 });
+    expect(apiGet).toHaveBeenCalledWith("/mobile/notices", { params: { page: 3, limit: 20 } });
+  });
+});
