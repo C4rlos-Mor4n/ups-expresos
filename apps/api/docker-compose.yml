@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ups_expresos_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ups_user
+      POSTGRES_PASSWORD: ups_password
+      POSTGRES_DB: ups_expresos
+    ports:
+      - "5433:5432"
+    volumes:
+      - ups_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ups_user -d ups_expresos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-test:
+    image: postgres:16
+    container_name: ups_expresos_postgres_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ups_test
+      POSTGRES_PASSWORD: ups_test
+      POSTGRES_DB: ups_test
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ups_test -d ups_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ups_postgres_data:

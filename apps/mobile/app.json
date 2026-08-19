@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "UPS Expresos",
+    "slug": "ups-expresos-mobile",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/images/images_busapp/logo-ups.png",
+    "scheme": "upsexpresosmobile",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "ec.edu.ups.expresos",
+      "icon": "./assets/images/images_busapp/logo-ups.png"
+    },
+    "android": {
+      "package": "ec.edu.ups.expresos",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#208AEF",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 76
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fc601b8b-544f-46a5-a7a3-31459617938a"
+      }
+    }
+  }
+}

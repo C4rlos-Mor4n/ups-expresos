@@ -1,0 +1,80 @@
+# ── Environment ────────────────────────────────────────────────
+**/.env
+**/.env.*
+!**/.env.example
+
+# ── Node ───────────────────────────────────────────────────────
+**/node_modules/
+
+# ── Logs ───────────────────────────────────────────────────────
+**/*.log
+**/logs/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# ── Expo ───────────────────────────────────────────────────────
+**/.expo/
+**/.expo-shared/
+**/.expo-shared
+**/web-build/
+**/expo-env.d.ts
+**/.metro-health-check*
+**/.kotlin/
+
+# ── Build outputs ──────────────────────────────────────────────
+**/dist/
+**/build/
+**/coverage/
+**/*.tsbuildinfo
+**/*.js.map
+**/*.d.ts
+!prisma/seed.ts
+
+# ── Generated native folders ───────────────────────────────────
+**/ios
+**/android
+
+# ── OS ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ────────────────────────────────────────────────────────
+.idea/
+.vscode/
+
+# ── Local databases / dumps ────────────────────────────────────
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+**/*.sql.gz
+**/*.dump
+
+# ── Certificates / keys / credentials ──────────────────────────
+**/*.pem
+**/*.key
+**/*.p12
+**/*.p8
+**/*.jks
+**/*.keystore
+**/*.mobileprovision
+**/service-account*.json
+**/credentials*.json
+**/secrets*.json
+**/id_rsa*
+**/id_ed25519*
+**/.npmrc
+
+# ── Mobile / Firebase ──────────────────────────────────────────
+**/google-services.json
+**/GoogleService-Info.plist
+
+# ── Temporary / misc ───────────────────────────────────────────
+**/*.tmp
+**/*.temp
+**/*.orig.*
+*.orig.*
+example
+
+# ── API-specific ───────────────────────────────────────────────
+apps/api/openapi-spec.json

@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  STUDENT
+  ADMIN
+  SUPER_ADMIN
+  DRIVER
+}
+
+enum RouteStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum ScheduleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum NoticeSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// ==================== MODELS ====================
+
+model AllowedEmailDomain {
+  id          String   @id @default(uuid()) @db.Uuid
+  domain      String   @unique
+  isActive    Boolean  @default(true)
+  createdById String?  @db.Uuid
+  createdBy   User?    @relation("AllowedDomainCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("allowed_email_domains")
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String   @unique
+  role          UserRole @default(STUDENT)
+  emailVerified Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  sessions          Session[]
+  authVerification  AuthVerificationCode?
+  createdNotices    Notice[]          @relation("NoticeCreator")
+  auditLogs         AuditLog[]
+  tripFeedbacks     TripFeedback[]
+  createdDomains    AllowedEmailDomain[] @relation("AllowedDomainCreator")
+
+  @@map("users")
+}
+
+model AuthVerificationCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  email     String    @unique
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [email], references: [email])
+
+  @@map("auth_verification_codes")
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  user             User      @relation(fields: [userId], references: [id])
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Route {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  direction   String
+  status      RouteStatus @default(ACTIVE)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  routeStops    RouteStop[]
+  schedules     Schedule[]
+  drivers       Driver[]
+  tripFeedbacks TripFeedback[]
+
+  @@map("routes")
+}
+
+model Stop {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  reference String?
+  latitude  Decimal  @db.Decimal(10, 7)
+  longitude Decimal  @db.Decimal(10, 7)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  routeStops RouteStop[]
+
+  @@map("stops")
+}
+
+model RouteStop {
+  id                      String  @id @default(uuid()) @db.Uuid
+  routeId                 String  @db.Uuid
+  stopId                  String  @db.Uuid
+  stopOrder               Int
+  estimatedArrivalMinutes Int?
+  notes                   String?
+
+  route Route @relation(fields: [routeId], references: [id])
+  stop  Stop  @relation(fields: [stopId], references: [id])
+
+  @@unique([routeId, stopId])
+  @@unique([routeId, stopOrder])
+  @@index([routeId])
+  @@index([stopId])
+  @@map("route_stops")
+}
+
+model Schedule {
+  id                     String         @id @default(uuid()) @db.Uuid
+  routeId                String         @db.Uuid
+  dayOfWeek              DayOfWeek
+  direction              String
+  departureTime          String
+  approximateArrivalTime String?
+  status                 ScheduleStatus @default(ACTIVE)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  route Route @relation(fields: [routeId], references: [id])
+
+  @@index([routeId])
+  @@index([routeId, dayOfWeek, direction])
+  @@map("schedules")
+}
+
+model Vehicle {
+  id        String        @id @default(uuid()) @db.Uuid
+  plate     String        @unique
+  code      String        @unique
+  capacity  Int
+  status    VehicleStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  drivers Driver[]
+
+  @@map("vehicles")
+}
+
+model Driver {
+  id                String       @id @default(uuid()) @db.Uuid
+  name              String
+  phone             String?
+  licenseNumber     String?
+  status            DriverStatus @default(ACTIVE)
+  assignedVehicleId String?      @db.Uuid
+  assignedRouteId   String?      @db.Uuid
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  assignedVehicle Vehicle? @relation(fields: [assignedVehicleId], references: [id])
+  assignedRoute   Route?   @relation(fields: [assignedRouteId], references: [id])
+  tripFeedbacks   TripFeedback[]
+
+  @@index([assignedVehicleId])
+  @@index([assignedRouteId])
+  @@map("drivers")
+}
+
+model Notice {
+  id             String        @id @default(uuid()) @db.Uuid
+  title          String
+  message        String
+  severity       NoticeSeverity @default(INFO)
+  publishedFrom  DateTime
+  publishedUntil DateTime?
+  isActive       Boolean       @default(true)
+  createdById    String        @db.Uuid
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  createdBy User @relation("NoticeCreator", fields: [createdById], references: [id])
+
+  @@index([isActive, publishedFrom])
+  @@map("notices")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model TripFeedback {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  routeId    String   @db.Uuid
+  driverId   String?  @db.Uuid
+  rating     Int
+  comment    String?
+  travelDate DateTime?
+  createdAt  DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id])
+  route  Route   @relation(fields: [routeId], references: [id])
+  driver Driver? @relation(fields: [driverId], references: [id])
+
+  @@index([userId])
+  @@index([routeId])
+  @@map("trip_feedbacks")
+}
