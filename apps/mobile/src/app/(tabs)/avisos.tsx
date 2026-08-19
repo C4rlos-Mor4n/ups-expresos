@@ -1,15 +1,21 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useFocusEffect } from "expo-router";
 import { useTheme } from "../../context/ThemeContext";
 import { mobileService } from "../../services/mobile.service";
 import { Notice } from "../../types/notice";
+import { appendPage } from "../../utils/pagination";
 import { Ionicons } from "@expo/vector-icons";
+
+const PAGE_LIMIT = 20;
 
 export default function AvisosScreen() {
   const [activeTab, setActiveTab] = useState("Todos");
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const pageRef = useRef(1);
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isSmallDevice = width < 380;
@@ -39,16 +45,33 @@ export default function AvisosScreen() {
   const loadNotices = async () => {
     try {
       setLoading(true);
-      const response = await mobileService.getNotices();
-      // Si el tipado de PaginatedResponse<{data, meta}> es correcto, 'response.data' es el array
-      // Agregamos fallback por si el backend devuelve un arreglo directo o algo diferente.
-      const noticesData = Array.isArray(response) ? response : (response?.data || []);
-      setNotices(noticesData);
+      const response = await mobileService.getNotices({ page: 1, limit: PAGE_LIMIT });
+      const { items, hasMore: more } = appendPage([], response.data, response.meta);
+      pageRef.current = response.meta.page;
+      setNotices(items);
+      setHasMore(more);
     } catch (error) {
       console.error("Error loading notices", error);
-      setNotices([]); // Aseguramos que quede vacío y no undefined en caso de error (como el AxiosError)
+      setNotices([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoreNotices = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = pageRef.current + 1;
+      const response = await mobileService.getNotices({ page: nextPage, limit: PAGE_LIMIT });
+      const { items, hasMore: more } = appendPage(notices, response.data, response.meta);
+      pageRef.current = response.meta.page;
+      setNotices(items);
+      setHasMore(more);
+    } catch (error) {
+      console.error("Error loading more notices", error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -57,7 +80,12 @@ export default function AvisosScreen() {
     ? safeNotices 
     : safeNotices.filter(notice => notice.severity === severityMap[activeTab]);
 
-  const getSeverityConfig = (severity: string) => {
+  const getSeverityConfig = (severity: string): {
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
+    bgColor: string;
+    label: string;
+  } => {
     switch (severity) {
       case 'INFO':
         return {
@@ -140,7 +168,7 @@ export default function AvisosScreen() {
                   {/* Izquierda: Icono circular */}
                   <View style={styles.iconColumn}>
                     <View style={[styles.iconCircle, { backgroundColor: config.bgColor }]}>
-                      <Ionicons name={config.icon as any} size={24} color={config.color} />
+                      <Ionicons name={config.icon} size={24} color={config.color} />
                     </View>
                   </View>
 
@@ -172,6 +200,19 @@ export default function AvisosScreen() {
               </View>
             );
           })}
+          {hasMore && (
+            <Pressable
+              style={({ pressed }) => [styles.loadMore, pressed && { opacity: 0.85 }]}
+              onPress={loadMoreNotices}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <ActivityIndicator size="small" color={colors.button.primary} />
+              ) : (
+                <Text style={styles.loadMoreText}>Cargar más avisos</Text>
+              )}
+            </Pressable>
+          )}
         </ScrollView>
       )}
     </View>
@@ -290,6 +331,21 @@ function makeStyles(colors: Colors, isSmallDevice: boolean = false) {
       fontSize: 11,
       fontFamily: "Inter-Regular",
       color: colors.text.light,
-    }
+    },
+    loadMore: {
+      marginTop: 8,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background.card,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    loadMoreText: {
+      fontSize: 14,
+      fontFamily: "Inter-Bold",
+      color: colors.button.primary,
+    },
   });
 }

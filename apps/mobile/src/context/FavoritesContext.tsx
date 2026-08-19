@@ -69,12 +69,11 @@ export function FavoritesProvider({ children }: Props) {
 
       // Fetch details in background
       try {
-        const data = await mobileService.getRouteDetail(route.id);
-        const responseData = data as any;
+        const { stops, schedules } = await mobileService.getRouteDetail(route.id);
         const fullDetail = {
           ...route,
-          stops: responseData.stops ?? [],
-          schedules: responseData.schedules ?? []
+          stops,
+          schedules
         } as RouteDetail;
         
         setFavoriteRoutes((prev) => {

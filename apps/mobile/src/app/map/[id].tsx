@@ -36,18 +36,12 @@ export default function MapScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await mobileService.getRouteDetail(routeId);
-      const responseData = data as any;
-      // Handle both response shapes: { route, stops, schedules } or flat RouteDetail
-      if (responseData.route) {
-        setRoute({
-          ...responseData.route,
-          stops: responseData.stops ?? [],
-          schedules: responseData.schedules ?? [],
-        } as RouteDetail);
-      } else {
-        setRoute(responseData as RouteDetail);
-      }
+      const { route: routeData, stops, schedules } = await mobileService.getRouteDetail(routeId);
+      setRoute({
+        ...routeData,
+        stops,
+        schedules,
+      });
     } catch (err) {
       console.error("Error loading route details", err);
       setError("No se pudo cargar la información de la ruta. Verifica tu conexión a internet.");

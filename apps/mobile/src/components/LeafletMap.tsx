@@ -2,6 +2,8 @@ import React, { useRef, forwardRef, useImperativeHandle } from "react";
 import { View, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { RouteStop } from "../types/route";
+import { escapeScriptJson } from "../utils/scriptJson";
+import { ESCAPE_HTML_JS } from "../utils/htmlEscape";
 
 export interface LeafletMapHandle {
   fitToStops: () => void;
@@ -27,8 +29,10 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
       },
     }));
 
-    // Serialize stops for injection into the HTML
-    const stopsJson = JSON.stringify(
+    // Serialize stops for injection into the HTML.
+    // El escapado evita que un dato (p.ej. un nombre de parada) con "</script>"
+    // cierre el bloque de script e inyecte HTML/JS arbitrario en el WebView.
+    const stopsJson = escapeScriptJson(
       stops.map((s) => ({
         lat: Number(s.stop.latitude),
         lng: Number(s.stop.longitude),
@@ -96,6 +100,8 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
 <script>
   var stops = ${stopsJson};
 
+  ${ESCAPE_HTML_JS}
+
   // Initialize map - center will be adjusted via fitBounds
   var map = L.map('map', {
     zoomControl: true,
@@ -146,9 +152,15 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
 
     // Draw markers
     stops.forEach(function(stop) {
+      // Escapado HTML contextual: los valores (nombre, referencia, orden) se
+      // insertan dentro de strings HTML (divIcon / bindPopup), no solo JSON.
+      var order = escapeHtml(stop.order);
+      var name = escapeHtml(stop.name);
+      var reference = escapeHtml(stop.reference || '');
+
       var iconHtml = '<div class="custom-marker">' +
-        '<div class="marker-circle">' + stop.order + '</div>' +
-        '<div class="marker-label">' + stop.name + '</div>' +
+        '<div class="marker-circle">' + order + '</div>' +
+        '<div class="marker-label">' + name + '</div>' +
         '</div>';
 
       var icon = L.divIcon({
@@ -161,8 +173,8 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
 
       L.marker([stop.lat, stop.lng], { icon: icon })
         .addTo(map)
-        .bindPopup('<b>' + stop.order + '. ' + stop.name + '</b>' +
-          (stop.reference ? '<br/><span style="font-size:12px;color:#555;">' + stop.reference + '</span>' : ''));
+        .bindPopup('<b>' + order + '. ' + name + '</b>' +
+          (stop.reference ? '<br/><span style="font-size:12px;color:#555;">' + reference + '</span>' : ''));
     });
 
     // Auto-fit bounds to show all stops
@@ -187,8 +199,10 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           scrollEnabled={false}
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
-          // Allow mixed content (http leaflet tiles on https page in some Android versions)
-          mixedContentMode="always"
+          // Todos los recursos (Leaflet, tiles CARTO, OSRM) son https: no se
+          // permite contenido mixto. El valor por defecto de la plataforma
+          // ("never") es suficiente y evita cargas http inseguras.
+          mixedContentMode="never"
           allowsInlineMediaPlayback
           onError={(e) => console.warn("LeafletMap WebView error:", e.nativeEvent)}
         />

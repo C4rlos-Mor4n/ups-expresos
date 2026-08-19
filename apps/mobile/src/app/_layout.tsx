@@ -1,6 +1,7 @@
 import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { isPrivateRoute } from "../utils/routes";
 import { ThemeProvider } from "../context/ThemeContext";
 import { FavoritesProvider } from "../context/FavoritesContext";
 import { FavoriteStopsProvider } from "../context/FavoriteStopsContext";
@@ -26,11 +27,8 @@ function AppContent() {
   useEffect(() => {
     if (loading || !navigationState?.key) return;
 
-    // Check if user is navigating within the main tabs
-    const inTabsGroup = segments[0] === "(tabs)";
-
-    // Si no está autenticado y está dentro de las pestañas protegidas, regresamos a la pantalla de bienvenida
-    if (!isAuthenticated && inTabsGroup) {
+    // Si no está autenticado y navega a una ruta privada, redirigir a welcome.
+    if (!isAuthenticated && isPrivateRoute(segments)) {
       if (router.canDismiss()) {
         router.dismissAll();
       } else {

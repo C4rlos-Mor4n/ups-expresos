@@ -58,7 +58,7 @@ export default function OtpScreen() {
       await login(
         response.accessToken,
         response.refreshToken,
-        response.user as any
+        response.user
       );
 
       router.replace("/(tabs)");

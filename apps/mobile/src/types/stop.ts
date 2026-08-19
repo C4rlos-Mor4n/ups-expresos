@@ -1,8 +1,7 @@
 export interface Stop {
   id: string;
   name: string;
-  reference: string;
-  description?: string;
+  reference: string | null;
   latitude: number;
   longitude: number;
   isActive: boolean;

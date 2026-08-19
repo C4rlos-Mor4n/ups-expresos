@@ -1,6 +1,6 @@
-import api from './api';
+import api from "../api/client";
 import { PaginatedResponse } from '../types/api';
-import { Route, RouteDetail, RouteStop, Schedule } from '../types/route';
+import { Route, RouteDetailResponse, RouteStop, Schedule } from '../types/route';
 import { Notice } from '../types/notice';
 
 export const mobileService = {
@@ -9,7 +9,7 @@ export const mobileService = {
     return response.data;
   },
 
-  getRouteDetail: async (id: string): Promise<RouteDetail> => {
+  getRouteDetail: async (id: string): Promise<RouteDetailResponse> => {
     const response = await api.get(`/mobile/routes/${id}`);
     return response.data;
   },

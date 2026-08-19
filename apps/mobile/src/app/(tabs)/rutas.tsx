@@ -20,7 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function RutasScreen() {
   const router = useRouter();
-  const { routes: globalRoutes, loading, refreshRoutes } = useRoutes();
+  const { routes: globalRoutes, loading, loadingMore, hasMore, loadMoreRoutes } = useRoutes();
   const [search, setSearch] = useState("");
   const { colors } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -142,6 +142,19 @@ export default function RutasScreen() {
               </Pressable>
             );
           })}
+          {hasMore && (
+            <Pressable
+              style={({ pressed }) => [styles.loadMore, pressed && { opacity: 0.85 }]}
+              onPress={loadMoreRoutes}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <ActivityIndicator size="small" color={colors.button.primary} />
+              ) : (
+                <Text style={styles.loadMoreText}>Cargar más rutas</Text>
+              )}
+            </Pressable>
+          )}
         </ScrollView>
       )}
     </View>
@@ -257,6 +270,21 @@ function makeStyles(colors: Colors, isSmallDevice: boolean = false) {
     statusText: {
       fontSize: isSmallDevice ? 9 : 11,
       fontFamily: "Inter-Bold",
+    },
+    loadMore: {
+      marginTop: 8,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#FFFFFF",
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    loadMoreText: {
+      fontSize: 14,
+      fontFamily: "Inter-Bold",
+      color: colors.button.primary,
     },
   });
 }

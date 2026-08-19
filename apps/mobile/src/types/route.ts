@@ -6,7 +6,7 @@ export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDA
 export interface Route {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   direction: string;
   status: RouteStatus;
   isActive: boolean;
@@ -16,10 +16,9 @@ export interface Route {
 
 export interface RouteStop {
   id: string;
-  stopId: string;
   stopOrder: number;
-  estimatedArrivalMinutes: number;
-  notes: string | null;
+  estimatedArrivalMinutes?: number | null;
+  notes?: string | null;
   stop: Stop;
 }
 
@@ -29,8 +28,15 @@ export interface Schedule {
   dayOfWeek: DayOfWeek;
   direction: string;
   departureTime: string;
-  approximateArrivalTime: string;
+  approximateArrivalTime?: string | null;
   status: string;
+}
+
+// Shape real de GET /mobile/routes/:id (backend envuelve route, stops y schedules).
+export interface RouteDetailResponse {
+  route: Route;
+  stops: RouteStop[];
+  schedules: Schedule[];
 }
 
 export interface RouteDetail extends Route {
