@@ -13,6 +13,7 @@ import {
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { Colors } from "../../constants/Colors";
 import { authService } from "../../services/auth.service";
 
@@ -42,16 +43,17 @@ const handleRequestCode = async () => {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
 
-  if (error.response?.status === 429) {
+  if (isAxiosError(error) && error.response?.status === 429) {
     alert("Debes esperar unos segundos antes de solicitar otro código.");
     return;
   }
 
   alert(
-    error.response?.data?.message ??
-    "No se pudo reenviar el código."
+    isAxiosError(error) && error.response?.data?.message
+      ? error.response.data.message
+      : "No se pudo reenviar el código."
   );
 
   } finally {

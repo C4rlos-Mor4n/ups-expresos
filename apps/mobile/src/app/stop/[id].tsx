@@ -55,7 +55,7 @@ export default function StopDetailScreen() {
           try {
             const stops = await mobileService.getRouteStops(route.id);
             const found = Array.isArray(stops)
-              ? stops.some((s: any) => s.stop?.id === sId || s.stopId === sId)
+              ? stops.some((s) => s.stop?.id === sId)
               : false;
             return found ? route : null;
           } catch {
@@ -63,7 +63,8 @@ export default function StopDetailScreen() {
           }
         })
       );
-      setRoutesForStop(results.filter(Boolean) as Route[]);
+      const isRoute = (r: Route | null): r is Route => r !== null;
+      setRoutesForStop(results.filter(isRoute));
     } catch (error) {
       console.error("Error finding routes for stop", error);
     } finally {

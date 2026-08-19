@@ -80,7 +80,12 @@ export default function AvisosScreen() {
     ? safeNotices 
     : safeNotices.filter(notice => notice.severity === severityMap[activeTab]);
 
-  const getSeverityConfig = (severity: string) => {
+  const getSeverityConfig = (severity: string): {
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
+    bgColor: string;
+    label: string;
+  } => {
     switch (severity) {
       case 'INFO':
         return {
@@ -163,7 +168,7 @@ export default function AvisosScreen() {
                   {/* Izquierda: Icono circular */}
                   <View style={styles.iconColumn}>
                     <View style={[styles.iconCircle, { backgroundColor: config.bgColor }]}>
-                      <Ionicons name={config.icon as any} size={24} color={config.color} />
+                      <Ionicons name={config.icon} size={24} color={config.color} />
                     </View>
                   </View>
 
