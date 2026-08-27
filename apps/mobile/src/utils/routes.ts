@@ -1,5 +1,5 @@
 // Segmentos de primer nivel que requieren sesión (consumen endpoints autenticados).
-const PRIVATE_SEGMENTS = new Set(["tabs", "route", "map", "stop"]);
+const PRIVATE_SEGMENTS = new Set(["tabs", "route", "map", "stop", "feedback"]);
 
 // Normaliza el primer segmento (expo-router devuelve grupos con paréntesis).
 function normalizeFirstSegment(segment: string | undefined): string {

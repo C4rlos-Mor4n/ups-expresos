@@ -12,7 +12,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useFavoriteStops } from "../../context/FavoriteStopsContext";
 import { useRoutes } from "../../context/RoutesContext";
 import { mobileService } from "../../services/mobile.service";
-import { Route } from "../../types/route";
+import { MobileRoute } from "../../types/route";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function StopDetailScreen() {
@@ -31,7 +31,7 @@ export default function StopDetailScreen() {
   const { isFavoriteStop, toggleFavoriteStop } = useFavoriteStops();
   const { routes } = useRoutes();
 
-  const [routesForStop, setRoutesForStop] = useState<Route[]>([]);
+  const [routesForStop, setRoutesForStop] = useState<MobileRoute[]>([]);
   const [loadingRoutes, setLoadingRoutes] = useState(true);
 
   const styles = makeStyles(colors);
@@ -63,7 +63,7 @@ export default function StopDetailScreen() {
           }
         })
       );
-      const isRoute = (r: Route | null): r is Route => r !== null;
+      const isRoute = (r: MobileRoute | null): r is MobileRoute => r !== null;
       setRoutesForStop(results.filter(isRoute));
     } catch (error) {
       console.error("Error finding routes for stop", error);
@@ -120,7 +120,7 @@ export default function StopDetailScreen() {
               <Pressable
                 key={route.id}
                 style={({ pressed }) => [styles.routeCard, pressed && { opacity: 0.7 }]}
-                onPress={() => router.push("/route/" + route.id)}
+                onPress={() => router.push({ pathname: "/route/[id]", params: { id: route.id } })}
               >
                 <View style={styles.routeCardBorder} />
                 <View style={styles.routeCardContent}>

@@ -1,10 +1,10 @@
 import api from "../api/client";
 import { PaginatedResponse } from '../types/api';
-import { Route, RouteDetailResponse, RouteStop, Schedule } from '../types/route';
+import { MobileRoute, RouteDetailResponse, RouteStop, Schedule } from '../types/route';
 import { Notice } from '../types/notice';
 
 export const mobileService = {
-  getRoutes: async (params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<PaginatedResponse<Route>> => {
+  getRoutes: async (params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<PaginatedResponse<MobileRoute>> => {
     const response = await api.get('/mobile/routes', { params });
     return response.data;
   },

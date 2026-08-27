@@ -68,7 +68,7 @@ export default function FavoritosScreen() {
                 <Pressable
                   key={route.id}
                   style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
-                  onPress={() => router.push("/route/" + route.id)}
+                  onPress={() => router.push({ pathname: "/route/[id]", params: { id: route.id } })}
                 >
                   <View style={styles.blueLine} />
                   <View style={styles.cardContent}>

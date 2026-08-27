@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TextInput,
   ScrollView,
+  RefreshControl,
   Pressable,
   ActivityIndicator,
   Platform,
@@ -15,13 +16,16 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useFavorites } from "../../context/FavoritesContext";
 import { useRoutes } from "../../context/RoutesContext";
-import { Route } from "../../types/route";
 import { Ionicons } from "@expo/vector-icons";
+import RouteOperationBadge from "../../components/RouteOperationBadge";
+import ErrorRetry from "../../components/ErrorRetry";
 
 export default function RutasScreen() {
   const router = useRouter();
-  const { routes: globalRoutes, loading, loadingMore, hasMore, loadMoreRoutes } = useRoutes();
+  const { routes: globalRoutes, loading, loadingMore, hasMore, loadMoreRoutes, refreshRoutes } = useRoutes();
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const { colors } = useTheme();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -56,6 +60,26 @@ export default function RutasScreen() {
       };
     }, [])
   );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshRoutes();
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshRoutes]);
+
+  const handleLoadMore = useCallback(async () => {
+    try {
+      await loadMoreRoutes();
+    } catch {
+      setLoadFailed(true);
+    }
+  }, [loadMoreRoutes]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -94,12 +118,19 @@ export default function RutasScreen() {
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={colors.button.primary} />
         </View>
+      ) : loadFailed && routes.length === 0 ? (
+        <ErrorRetry onRetry={handleRefresh} retrying={refreshing} />
       ) : routes.length === 0 ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={{ color: colors.text.light }}>No se encontraron rutas.</Text>
+          <Text style={{ color: colors.text.light }}>No hay rutas disponibles actualmente.</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.button.primary} />
+          }
+        >
           <Text style={styles.sectionTitle}>Rutas activas</Text>
           {routes.map((route) => {
             const statusConfig = getStatusConfig(route.status);
@@ -107,7 +138,7 @@ export default function RutasScreen() {
               <Pressable
                 key={route.id}
                 style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
-                onPress={() => router.push(`/route/${route.id}`)}
+                onPress={() => router.push({ pathname: "/route/[id]", params: { id: route.id } })}
               >
                 {/* Borde azul lateral */}
                 <View style={styles.blueLine} />
@@ -117,6 +148,11 @@ export default function RutasScreen() {
                   <View style={styles.cardLeft}>
                     <Text style={styles.cardTitle}>{route.name}</Text>
                     <Text style={styles.cardDirection}>{route.direction}</Text>
+                    {route.currentOperation ? (
+                      <View style={styles.operationBadgeWrap}>
+                        <RouteOperationBadge status={route.currentOperation.status} />
+                      </View>
+                    ) : null}
                   </View>
                   <View style={styles.cardRight}>
                     <Pressable
@@ -145,7 +181,7 @@ export default function RutasScreen() {
           {hasMore && (
             <Pressable
               style={({ pressed }) => [styles.loadMore, pressed && { opacity: 0.85 }]}
-              onPress={loadMoreRoutes}
+              onPress={handleLoadMore}
               disabled={loadingMore}
             >
               {loadingMore ? (
@@ -256,6 +292,9 @@ function makeStyles(colors: Colors, isSmallDevice: boolean = false) {
       fontSize: isSmallDevice ? 11 : 13,
       fontFamily: "Inter-Regular",
       color: colors.text.light,
+    },
+    operationBadgeWrap: {
+      marginTop: 8,
     },
     cardRight: {
       alignItems: "flex-end",
