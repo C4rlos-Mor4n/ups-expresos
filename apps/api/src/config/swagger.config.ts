@@ -20,6 +20,8 @@ export function buildSwaggerDocumentConfig(): Omit<ReturnType<DocumentBuilder['b
     .addTag('Admin Vehicles', 'Admin vehicle management')
     .addTag('Admin Drivers', 'Admin driver management')
     .addTag('Admin Notices', 'Admin notice management')
+    .addTag('Admin Route Assignments', 'Admin route assignment management')
+    .addTag('Driver Operations', 'Driver operational endpoints (manual trip start/finish)')
     .addTag('Trip Feedback', 'Trip feedback and ratings from students');
 
   const publicUrl = process.env['APP_PUBLIC_URL']?.trim();

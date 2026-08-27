@@ -83,6 +83,19 @@ export interface DemoTripFeedbackSeed {
   travelOffsetDays: number;
 }
 
+export interface DemoRouteAssignmentSeed {
+  routeKey: string;
+  driverName: string;
+  vehicleCode: string;
+  serviceOffsetDays: number;
+  notes?: string;
+}
+
+export interface DemoDriverUserLinkSeed {
+  driverName: string;
+  userEmail: string;
+}
+
 export interface DemoCatalog {
   users: DemoUserSeed[];
   routes: DemoRouteSeed[];
@@ -93,6 +106,8 @@ export interface DemoCatalog {
   drivers: DemoDriverSeed[];
   notices: DemoNoticeSeed[];
   tripFeedbacks: DemoTripFeedbackSeed[];
+  routeAssignments: DemoRouteAssignmentSeed[];
+  driverUserLinks: DemoDriverUserLinkSeed[];
 }
 
 const WEEKDAYS = [
@@ -615,6 +630,47 @@ export function getDemoCatalog(): DemoCatalog {
     },
   ];
 
+  // Asignaciones operativas de demostración. serviceOffsetDays=0 corresponde a la
+  // fecha actual, permitiendo iniciar/finalizar recorridos manualmente en la demo.
+  // TODO: reemplazar por asignaciones oficiales cuando la operación confirme los turnos reales.
+  const routeAssignments: DemoRouteAssignmentSeed[] = [
+    {
+      routeKey: 'rio-daule-centenario-ida',
+      driverName: 'Luis Herrera',
+      vehicleCode: 'BUS-001',
+      serviceOffsetDays: 0,
+      notes: 'Asignación demo: Ruta Norte - recorrido de la mañana (ida).',
+    },
+    {
+      routeKey: 'centenario-rio-daule-retorno',
+      driverName: 'Ana Villacís',
+      vehicleCode: 'BUS-004',
+      serviceOffsetDays: 0,
+      notes: 'Asignación demo: Ruta Norte - retorno de la tarde.',
+    },
+    {
+      routeKey: 'terminal-25-centenario-ida',
+      driverName: 'María Paredes',
+      vehicleCode: 'BUS-002',
+      serviceOffsetDays: 0,
+      notes: 'Asignación demo: Ruta Sur - recorrido de la mañana (ida).',
+    },
+    {
+      routeKey: 'terminal-costa-maria-auxiliadora-ida',
+      driverName: 'José Cedeño',
+      vehicleCode: 'BUS-003',
+      serviceOffsetDays: 0,
+      notes: 'Asignación demo: Ruta La Joya / Vía a la Costa - recorrido de la mañana (ida).',
+    },
+  ];
+
+  // Vínculo entre los perfiles de conductor (Driver) y las cuentas de usuario con rol DRIVER.
+  // Permite que GET /driver/me/assignments/today resuelva el driver del usuario autenticado.
+  const driverUserLinks: DemoDriverUserLinkSeed[] = [
+    { driverName: 'Luis Herrera', userEmail: 'conductor.portal1@ups.edu.ec' },
+    { driverName: 'María Paredes', userEmail: 'conductor.portal2@ups.edu.ec' },
+  ];
+
   return {
     users,
     routes,
@@ -625,5 +681,7 @@ export function getDemoCatalog(): DemoCatalog {
     drivers,
     notices,
     tripFeedbacks,
+    routeAssignments,
+    driverUserLinks,
   };
 }

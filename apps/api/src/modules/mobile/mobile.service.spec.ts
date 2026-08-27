@@ -16,6 +16,8 @@ describe('MobileService', () => {
   let mockScheduleFindMany: jest.Mock;
   let mockNoticeFindMany: jest.Mock;
   let mockNoticeCount: jest.Mock;
+  let mockTripFindFirst: jest.Mock;
+  let mockRouteAssignmentFindFirst: jest.Mock;
 
   function mockDecimal(value: number): { toNumber: () => number } {
     return { toNumber: () => value };
@@ -41,6 +43,8 @@ describe('MobileService', () => {
     mockScheduleFindMany = jest.fn();
     mockNoticeFindMany = jest.fn();
     mockNoticeCount = jest.fn();
+    mockTripFindFirst = jest.fn();
+    mockRouteAssignmentFindFirst = jest.fn();
 
     const prismaMock = {
       route: {
@@ -58,6 +62,12 @@ describe('MobileService', () => {
       notice: {
         findMany: mockNoticeFindMany,
         count: mockNoticeCount,
+      },
+      trip: {
+        findFirst: mockTripFindFirst,
+      },
+      routeAssignment: {
+        findFirst: mockRouteAssignmentFindFirst,
       },
     } as unknown as PrismaService;
 
@@ -280,6 +290,98 @@ describe('MobileService', () => {
             OR: expect.arrayContaining([
               { publishedUntil: null },
             ]),
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('currentOperation', () => {
+    it('should include currentOperation IN_PROGRESS in active routes when a trip is in progress', async () => {
+      mockRouteFindMany.mockResolvedValue([mockActiveRoute]);
+      mockRouteCount.mockResolvedValue(1);
+      mockTripFindFirst.mockResolvedValue({
+        id: 'trip-1',
+        status: 'IN_PROGRESS',
+        startedAt: new Date('2026-08-27T12:00:00.000Z'),
+        driver: { id: 'driver-1', name: 'Juan Pérez' },
+        vehicle: { id: 'vehicle-1', plate: 'GXX-1234', code: 'BUS-01' },
+      });
+
+      const result = await service.findActiveRoutes(1, 10, {});
+
+      expect(result.data[0]!.currentOperation).toEqual({
+        status: 'IN_PROGRESS',
+        driver: { id: 'driver-1', name: 'Juan Pérez' },
+        vehicle: { id: 'vehicle-1', plate: 'GXX-1234', code: 'BUS-01' },
+        startedAt: new Date('2026-08-27T12:00:00.000Z'),
+        tripId: 'trip-1',
+      });
+    });
+
+    it('should return currentOperation null when no trip or assignment exists', async () => {
+      mockRouteFindMany.mockResolvedValue([mockActiveRoute]);
+      mockRouteCount.mockResolvedValue(1);
+      mockTripFindFirst.mockResolvedValue(null);
+      mockRouteAssignmentFindFirst.mockResolvedValue(null);
+
+      const result = await service.findActiveRoutes(1, 10, {});
+
+      expect(result.data[0]!.currentOperation).toBeNull();
+    });
+
+    it('should include currentOperation in route detail with driver, vehicle and status', async () => {
+      const routeWithRelations = {
+        ...mockActiveRoute,
+        routeStops: [],
+        schedules: [],
+      };
+
+      mockRouteFindUnique.mockResolvedValue(routeWithRelations);
+      mockTripFindFirst.mockResolvedValue({
+        id: 'trip-1',
+        status: 'IN_PROGRESS',
+        startedAt: new Date('2026-08-27T12:00:00.000Z'),
+        driver: { id: 'driver-1', name: 'Juan Pérez' },
+        vehicle: { id: 'vehicle-1', plate: 'GXX-1234', code: 'BUS-01' },
+      });
+
+      const result = await service.findRouteDetail('route-1');
+
+      expect(result.currentOperation?.status).toBe('IN_PROGRESS');
+      expect(result.currentOperation?.driver.name).toBe('Juan Pérez');
+      expect(result.currentOperation?.vehicle.plate).toBe('GXX-1234');
+    });
+
+    it('should return currentOperation null in route detail when no active operation', async () => {
+      const routeWithRelations = {
+        ...mockActiveRoute,
+        routeStops: [],
+        schedules: [],
+      };
+
+      mockRouteFindUnique.mockResolvedValue(routeWithRelations);
+      mockTripFindFirst.mockResolvedValue(null);
+      mockRouteAssignmentFindFirst.mockResolvedValue(null);
+
+      const result = await service.findRouteDetail('route-1');
+
+      expect(result.currentOperation).toBeNull();
+    });
+
+    it('should return currentOperation null when the only assignment is not for today', async () => {
+      mockRouteFindMany.mockResolvedValue([mockActiveRoute]);
+      mockRouteCount.mockResolvedValue(1);
+      mockTripFindFirst.mockResolvedValue(null);
+      mockRouteAssignmentFindFirst.mockResolvedValue(null);
+
+      const result = await service.findActiveRoutes(1, 10, {});
+
+      expect(result.data[0]!.currentOperation).toBeNull();
+      expect(mockRouteAssignmentFindFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            serviceDate: expect.objectContaining({ gte: expect.any(Date) }),
           }),
         }),
       );

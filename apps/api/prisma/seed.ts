@@ -283,6 +283,48 @@ async function seedDemoData(): Promise<void> {
     driverIds.set(driver.name, saved.id);
   }
 
+  // Vincular perfiles de conductor con cuentas de usuario de rol DRIVER (opcional).
+  for (const link of catalog.driverUserLinks) {
+    const driverId = driverIds.get(link.driverName);
+    const user = await prisma.user.findUnique({ where: { email: link.userEmail } });
+    if (!driverId || !user) continue;
+
+    await prisma.driver.update({
+      where: { id: driverId },
+      data: { userId: user.id },
+    });
+  }
+
+  // Asignaciones operativas de demostración para la fecha actual o próxima.
+  const assignmentRoutes = new Set(
+    catalog.routeAssignments.map((assignment) => routeIds.get(assignment.routeKey)).filter(Boolean),
+  ) as Set<string>;
+
+  if (assignmentRoutes.size > 0) {
+    await prisma.routeAssignment.deleteMany({
+      where: { routeId: { in: Array.from(assignmentRoutes) } },
+    });
+  }
+
+  for (const assignment of catalog.routeAssignments) {
+    const routeId = routeIds.get(assignment.routeKey);
+    const driverId = driverIds.get(assignment.driverName);
+    const vehicleId = vehicleIds.get(assignment.vehicleCode);
+    if (!routeId || !driverId || !vehicleId) continue;
+
+    const serviceDate = new Date(now.getTime() + assignment.serviceOffsetDays * 24 * 60 * 60 * 1000);
+
+    await prisma.routeAssignment.create({
+      data: {
+        routeId,
+        driverId,
+        vehicleId,
+        serviceDate,
+        notes: assignment.notes ?? null,
+      },
+    });
+  }
+
   for (const notice of catalog.notices) {
     const creator = await prisma.user.findUnique({ where: { email: notice.createdByEmail } });
     if (!creator) continue;
@@ -360,7 +402,7 @@ async function seedDemoData(): Promise<void> {
   }
 
   console.log(
-    `Demo data ready: ${catalog.users.length} users, ${catalog.routes.length} routes, ${catalog.stops.length} stops, ${catalog.schedules.length} schedules, ${catalog.vehicles.length} vehicles, ${catalog.drivers.length} drivers, ${catalog.notices.length} notices, ${catalog.tripFeedbacks.length} feedbacks`,
+    `Demo data ready: ${catalog.users.length} users, ${catalog.routes.length} routes, ${catalog.stops.length} stops, ${catalog.schedules.length} schedules, ${catalog.vehicles.length} vehicles, ${catalog.drivers.length} drivers, ${catalog.notices.length} notices, ${catalog.tripFeedbacks.length} feedbacks, ${catalog.routeAssignments.length} route assignments`,
   );
 }
 

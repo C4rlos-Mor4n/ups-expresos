@@ -15,6 +15,9 @@ import { DriversModule } from './modules/drivers/drivers.module';
 import { NoticesModule } from './modules/notices/notices.module';
 import { MobileModule } from './modules/mobile/mobile.module';
 import { TripFeedbackModule } from './modules/trip-feedback/trip-feedback.module';
+import { RouteAssignmentsModule } from './modules/route-assignments/route-assignments.module';
+import { TripsModule } from './modules/trips/trips.module';
+import { DriverOperationsModule } from './modules/driver-operations/driver-operations.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -56,6 +59,9 @@ import { RolesGuard } from './common/guards/roles.guard';
     NoticesModule,
     MobileModule,
     TripFeedbackModule,
+    RouteAssignmentsModule,
+    TripsModule,
+    DriverOperationsModule,
   ],
   providers: [
     {

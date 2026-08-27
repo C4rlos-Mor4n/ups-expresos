@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, RouteStatus, ScheduleStatus } from '@prisma/client';
+import { Prisma, RouteStatus, ScheduleStatus, TripStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { buildPaginatedResponse } from '../../common/utils/pagination.util';
 import { PaginatedResponse } from '../../common/types/pagination.type';
@@ -10,6 +10,19 @@ import { MobileRouteDetailResponseDto } from './dto/mobile-route-detail-response
 import { MobileNoticeResponseDto } from './dto/mobile-notice-response.dto';
 import { MobileRouteFiltersDto } from './dto/mobile-route-filters.dto';
 import { MobileScheduleFiltersDto } from './dto/mobile-schedule-filters.dto';
+import { CurrentOperationResponseDto, MobileRoutePaginatedResponseDto } from './dto/mobile-route-response.dto';
+
+type RouteWithCurrentOperation = {
+  id: string;
+  name: string;
+  description: string | null;
+  direction: string;
+  status: RouteStatus;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  currentOperation: CurrentOperationResponseDto | null;
+};
 
 @Injectable()
 export class MobileService {
@@ -19,7 +32,7 @@ export class MobileService {
     page: number,
     limit: number,
     filters: MobileRouteFiltersDto,
-  ): Promise<PaginatedResponse<RouteResponseDto>> {
+  ): Promise<MobileRoutePaginatedResponseDto> {
     const skip = (page - 1) * limit;
     const where: Prisma.RouteWhereInput = { isActive: true };
 
@@ -36,12 +49,9 @@ export class MobileService {
       this.prisma.route.count({ where }),
     ]);
 
-    return buildPaginatedResponse(
-      routes.map((route) => this.mapRouteToResponse(route)),
-      total,
-      page,
-      limit,
-    );
+    const data = await Promise.all(routes.map((route) => this.withCurrentOperation(route)));
+
+    return buildPaginatedResponse(data, total, page, limit) as MobileRoutePaginatedResponseDto;
   }
 
   async findRouteDetail(id: string): Promise<MobileRouteDetailResponseDto> {
@@ -54,10 +64,13 @@ export class MobileService {
     });
     if (!route) throw new NotFoundException(`Active route with id ${id} not found`);
 
+    const currentOperation = await this.buildCurrentOperation(id);
+
     return {
       route: this.mapRouteToResponse(route),
       stops: route.routeStops.map((routeStop) => this.mapRouteStopToResponse(routeStop)),
       schedules: route.schedules.map((schedule) => this.mapScheduleToResponse(schedule)),
+      currentOperation,
     };
   }
 
@@ -110,6 +123,80 @@ export class MobileService {
       page,
       limit,
     );
+  }
+
+  private async withCurrentOperation(route: {
+    id: string;
+    name: string;
+    description: string | null;
+    direction: string;
+    status: RouteStatus;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Promise<RouteWithCurrentOperation> {
+    return {
+      id: route.id,
+      name: route.name,
+      description: route.description,
+      direction: route.direction,
+      status: route.status,
+      isActive: route.isActive,
+      createdAt: route.createdAt,
+      updatedAt: route.updatedAt,
+      currentOperation: await this.buildCurrentOperation(route.id),
+    };
+  }
+
+  private async buildCurrentOperation(routeId: string): Promise<CurrentOperationResponseDto | null> {
+    const inProgressTrip = await this.prisma.trip.findFirst({
+      where: { routeId, status: TripStatus.IN_PROGRESS },
+      orderBy: { startedAt: 'desc' },
+      include: {
+        driver: { select: { id: true, name: true } },
+        vehicle: { select: { id: true, plate: true, code: true } },
+      },
+    });
+
+    if (inProgressTrip) {
+      return {
+        status: TripStatus.IN_PROGRESS,
+        driver: { id: inProgressTrip.driver.id, name: inProgressTrip.driver.name },
+        vehicle: {
+          id: inProgressTrip.vehicle.id,
+          plate: inProgressTrip.vehicle.plate,
+          code: inProgressTrip.vehicle.code,
+        },
+        startedAt: inProgressTrip.startedAt,
+        tripId: inProgressTrip.id,
+      };
+    }
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const latestAssignment = await this.prisma.routeAssignment.findFirst({
+      where: { routeId, isActive: true, serviceDate: { gte: todayStart, lt: todayEnd } },
+      orderBy: { serviceDate: 'desc' },
+      include: {
+        driver: { select: { id: true, name: true } },
+        vehicle: { select: { id: true, plate: true, code: true } },
+      },
+    });
+
+    if (!latestAssignment) return null;
+
+    return {
+      status: latestAssignment.status,
+      driver: { id: latestAssignment.driver.id, name: latestAssignment.driver.name },
+      vehicle: {
+        id: latestAssignment.vehicle.id,
+        plate: latestAssignment.vehicle.plate,
+        code: latestAssignment.vehicle.code,
+      },
+      startedAt: null,
+    };
   }
 
   private mapRouteToResponse(route: {

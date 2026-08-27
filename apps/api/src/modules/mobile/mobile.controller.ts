@@ -10,7 +10,7 @@ import { MobileScheduleFiltersDto } from './dto/mobile-schedule-filters.dto';
 import { MobileRouteDetailResponseDto } from './dto/mobile-route-detail-response.dto';
 import { MobileRouteStopResponseDto } from './dto/mobile-route-stop-response.dto';
 import { MobileNoticePaginatedResponseDto } from './dto/mobile-notice-paginated-response.dto';
-import { RoutePaginatedResponseDto } from '../routes/dto/route-paginated-response.dto';
+import { MobileRoutePaginatedResponseDto } from './dto/mobile-route-response.dto';
 import { ScheduleResponseDto } from '../schedules/dto/schedule-response.dto';
 
 @ApiBearerAuth()
@@ -23,10 +23,10 @@ export class MobileController {
 
   @Get('routes')
   @ApiOperation({ summary: 'List active routes for mobile app' })
-  @ApiOkResponse({ type: RoutePaginatedResponseDto, description: 'Paginated list of active routes' })
+  @ApiOkResponse({ type: MobileRoutePaginatedResponseDto, description: 'Paginated list of active routes with current operation status' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
-  findActiveRoutes(@Query() query: MobileRouteQueryDto): Promise<RoutePaginatedResponseDto> {
+  findActiveRoutes(@Query() query: MobileRouteQueryDto): Promise<MobileRoutePaginatedResponseDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     return this.mobileService.findActiveRoutes(page, limit, query);
