@@ -48,6 +48,7 @@ function AppContent() {
         <Stack.Screen name="route/[id]" />
         <Stack.Screen name="map/[id]" />
         <Stack.Screen name="stop/[id]" />
+        <Stack.Screen name="feedback/[routeId]" />
       </Stack>
     </>
   );

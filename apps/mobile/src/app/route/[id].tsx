@@ -13,6 +13,10 @@ import { useFavorites } from "../../context/FavoritesContext";
 import { mobileService } from "../../services/mobile.service";
 import { RouteDetail, Schedule } from "../../types/route";
 import { Ionicons } from "@expo/vector-icons";
+import RouteOperationBadge from "../../components/RouteOperationBadge";
+import ErrorRetry from "../../components/ErrorRetry";
+import { formatTime } from "../../utils/datetime";
+import { getErrorMessage } from "../../utils/error-message";
 
 const DAY_ORDER = ["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"];
 const DAY_SHORT: Record<string, string> = {
@@ -58,25 +62,28 @@ function getStatusConfig(status: string) {
 }
 
 export default function RouteDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
   const { isFavorite, toggleFavorite, getFavoriteDetail } = useFavorites();
   const [route, setRoute] = useState<RouteDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const styles = makeStyles(colors);
 
   useEffect(() => {
-    if (id) loadRouteDetail(id as string);
+    if (id) loadRouteDetail(id);
   }, [id]);
 
   const loadRouteDetail = async (routeId: string) => {
     try {
       setLoading(true);
-      const { route: routeData, stops, schedules } = await mobileService.getRouteDetail(routeId);
-      setRoute({ ...routeData, stops, schedules });
+      setError(null);
+      const { route: routeData, stops, schedules, currentOperation } = await mobileService.getRouteDetail(routeId);
+      setRoute({ ...routeData, stops, schedules, currentOperation });
     } catch (error) {
       console.error("Error loading route details", error);
+      setError(getErrorMessage(error));
       const offline = getFavoriteDetail(routeId);
       if (offline) setRoute(offline);
     } finally {
@@ -95,7 +102,7 @@ export default function RouteDetailScreen() {
   if (!route) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background.main }}>
-        <Text style={{ color: colors.text.light }}>Error al cargar la ruta.</Text>
+        <ErrorRetry title="No se pudo cargar la ruta" message={error ?? undefined} onRetry={() => loadRouteDetail(id)} />
       </View>
     );
   }
@@ -138,6 +145,38 @@ export default function RouteDetailScreen() {
           <Text style={styles.sectionText}>{route.description}</Text>
         </View>
       )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Estado del recorrido</Text>
+        {route.currentOperation ? (
+          <>
+            <RouteOperationBadge status={route.currentOperation.status} />
+            {route.currentOperation.driver?.name ? (
+              <View style={styles.operationRow}>
+                <Ionicons name="person-outline" size={16} color={colors.text.light} />
+                <Text style={styles.operationText}>Conductor: {route.currentOperation.driver.name}</Text>
+              </View>
+            ) : null}
+            {route.currentOperation.vehicle ? (
+              <View style={styles.operationRow}>
+                <Ionicons name="bus-outline" size={16} color={colors.text.light} />
+                <Text style={styles.operationText}>
+                  Bus: {route.currentOperation.vehicle.plate}
+                  {route.currentOperation.vehicle.code ? ` · ${route.currentOperation.vehicle.code}` : ""}
+                </Text>
+              </View>
+            ) : null}
+            {route.currentOperation.startedAt ? (
+              <View style={styles.operationRow}>
+                <Ionicons name="time-outline" size={16} color={colors.text.light} />
+                <Text style={styles.operationText}>Inicio: {formatTime(route.currentOperation.startedAt)}</Text>
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <Text style={styles.sectionText}>Sin recorrido operativo registrado actualmente.</Text>
+        )}
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{"Paradas" + (totalStops > 0 ? " (" + totalStops + ")" : "")}</Text>
@@ -185,7 +224,23 @@ export default function RouteDetailScreen() {
 
       <Pressable
         style={({ pressed }) => [styles.mapBtn, pressed && { opacity: 0.85 }]}
-        onPress={() => router.push("/map/" + id)}
+        onPress={() =>
+          router.push({
+            pathname: "/feedback/[routeId]",
+            params: {
+              routeId: route.id,
+              driverId: route.currentOperation?.driver?.id ?? "",
+            },
+          })
+        }
+      >
+        <Ionicons name="star-outline" size={22} color="#FFFFFF" style={{ marginRight: 10 }} />
+        <Text style={styles.mapBtnText}>Calificar viaje</Text>
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [styles.mapBtn, pressed && { opacity: 0.85 }]}
+        onPress={() => router.push({ pathname: "/map/[id]", params: { id } })}
       >
         <Ionicons name="map-outline" size={22} color="#FFFFFF" style={{ marginRight: 10 }} />
         <Text style={styles.mapBtnText}>Ver mapa de la ruta</Text>
@@ -218,6 +273,8 @@ function makeStyles(colors: Colors) {
     scheduleDay:   { fontSize: 14, fontFamily: "Inter-Bold",    color: colors.text.dark,  marginBottom: 3 },
     scheduleTimes: { fontSize: 14, fontFamily: "Inter-Regular", color: colors.text.light, lineHeight: 20 },
     scheduleFreq:  { fontSize: 13, fontFamily: "Inter-Regular", color: colors.text.light, marginTop: 2 },
+    operationRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
+    operationText: { fontSize: 14, fontFamily: "Inter-Regular", color: colors.text.dark, flexShrink: 1 },
     mapBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0056B8", marginHorizontal: 16, marginTop: 20, borderRadius: 14, paddingVertical: 16, elevation: 3, shadowColor: "#0056B8", shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
     mapBtnText: { fontSize: 16, fontFamily: "Inter-Bold", color: "#FFFFFF" },
   });

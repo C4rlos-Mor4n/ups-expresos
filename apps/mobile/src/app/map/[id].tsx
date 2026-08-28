@@ -13,6 +13,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { mobileService } from "../../services/mobile.service";
 import { RouteDetail } from "../../types/route";
 import LeafletMap, { LeafletMapHandle } from "../../components/LeafletMap";
+import { getErrorMessage } from "../../utils/error-message";
 
 export default function MapScreen() {
   const { id } = useLocalSearchParams();
@@ -44,7 +45,7 @@ export default function MapScreen() {
       });
     } catch (err) {
       console.error("Error loading route details", err);
-      setError("No se pudo cargar la información de la ruta. Verifica tu conexión a internet.");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

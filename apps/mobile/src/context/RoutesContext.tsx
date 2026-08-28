@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mobileService } from '../services/mobile.service';
-import { Route } from '../types/route';
+import { MobileRoute } from '../types/route';
 import { PaginatedMeta } from '../types/api';
 import { appendPage } from '../utils/pagination';
 import { useAuth } from './AuthContext';
@@ -9,7 +9,7 @@ import { useAuth } from './AuthContext';
 const PAGE_LIMIT = 20;
 
 interface RoutesContextType {
-  routes: Route[];
+  routes: MobileRoute[];
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
@@ -30,7 +30,7 @@ const CACHE_KEY = '@ups_routes_cache';
 
 export const RoutesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  const [routes, setRoutes] = useState<Route[]>([]);
+  const [routes, setRoutes] = useState<MobileRoute[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);

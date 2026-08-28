@@ -6,6 +6,7 @@ import { mobileService } from "../../services/mobile.service";
 import { Notice } from "../../types/notice";
 import { appendPage } from "../../utils/pagination";
 import { Ionicons } from "@expo/vector-icons";
+import ErrorRetry from "../../components/ErrorRetry";
 
 const PAGE_LIMIT = 20;
 
@@ -15,6 +16,7 @@ export default function AvisosScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const pageRef = useRef(1);
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -45,6 +47,7 @@ export default function AvisosScreen() {
   const loadNotices = async () => {
     try {
       setLoading(true);
+      setLoadFailed(false);
       const response = await mobileService.getNotices({ page: 1, limit: PAGE_LIMIT });
       const { items, hasMore: more } = appendPage([], response.data, response.meta);
       pageRef.current = response.meta.page;
@@ -53,6 +56,7 @@ export default function AvisosScreen() {
     } catch (error) {
       console.error("Error loading notices", error);
       setNotices([]);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -150,9 +154,11 @@ export default function AvisosScreen() {
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={colors.button.primary} />
         </View>
+      ) : loadFailed && filteredNotices.length === 0 ? (
+        <ErrorRetry title="No se pudieron cargar los avisos" onRetry={loadNotices} />
       ) : filteredNotices.length === 0 ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={{ color: colors.text.light }}>No hay avisos disponibles en este momento.</Text>
+          <Text style={{ color: colors.text.light }}>No hay avisos publicados actualmente.</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list}>

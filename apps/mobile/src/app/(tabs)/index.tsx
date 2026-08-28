@@ -7,7 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { mobileService } from "../../services/mobile.service";
 import { getNextSchedule } from "../../utils/schedule";
-import { Route } from "../../types/route";
+import { MobileRoute } from "../../types/route";
+import RouteOperationBadge from "../../components/RouteOperationBadge";
 
 import {
   MapPin,
@@ -23,7 +24,7 @@ export default function HomeScreen() {
   const isSmallDevice = width < 380;
   const { routes, loading: loadingRoutes } = useRoutes();
   
-  const [firstRoute, setFirstRoute] = useState<Route | null>(null);
+  const [firstRoute, setFirstRoute] = useState<MobileRoute | null>(null);
   const [nextSchedule, setNextSchedule] = useState<string>("--:--");
   const [loadingSchedule, setLoadingSchedule] = useState(true);
 
@@ -211,6 +212,12 @@ return (
           <Text style={styles.routeFrom} numberOfLines={2}>
             {firstRoute.direction ? firstRoute.direction.replace(" --> ", " -->\n") : ''}
           </Text>
+
+          {firstRoute.currentOperation ? (
+            <View style={{ marginTop: 6 }}>
+              <RouteOperationBadge status={firstRoute.currentOperation.status} />
+            </View>
+          ) : null}
 
           <Text style={styles.routeLabel}>
             Próximo horario

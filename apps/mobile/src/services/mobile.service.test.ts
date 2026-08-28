@@ -95,6 +95,34 @@ describe("mobileService pagination contract", () => {
     expect(result.meta.totalPages).toBe(1);
   });
 
+  it("getRoutes surfaces currentOperation on each route", async () => {
+    const meta = { page: 1, limit: 20, total: 1, totalPages: 1 };
+    const routeWithOperation = {
+      id: "route-1",
+      name: "Norte - Salesiana",
+      description: null,
+      direction: "Norte",
+      status: "ACTIVE",
+      isActive: true,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      currentOperation: {
+        status: "IN_PROGRESS",
+        startedAt: "2026-08-27T12:00:00.000Z",
+        tripId: "trip-1",
+        driver: { id: "driver-1", name: "Luis Herrera" },
+        vehicle: { id: "vehicle-1", plate: "PPN-1234", code: "BUS-001" },
+      },
+    };
+    apiGet.mockResolvedValue({ data: { data: [routeWithOperation], meta } });
+    const result = await mobileService.getRoutes({ page: 1, limit: 20 });
+    const operation = result.data[0]?.currentOperation;
+    expect(operation).not.toBeNull();
+    expect(operation?.status).toBe("IN_PROGRESS");
+    expect(operation?.driver?.name).toBe("Luis Herrera");
+    expect(operation?.vehicle?.plate).toBe("PPN-1234");
+  });
+
   it("getNotices sends page and limit params", async () => {
     apiGet.mockResolvedValue({ data: { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } } });
     await mobileService.getNotices({ page: 3, limit: 20 });
