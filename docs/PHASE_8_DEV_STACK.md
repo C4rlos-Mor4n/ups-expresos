@@ -8,6 +8,11 @@ cd ~/ups-expresos
 ```
 
 El script inicia/reutiliza el emulador, API, Metro y el development client.
+Usa el puerto definido por `DATABASE_URL` en `apps/api/.env` (o en
+`API_ENV_FILE`); si debe iniciar un contenedor local, usa `ups-go-postgres` o
+el nombre indicado mediante `UPS_GO_DB_CONTAINER`.
+Las rutas de Android se detectan en WSL, o se pueden indicar con
+`ANDROID_SDK_WINDOWS` y `ANDROID_SDK_ROOT`.
 Para parar solo los servicios de ese checkout:
 
 ```bash

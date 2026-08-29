@@ -78,4 +78,3 @@ example
 
 # ── API-specific ───────────────────────────────────────────────
 apps/api/openapi-spec.json
-dev-stack.sh
