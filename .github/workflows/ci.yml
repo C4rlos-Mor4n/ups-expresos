@@ -90,6 +90,12 @@ jobs:
           RUN_SCHEDULED_DEPARTURE_INTEGRATION: "true"
         run: pnpm test:scheduled-departure:integration
 
+      - name: ScheduledDeparture materializer PostgreSQL integration
+        env:
+          RUN_SCHEDULED_DEPARTURE_MATERIALIZER_INTEGRATION: "true"
+          TZ: America/Guayaquil
+        run: pnpm test:scheduled-departure-materializer:integration
+
       - name: Lint
         run: pnpm lint
 
