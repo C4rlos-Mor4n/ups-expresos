@@ -1,335 +1,36 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  Animated,
-  ActivityIndicator,
-} from "react-native";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Colors } from "../../constants/Colors";
-import * as Haptics from "expo-haptics";
-import { useAuth } from "../../context/AuthContext";
-import { authService } from "../../services/auth.service";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/Colors";
+import { PrimaryButton } from "@/components/operational-ui";
+import { useAuth } from "@/context/AuthContext";
+import { authService } from "@/services/auth.service";
+import { getErrorMessage } from "@/utils/error-message";
 
 export default function OtpScreen() {
-  const { email } = useLocalSearchParams();
-  const router = useRouter();
-
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [error, setError] = useState(false);
+  const { email: rawEmail } = useLocalSearchParams<{ email?: string }>();
+  const email = typeof rawEmail === "string" ? rawEmail : "";
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const [seconds, setSeconds] = useState(60);
-  const [canResend, setCanResend] = useState(false);
-
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const { login } = useAuth();
 
-  const inputs = useRef<Array<TextInput | null>>([]);
-  const shakeAnimation = useRef(new Animated.Value(0)).current;
-
-  const [resending, setResending] = useState(false);
-
-  useEffect(() => {
-    if (seconds <= 0) {
-      setCanResend(true);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setSeconds((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [seconds]);
-
-  const verifyOtp = async (code: string) => {
-    setLoading(true);
-    setError(false);
-
+  const verifyCode = async () => {
+    if (code.length !== 6) { setError("El código debe contener 6 dígitos."); return; }
     try {
-      const response = await authService.verifyCode(
-        String(email),
-        code
-      );
-
-      await login(
-        response.accessToken,
-        response.refreshToken,
-        response.user
-      );
-
-      router.replace("/(tabs)");
-    } catch (error) {
-      console.error(error);
-
-      shake();
-
-      setOtp(["", "", "", "", "", ""]);
-
-      inputs.current[0]?.focus();
-    } finally {
-      setLoading(false);
-    }
+      setLoading(true); setError(null);
+      const response = await authService.verifyCode(email, code);
+      await login(response.accessToken, response.refreshToken, response.user);
+      router.replace("/");
+    } catch (requestError) { setError(getErrorMessage(requestError)); } finally { setLoading(false); }
   };
 
-const handleResendCode = async () => {
-
-  if (resending || !canResend) return;
-
-  setResending(true);
-
-  try {
-
-    await authService.requestCode(String(email));
-
-    setSeconds(60);
-    setCanResend(false);
-
-  } finally {
-
-    setResending(false);
-
-  }
-};
-
-  const handleChange = (text: string, index: number) => {
-    const newChar = text.slice(-1);
-    if (!/^\d?$/.test(newChar)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = newChar;
-    setOtp(newOtp);
-
-    if (newChar !== "" && index < 5) {
-      inputs.current[index + 1]?.focus();
-    }
-
-    if (newChar === "" && index > 0) {
-      inputs.current[index - 1]?.focus();
-    }
-
-    const fullCode = newOtp.join("");
-
-    if (fullCode.length === 6 && !loading) {
-      verifyOtp(fullCode);
-    }
-  };
-
-  const shake = () => {
-    setError(true);
-
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Error
-    );
-
-    Animated.sequence([
-      Animated.timing(shakeAnimation, {
-        toValue: 10,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: -10,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: 10,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: -10,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnimation, {
-        toValue: 0,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setTimeout(() => {
-      setError(false);
-    }, 800);
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Verificación</Text>
-
-      <Text style={styles.subtitle}>
-        Ingresa el código enviado a tu correo
-      </Text>
-
-      <Text style={styles.email}>{email}</Text>
-
-      {loading && (
-        <ActivityIndicator
-          size="small"
-          color={Colors.primary}
-          style={{ marginTop: 20 }}
-        />
-      )}
-
-      <Animated.View
-        style={[
-          styles.otpContainer,
-          {
-            transform: [
-              {
-                translateX: shakeAnimation,
-              },
-            ],
-          },
-        ]}
-      >
-        {otp.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => {
-              inputs.current[index] = ref;
-            }}
-            editable={!loading}
-            style={[
-              styles.otpInput,
-              error && {
-                borderColor: Colors.error,
-              },
-            ]}
-            keyboardType="number-pad"
-            maxLength={2}
-            value={digit}
-            textAlign="center"
-            onChangeText={(text) =>
-              handleChange(text, index)
-            }
-            onKeyPress={({ nativeEvent }) => {
-              if (
-                nativeEvent.key === "Backspace" &&
-                otp[index] === "" &&
-                index > 0
-              ) {
-                inputs.current[index - 1]?.focus();
-              }
-            }}
-          />
-        ))}
-      </Animated.View>
-
-      <Text style={styles.resendQuestion}>
-        ¿No recibiste el código?
-      </Text>
-
-      <Pressable
-        disabled={!canResend || resending}
-        onPress={handleResendCode}
-      >
-        <Text style={styles.resendText}>
-          {canResend
-            ? "Reenviar código"
-            : `Reenviar código (00:${seconds
-                .toString()
-                .padStart(2, "0")})`}
-        </Text>
-      </Pressable>
-
-      <View style={styles.bottomContainer}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backButton}>
-            Volver
-          </Text>
-        </Pressable>
-      </View>
-    </View>
-  );
+  return <SafeAreaView style={styles.safe}><KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboard}><View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={22} color={Colors.white} /></Pressable><Text style={styles.headerTitle}>Verificación</Text></View><View style={styles.content}><View style={styles.icon}><Ionicons name="shield-checkmark-outline" size={36} color={Colors.primary} /></View><Text style={styles.title}>Confirma tu acceso</Text><Text style={styles.description}>Escribe el código de seis dígitos que enviamos a{`\n`}<Text style={styles.email}>{email || "tu correo institucional"}</Text>.</Text><TextInput accessibilityLabel="Código de verificación de seis dígitos" autoFocus keyboardType="number-pad" maxLength={6} textContentType="oneTimeCode" value={code} onChangeText={(value) => { setCode(value.replace(/\D/g, "")); if (error) setError(null); }} style={styles.codeInput} placeholder="000000" placeholderTextColor="#A7B2C2" onSubmitEditing={verifyCode} />{error ? <View style={styles.error}><Text style={styles.errorText}>{error}</Text></View> : null}<PrimaryButton label="Verificar e ingresar" loading={loading} onPress={verifyCode} icon="checkmark" /><Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.change}><Text style={styles.changeText}>Usar otro correo</Text></Pressable></View></KeyboardAvoidingView></SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 28,
-    paddingTop: 90,
-  },
-  bottomContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    paddingBottom: 40,
-  },
-  backButton: {
-    textAlign: "center",
-  color: Colors.primary,
-  fontSize: 16,
-  fontFamily: "Inter-SemiBold",
-},
-
-  title: {
-    fontSize: 32,
-    fontFamily: "Inter-Bold",
-    color: Colors.text.dark,
-    marginBottom: 12,
-  },
-
-  subtitle: {
-    fontSize: 16,
-    fontFamily: "Inter-Regular",
-    color: Colors.text.light,
-    lineHeight: 24,
-    marginBottom: 12,
-  },
-
-  email: {
-    fontSize: 17,
-    fontFamily: "Inter-SemiBold",
-    color: Colors.primary,
-  },
-
-  otpContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 40,
-    marginBottom: 35,
-  },
-
-  otpInput: {
-    width: 48,
-    height: 58,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    fontSize: 24,
-    fontFamily: "Inter-Bold",
-    color: Colors.text.dark,
-    backgroundColor: "#FFFFFF",
-  },
-
-  resendQuestion: {
-    textAlign: "center",
-    fontSize: 15,
-    fontFamily: "Inter-Regular",
-    color: Colors.text.light,
-    marginTop: 20,
-  },
-
-  resendText: {
-    fontSize: 16,
-    fontFamily: "Inter-SemiBold",
-    color: Colors.primary,
-    textAlign: "center",
-  },
-
-  disabledText: {
-    color: "#A0A0A0",
-  },
-
-  backButtonText: {
-    fontSize: 16,
-    fontFamily: "Inter-SemiBold",
-    color: Colors.text.dark,
-  },
+  safe: { flex: 1, backgroundColor: Colors.background.main }, keyboard: { flex: 1 }, header: { minHeight: 72, backgroundColor: Colors.navy, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 10 }, back: { width: 44, height: 44, justifyContent: "center", alignItems: "center", marginLeft: -10 }, headerTitle: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 18 }, content: { flex: 1, padding: 24, justifyContent: "center", alignItems: "stretch", gap: 18 }, icon: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.background.alt, justifyContent: "center", alignItems: "center", alignSelf: "center" }, title: { fontFamily: "Inter-Bold", color: Colors.text.dark, fontSize: 26, textAlign: "center" }, description: { color: Colors.text.light, fontFamily: "Inter-Regular", fontSize: 15, lineHeight: 22, textAlign: "center", marginTop: -8 }, email: { color: Colors.text.dark, fontFamily: "Inter-SemiBold" }, codeInput: { minHeight: 60, borderRadius: 14, borderWidth: 1, borderColor: Colors.primary, backgroundColor: Colors.white, color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 28, letterSpacing: 9, textAlign: "center", marginTop: 8 }, error: { padding: 12, borderRadius: 12, backgroundColor: "#FDE9E7" }, errorText: { color: Colors.error, fontFamily: "Inter-Regular", fontSize: 13, textAlign: "center" }, change: { minHeight: 44, alignItems: "center", justifyContent: "center" }, changeText: { color: Colors.primary, fontFamily: "Inter-SemiBold", fontSize: 14 },
 });

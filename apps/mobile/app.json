@@ -1,24 +1,24 @@
 {
   "expo": {
-    "name": "UPS Expresos",
-    "slug": "ups-expresos-mobile",
+    "name": "UPS GO",
+    "slug": "ups-go",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/images_busapp/logo-ups.png",
-    "scheme": "upsexpresosmobile",
+    "icon": "./assets/images/splash-icon.png",
+    "scheme": "upsgo",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "ec.edu.ups.expresos",
-      "icon": "./assets/images/images_busapp/logo-ups.png"
+      "icon": "./assets/images/splash-icon.png"
     },
     "android": {
       "package": "ec.edu.ups.expresos",
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundColor": "#07508E",
+        "foregroundImage": "./assets/images/splash-icon.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true
     },
     "web": {
       "output": "static",

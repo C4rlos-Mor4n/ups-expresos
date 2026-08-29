@@ -1,88 +1,39 @@
-import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
+import { Stack, useRootNavigationState, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AuthProvider, useAuth } from "../context/AuthContext";
-import { isPrivateRoute } from "../utils/routes";
-import { ThemeProvider } from "../context/ThemeContext";
-import { FavoritesProvider } from "../context/FavoritesContext";
-import { FavoriteStopsProvider } from "../context/FavoriteStopsContext";
-import { RoutesProvider } from "../context/RoutesContext";
 import { useEffect } from "react";
-import { 
-  useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold
-} from '@expo-google-fonts/inter';
-import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
+import * as SplashScreen from "expo-splash-screen";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { canAccessRoleRoute, getRoleHome, isPrivateRoute } from "@/utils/routes";
 
 SplashScreen.preventAutoHideAsync();
 
 function AppContent() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
     if (loading || !navigationState?.key) return;
-
-    // Si no está autenticado y navega a una ruta privada, redirigir a welcome.
-    if (!isAuthenticated && isPrivateRoute(segments)) {
-      if (router.canDismiss()) {
-        router.dismissAll();
-      } else {
-        router.replace("/");
-      }
+    const privateRoute = isPrivateRoute(segments);
+    const onAuthRoute = segments[0] === "(auth)";
+    const onRoot = segments[0] === "index";
+    if (!isAuthenticated && privateRoute) {
+      router.replace("/(auth)/login");
+      return;
     }
-  }, [isAuthenticated, loading, segments, navigationState?.key]);
+    if (isAuthenticated && (onAuthRoute || onRoot || !privateRoute || !canAccessRoleRoute(user?.role, segments))) {
+      router.replace(getRoleHome(user?.role));
+    }
+  }, [isAuthenticated, loading, navigationState?.key, router, segments, user?.role]);
 
-  return (
-    <>
-      <StatusBar style="dark" />
-
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="route/[id]" />
-        <Stack.Screen name="map/[id]" />
-        <Stack.Screen name="stop/[id]" />
-        <Stack.Screen name="feedback/[routeId]" />
-      </Stack>
-    </>
-  );
+  return <><StatusBar style="light" /><Stack screenOptions={{ headerShown: false }}><Stack.Screen name="index" /><Stack.Screen name="(auth)" /><Stack.Screen name="(student)" /><Stack.Screen name="(driver)" /><Stack.Screen name="unsupported-role" /></Stack></>;
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    'Inter-Regular': Inter_400Regular,
-    'Inter-Medium': Inter_500Medium,
-    'Inter-SemiBold': Inter_600SemiBold,
-    'Inter-Bold': Inter_700Bold,
-  });
-
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
-
-  if (!fontsLoaded) {
-    return null;
-  }
-
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <RoutesProvider>
-          <FavoritesProvider>
-            <FavoriteStopsProvider>
-              <AppContent />
-            </FavoriteStopsProvider>
-          </FavoritesProvider>
-        </RoutesProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  );
+  const [fontsLoaded] = useFonts({ "Inter-Regular": Inter_400Regular, "Inter-Medium": Inter_500Medium, "Inter-SemiBold": Inter_600SemiBold, "Inter-Bold": Inter_700Bold });
+  useEffect(() => { if (fontsLoaded) void SplashScreen.hideAsync(); }, [fontsLoaded]);
+  if (!fontsLoaded) return null;
+  return <AuthProvider><AppContent /></AuthProvider>;
 }

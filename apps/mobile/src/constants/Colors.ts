@@ -1,23 +1,33 @@
 export const Colors = {
-  primary: '#00205B', // UPS Blue (PANTONE 281 CVU)
-  secondary: '#F2A900',
-  white: "#FFFFFF", // UPS Yellow (PANTONE 130 CVU)
+  primary: "#07508E",
+  secondary: "#F2B635",
+  white: "#FFFFFF",
+  navy: "#002B5C",
   text: {
-    dark: '#403F3B',
-    light: '#807D7E',
+    dark: "#172033",
+    light: "#5E6B82",
+    inverse: "#FFFFFF",
   },
   background: {
-    main: '#F3F7FB', // Light blueish background
-    card: '#FFFFFF',
-    alt: '#F0F0F0',
+    main: "#F4F7FB",
+    card: "#FFFFFF",
+    alt: "#E9EFF7",
+    subtle: "#F8FAFD",
   },
   button: {
-    primary: '#0065B0',
-    primaryDark: '#07508E',
+    primary: "#07508E",
+    primaryDark: "#053C6A",
+    gold: "#D99D16",
   },
-  border: '#E0E0E0',
-  error: '#D32F2F',
-  success: '#388E3C',
-  warning: '#F57C00',
-  info: '#1976D2',
-};
+  border: "#D9E2EE",
+  error: "#B42318",
+  success: "#18794E",
+  warning: "#B54708",
+  info: "#07508E",
+  state: {
+    scheduled: { background: "#EAF1F8", foreground: "#07508E" },
+    assigned: { background: "#FFF4D8", foreground: "#8A5A00" },
+    inProgress: { background: "#DCF4E7", foreground: "#12683F" },
+    completed: { background: "#E8ECF2", foreground: "#435168" },
+  },
+} as const;

@@ -99,15 +99,19 @@ export function AuthProvider({ children }: Props) {
         // Error de red: se conserva la sesión optimista (onSessionExpired solo
         // se dispara en fallo real de refresh, no en problemas de conexión).
       }
-    } catch (error) {
-      console.error("Error cargando sesión", error);
+    } catch {
+      // Un fallo de almacenamiento local no debe exponer detalle técnico ni
+      // impedir que el guard de rutas muestre el acceso público.
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadSession();
+    const initialLoad = setTimeout(() => {
+      void loadSession();
+    }, 0);
+    return () => clearTimeout(initialLoad);
   }, [loadSession]);
 
   const login = useCallback(
@@ -137,7 +141,6 @@ export function AuthProvider({ children }: Props) {
       }
     } catch {
       // 2. Si el backend no está disponible, no dejar al usuario atrapado.
-      console.log("Logout del backend falló, procediendo a cerrar sesión localmente.");
     }
 
     // 3. Limpia SecureStore y estado local siempre.
