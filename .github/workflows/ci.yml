@@ -96,6 +96,18 @@ jobs:
           TZ: America/Guayaquil
         run: pnpm test:scheduled-departure-materializer:integration
 
+      - name: Phase 6 operational PostgreSQL integration
+        env:
+          RUN_PHASE_6_OPERATIONAL_INTEGRATION: "true"
+          TZ: America/Guayaquil
+        run: pnpm test:phase6:operational-integration
+
+      - name: Phase 6 API PostgreSQL integration
+        env:
+          RUN_PHASE_6_API_INTEGRATION: "true"
+          TZ: America/Guayaquil
+        run: pnpm test:phase6:api-integration
+
       - name: Lint
         run: pnpm lint
 
