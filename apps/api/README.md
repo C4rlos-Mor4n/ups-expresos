@@ -23,9 +23,10 @@ Configura variables locales a partir de `.env.example`. Nunca subas `.env`.
 
 ## Desarrollo
 
-Desde la raíz del repositorio, el flujo habitual para API, Metro y Android es:
+Desde el checkout principal, el flujo habitual para API, Metro y Android es:
 
 ```bash
+cd ~/ups-expresos
 ./scripts/dev-stack.sh
 ```
 

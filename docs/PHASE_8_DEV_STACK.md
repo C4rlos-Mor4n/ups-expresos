@@ -1,8 +1,9 @@
 # Phase 8 — Development stack
 
-Desde la raíz del checkout canónico:
+Tras el cierre de Fase 8, el checkout principal de desarrollo es `~/ups-expresos`:
 
 ```bash
+cd ~/ups-expresos
 ./scripts/dev-stack.sh
 ```
 
