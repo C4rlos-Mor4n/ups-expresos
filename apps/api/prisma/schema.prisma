@@ -67,6 +67,44 @@ enum Direction {
   RETORNO
 }
 
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum SchedulePatternType {
+  EXPLICIT_TIMES
+}
+
+enum SchedulePublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ServiceExceptionReason {
+  HOLIDAY
+  VACATION
+  EXAM_PERIOD
+}
+
+enum ServiceExceptionEffect {
+  NO_SERVICE
+  REPLACE_TIMES
+  ADD_TIMES
+}
+
+enum ServiceExceptionStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
 enum ServiceLineType {
   CAMPUS_ROUTE
   INTERCAMPUS
@@ -400,6 +438,7 @@ model ServiceLine {
   campus            Campus      @relation("CampusServiceLines", fields: [campusId], references: [id], onDelete: Restrict)
   destinationCampus Campus?     @relation("CampusDestinationLines", fields: [destinationCampusId], references: [id], onDelete: Restrict)
   paths             RoutePath[]
+  calendars         ServiceCalendar[]
 
   @@unique([campusId, code])
   @@index([campusId, isActive])
@@ -420,6 +459,7 @@ model RoutePath {
 
   serviceLine ServiceLine     @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
   stops       RoutePathStop[]
+  journeyTemplates ScheduleJourneyTemplate[]
 
   @@unique([serviceLineId, code])
   @@index([serviceLineId, direction, isActive])
@@ -436,9 +476,128 @@ model RoutePathStop {
 
   routePath RoutePath @relation(fields: [routePathId], references: [id], onDelete: Restrict)
   stop      Stop      @relation(fields: [stopId], references: [id], onDelete: Restrict)
+  scheduledStopTimes ScheduledStopTime[]
 
   @@unique([routePathId, stopId])
   @@unique([routePathId, stopOrder])
   @@index([stopId])
   @@map("route_path_stops")
+}
+
+model ServiceCalendar {
+  id            String                    @id @default(uuid()) @db.Uuid
+  serviceLineId String                    @db.Uuid
+  name          String
+  validFrom     DateTime                  @db.Date
+  validUntil    DateTime                  @db.Date
+  timezone      String                    @default("America/Guayaquil")
+  status        SchedulePublicationStatus @default(DRAFT)
+  createdAt     DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime                  @updatedAt @db.Timestamptz(3)
+
+  serviceLine ServiceLine        @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
+  patterns    SchedulePattern[]
+  exceptions  ServiceException[]
+
+  @@index([serviceLineId, validFrom, validUntil, status])
+  @@map("service_calendars")
+}
+
+model SchedulePattern {
+  id                String                    @id @default(uuid()) @db.Uuid
+  serviceCalendarId String                    @db.Uuid
+  direction         Direction
+  type              SchedulePatternType       @default(EXPLICIT_TIMES)
+  status            SchedulePublicationStatus @default(DRAFT)
+  name              String?
+  exceptionId       String?                   @db.Uuid
+  createdAt         DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                  @updatedAt @db.Timestamptz(3)
+
+  serviceCalendar ServiceCalendar      @relation(fields: [serviceCalendarId], references: [id], onDelete: Restrict)
+  exception       ServiceException?    @relation(fields: [exceptionId], references: [id], onDelete: Restrict)
+  days            SchedulePatternDay[]
+  times           ScheduleTime[]
+
+  @@index([serviceCalendarId, direction, status])
+  @@index([exceptionId, direction])
+  @@map("schedule_patterns")
+}
+
+model SchedulePatternDay {
+  id                String  @id @default(uuid()) @db.Uuid
+  schedulePatternId String  @db.Uuid
+  weekday           Weekday
+
+  pattern SchedulePattern @relation(fields: [schedulePatternId], references: [id], onDelete: Restrict)
+
+  @@unique([schedulePatternId, weekday])
+  @@map("schedule_pattern_days")
+}
+
+model ScheduleTime {
+  id                     String    @id @default(uuid()) @db.Uuid
+  schedulePatternId      String    @db.Uuid
+  departureTime          DateTime  @db.Time(0)
+  approximateArrivalTime DateTime? @db.Time(0)
+  createdAt              DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @db.Timestamptz(3)
+
+  pattern          SchedulePattern           @relation(fields: [schedulePatternId], references: [id], onDelete: Restrict)
+  journeyTemplates ScheduleJourneyTemplate[]
+
+  @@unique([schedulePatternId, departureTime])
+  @@map("schedule_times")
+}
+
+model ScheduleJourneyTemplate {
+  id             String   @id @default(uuid()) @db.Uuid
+  scheduleTimeId String   @db.Uuid
+  routePathId    String   @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  scheduleTime ScheduleTime        @relation(fields: [scheduleTimeId], references: [id], onDelete: Restrict)
+  routePath    RoutePath           @relation(fields: [routePathId], references: [id], onDelete: Restrict)
+  stopTimes    ScheduledStopTime[]
+
+  @@unique([scheduleTimeId, routePathId])
+  @@index([routePathId])
+  @@map("schedule_journey_templates")
+}
+
+model ScheduledStopTime {
+  id                String   @id @default(uuid()) @db.Uuid
+  journeyTemplateId String   @db.Uuid
+  routePathStopId   String   @db.Uuid
+  offsetMinutes     Int
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  journeyTemplate ScheduleJourneyTemplate @relation(fields: [journeyTemplateId], references: [id], onDelete: Restrict)
+  routePathStop   RoutePathStop           @relation(fields: [routePathStopId], references: [id], onDelete: Restrict)
+
+  @@unique([journeyTemplateId, routePathStopId])
+  @@index([journeyTemplateId, offsetMinutes])
+  @@map("scheduled_stop_times")
+}
+
+model ServiceException {
+  id                String                 @id @default(uuid()) @db.Uuid
+  serviceCalendarId String                 @db.Uuid
+  serviceDate       DateTime               @db.Date
+  direction         Direction?
+  reason            ServiceExceptionReason
+  effect            ServiceExceptionEffect
+  status            ServiceExceptionStatus @default(DRAFT)
+  description       String
+  createdAt         DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime               @updatedAt @db.Timestamptz(3)
+
+  serviceCalendar     ServiceCalendar   @relation(fields: [serviceCalendarId], references: [id], onDelete: Restrict)
+  replacementPatterns SchedulePattern[]
+
+  @@index([serviceCalendarId, serviceDate, status, direction])
+  @@index([serviceDate, reason, effect, status])
+  @@map("service_exceptions")
 }
