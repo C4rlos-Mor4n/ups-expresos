@@ -19,6 +19,7 @@ import { RolesGuard } from './common/guards/roles.guard';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: process.env.API_ENV_FILE ?? '.env',
       load: [appConfig],
     }),
     ThrottlerModule.forRootAsync({
