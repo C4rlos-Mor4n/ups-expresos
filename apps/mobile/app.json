@@ -4,18 +4,18 @@
     "slug": "ups-go",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/splash-icon.png",
+    "icon": "./assets/images/images_upsgo/logo-ups-go-icon.png",
     "scheme": "upsgo",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "ec.edu.ups.expresos",
-      "icon": "./assets/images/splash-icon.png"
+      "icon": "./assets/images/images_upsgo/logo-ups-go-icon.png"
     },
     "android": {
       "package": "ec.edu.ups.expresos",
       "adaptiveIcon": {
-        "backgroundColor": "#07508E",
-        "foregroundImage": "./assets/images/splash-icon.png",
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/images_upsgo/logo-ups-go-icon.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": true
@@ -30,7 +30,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/images_upsgo/logo-ups-go-icon.png",
           "imageWidth": 76
         }
       ],

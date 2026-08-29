@@ -18,12 +18,11 @@ function AppContent() {
     if (loading || !navigationState?.key) return;
     const privateRoute = isPrivateRoute(segments);
     const onAuthRoute = segments[0] === "(auth)";
-    const onRoot = segments[0] === "index";
     if (!isAuthenticated && privateRoute) {
       router.replace("/(auth)/login");
       return;
     }
-    if (isAuthenticated && (onAuthRoute || onRoot || !privateRoute || !canAccessRoleRoute(user?.role, segments))) {
+    if (isAuthenticated && (onAuthRoute || !privateRoute || !canAccessRoleRoute(user?.role, segments))) {
       router.replace(getRoleHome(user?.role));
     }
   }, [isAuthenticated, loading, navigationState?.key, router, segments, user?.role]);
