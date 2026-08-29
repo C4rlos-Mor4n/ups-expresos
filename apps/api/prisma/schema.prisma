@@ -16,17 +16,6 @@ enum UserRole {
   DRIVER
 }
 
-enum RouteStatus {
-  ACTIVE
-  SUSPENDED
-  INACTIVE
-}
-
-enum ScheduleStatus {
-  ACTIVE
-  INACTIVE
-}
-
 enum VehicleStatus {
   ACTIVE
   MAINTENANCE
@@ -36,30 +25,6 @@ enum VehicleStatus {
 enum DriverStatus {
   ACTIVE
   INACTIVE
-}
-
-enum NoticeSeverity {
-  INFO
-  WARNING
-  CRITICAL
-}
-
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
-}
-
-enum TripStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  SUSPENDED
 }
 
 enum Direction {
@@ -152,9 +117,7 @@ model User {
   // Relations
   sessions         Session[]
   authVerification AuthVerificationCode?
-  createdNotices   Notice[]              @relation("NoticeCreator")
   auditLogs        AuditLog[]
-  tripFeedbacks    TripFeedback[]
   createdDomains   AllowedEmailDomain[]  @relation("AllowedDomainCreator")
   driverProfile    Driver?
 
@@ -190,27 +153,6 @@ model Session {
   @@map("sessions")
 }
 
-model Route {
-  id          String      @id @default(uuid()) @db.Uuid
-  name        String
-  description String?
-  direction   String
-  status      RouteStatus @default(ACTIVE)
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  // Relations
-  routeStops    RouteStop[]
-  schedules     Schedule[]
-  drivers       Driver[]
-  tripFeedbacks TripFeedback[]
-  assignments   RouteAssignment[]
-  trips         Trip[]
-
-  @@map("routes")
-}
-
 model Stop {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -222,46 +164,9 @@ model Stop {
   updatedAt DateTime @updatedAt
 
   // Relations
-  routeStops     RouteStop[]
   routePathStops RoutePathStop[]
 
   @@map("stops")
-}
-
-model RouteStop {
-  id                      String  @id @default(uuid()) @db.Uuid
-  routeId                 String  @db.Uuid
-  stopId                  String  @db.Uuid
-  stopOrder               Int
-  estimatedArrivalMinutes Int?
-  notes                   String?
-
-  route Route @relation(fields: [routeId], references: [id])
-  stop  Stop  @relation(fields: [stopId], references: [id])
-
-  @@unique([routeId, stopId])
-  @@unique([routeId, stopOrder])
-  @@index([routeId])
-  @@index([stopId])
-  @@map("route_stops")
-}
-
-model Schedule {
-  id                     String         @id @default(uuid()) @db.Uuid
-  routeId                String         @db.Uuid
-  dayOfWeek              DayOfWeek
-  direction              String
-  departureTime          String
-  approximateArrivalTime String?
-  status                 ScheduleStatus @default(ACTIVE)
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
-
-  route Route @relation(fields: [routeId], references: [id])
-
-  @@index([routeId])
-  @@index([routeId, dayOfWeek, direction])
-  @@map("schedules")
 }
 
 model Vehicle {
@@ -274,56 +179,26 @@ model Vehicle {
   updatedAt DateTime      @updatedAt
 
   // Relations
-  drivers            Driver[]
-  assignments        RouteAssignment[]
-  trips              Trip[]
   serviceAssignments ServiceAssignment[]
 
   @@map("vehicles")
 }
 
 model Driver {
-  id                String       @id @default(uuid()) @db.Uuid
-  name              String
-  phone             String?
-  licenseNumber     String?
-  status            DriverStatus @default(ACTIVE)
-  assignedVehicleId String?      @db.Uuid
-  assignedRouteId   String?      @db.Uuid
-  userId            String?      @unique @db.Uuid
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  id            String       @id @default(uuid()) @db.Uuid
+  name          String
+  phone         String?
+  licenseNumber String?
+  status        DriverStatus @default(ACTIVE)
+  userId        String?      @unique @db.Uuid
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  assignedVehicle    Vehicle?            @relation(fields: [assignedVehicleId], references: [id])
-  assignedRoute      Route?              @relation(fields: [assignedRouteId], references: [id])
   user               User?               @relation(fields: [userId], references: [id])
-  tripFeedbacks      TripFeedback[]
-  assignments        RouteAssignment[]
-  trips              Trip[]
   serviceAssignments ServiceAssignment[]
 
-  @@index([assignedVehicleId])
-  @@index([assignedRouteId])
   @@index([userId])
   @@map("drivers")
-}
-
-model Notice {
-  id             String         @id @default(uuid()) @db.Uuid
-  title          String
-  message        String
-  severity       NoticeSeverity @default(INFO)
-  publishedFrom  DateTime
-  publishedUntil DateTime?
-  isActive       Boolean        @default(true)
-  createdById    String         @db.Uuid
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
-  createdBy User @relation("NoticeCreator", fields: [createdById], references: [id])
-
-  @@index([isActive, publishedFrom])
-  @@map("notices")
 }
 
 model AuditLog {
@@ -340,87 +215,6 @@ model AuditLog {
   @@index([actorId])
   @@index([entity, entityId])
   @@map("audit_logs")
-}
-
-model TripFeedback {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @db.Uuid
-  routeId    String    @db.Uuid
-  driverId   String?   @db.Uuid
-  rating     Int
-  comment    String?
-  travelDate DateTime?
-  createdAt  DateTime  @default(now())
-
-  user   User    @relation(fields: [userId], references: [id])
-  route  Route   @relation(fields: [routeId], references: [id])
-  driver Driver? @relation(fields: [driverId], references: [id])
-
-  @@index([userId])
-  @@index([routeId])
-  @@map("trip_feedbacks")
-}
-
-model RouteAssignment {
-  id        String @id @default(uuid()) @db.Uuid
-  routeId   String @db.Uuid
-  driverId  String @db.Uuid
-  vehicleId String @db.Uuid
-
-  serviceDate DateTime
-  status      TripStatus @default(SCHEDULED)
-
-  notes         String?
-  isActive      Boolean   @default(true)
-  suspendReason String?
-  suspendedAt   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  route   Route   @relation(fields: [routeId], references: [id])
-  driver  Driver  @relation(fields: [driverId], references: [id])
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
-  trips   Trip[]
-
-  @@index([routeId])
-  @@index([driverId])
-  @@index([vehicleId])
-  @@index([serviceDate])
-  @@index([status])
-  @@map("route_assignments")
-}
-
-model Trip {
-  id           String @id @default(uuid()) @db.Uuid
-  assignmentId String @db.Uuid
-
-  routeId   String @db.Uuid
-  driverId  String @db.Uuid
-  vehicleId String @db.Uuid
-
-  status    TripStatus @default(SCHEDULED)
-  startedAt DateTime?
-  endedAt   DateTime?
-
-  startNotes String?
-  endNotes   String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  assignment RouteAssignment @relation(fields: [assignmentId], references: [id])
-  route      Route           @relation(fields: [routeId], references: [id])
-  driver     Driver          @relation(fields: [driverId], references: [id])
-  vehicle    Vehicle         @relation(fields: [vehicleId], references: [id])
-
-  @@index([assignmentId])
-  @@index([routeId])
-  @@index([driverId])
-  @@index([vehicleId])
-  @@index([status])
-  @@index([startedAt])
-  @@map("trips")
 }
 
 model Campus {

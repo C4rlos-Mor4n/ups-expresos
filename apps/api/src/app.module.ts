@@ -7,17 +7,9 @@ import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
-import { RoutesModule } from './modules/routes/routes.module';
 import { StopsModule } from './modules/stops/stops.module';
-import { SchedulesModule } from './modules/schedules/schedules.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { DriversModule } from './modules/drivers/drivers.module';
-import { NoticesModule } from './modules/notices/notices.module';
-import { MobileModule } from './modules/mobile/mobile.module';
-import { TripFeedbackModule } from './modules/trip-feedback/trip-feedback.module';
-import { RouteAssignmentsModule } from './modules/route-assignments/route-assignments.module';
-import { TripsModule } from './modules/trips/trips.module';
-import { DriverOperationsModule } from './modules/driver-operations/driver-operations.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { OperationalModule } from './modules/operational/operational.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -53,17 +45,9 @@ import { RolesGuard } from './common/guards/roles.guard';
     HealthModule,
     AuthModule,
     AuditLogsModule,
-    RoutesModule,
     StopsModule,
-    SchedulesModule,
     VehiclesModule,
     DriversModule,
-    NoticesModule,
-    MobileModule,
-    TripFeedbackModule,
-    RouteAssignmentsModule,
-    TripsModule,
-    DriverOperationsModule,
     CalendarModule,
     OperationalModule,
   ],

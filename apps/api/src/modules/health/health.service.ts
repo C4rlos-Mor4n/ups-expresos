@@ -12,7 +12,7 @@ export class HealthService {
 
   check(): Record<string, string> {
     const appConfig = this.configService.get<AppConfig>('app', { infer: true });
-    const appName = appConfig?.appName ?? 'UPS ExpresosApp API';
+    const appName = appConfig?.appName ?? 'UPS GO API';
 
     return {
       status: 'ok',

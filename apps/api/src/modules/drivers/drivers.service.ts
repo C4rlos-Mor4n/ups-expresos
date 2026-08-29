@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Driver, DriverStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
@@ -16,16 +16,12 @@ export class DriversService {
   ) {}
 
   async create(dto: CreateDriverDto, actorId: string): Promise<DriverResponseDto> {
-    await this.validateAssignments(dto.assignedVehicleId, dto.assignedRouteId);
-
     const driver = await this.prisma.driver.create({
       data: {
         name: dto.name,
         phone: dto.phone ?? null,
         licenseNumber: dto.licenseNumber ?? null,
         status: dto.status ?? DriverStatus.ACTIVE,
-        assignedVehicleId: dto.assignedVehicleId ?? null,
-        assignedRouteId: dto.assignedRouteId ?? null,
       },
     });
 
@@ -38,8 +34,6 @@ export class DriversService {
 
   async update(id: string, dto: UpdateDriverDto, actorId: string): Promise<DriverResponseDto> {
     await this.findOne(id);
-    await this.validateAssignments(dto.assignedVehicleId, dto.assignedRouteId);
-
     const driver = await this.prisma.driver.update({
       where: { id },
       data: {
@@ -47,8 +41,6 @@ export class DriversService {
         phone: dto.phone,
         licenseNumber: dto.licenseNumber,
         status: dto.status,
-        assignedVehicleId: dto.assignedVehicleId,
-        assignedRouteId: dto.assignedRouteId,
       } as Prisma.DriverUpdateInput,
     });
 
@@ -75,17 +67,6 @@ export class DriversService {
     return this.mapDriverToResponse(driver);
   }
 
-  private async validateAssignments(vehicleId: string | undefined, routeId: string | undefined): Promise<void> {
-    if (vehicleId) {
-      const vehicle = await this.prisma.vehicle.findUnique({ where: { id: vehicleId } });
-      if (!vehicle) throw new BadRequestException(`Vehicle with id ${vehicleId} not found`);
-    }
-    if (routeId) {
-      const route = await this.prisma.route.findUnique({ where: { id: routeId } });
-      if (!route) throw new BadRequestException(`Route with id ${routeId} not found`);
-    }
-  }
-
   async remove(id: string, actorId: string): Promise<DriverResponseDto> {
     await this.findOne(id);
 
@@ -108,8 +89,6 @@ export class DriversService {
       phone: driver.phone,
       licenseNumber: driver.licenseNumber,
       status: driver.status,
-      assignedVehicleId: driver.assignedVehicleId,
-      assignedRouteId: driver.assignedRouteId,
       createdAt: driver.createdAt,
       updatedAt: driver.updatedAt,
     };
