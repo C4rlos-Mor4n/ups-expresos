@@ -85,6 +85,11 @@ jobs:
           RUN_CALENDAR_INTEGRATION: "true"
         run: pnpm test:calendar:integration
 
+      - name: ScheduledDeparture PostgreSQL integration
+        env:
+          RUN_SCHEDULED_DEPARTURE_INTEGRATION: "true"
+        run: pnpm test:scheduled-departure:integration
+
       - name: Lint
         run: pnpm lint
 
