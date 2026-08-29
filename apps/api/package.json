@@ -11,6 +11,7 @@
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:calendar:integration": "jest --runInBand --runTestsByPath src/modules/calendar/calendar-resolver.integration.spec.ts",
     "test:e2e": "DATABASE_URL=\"postgresql://ups_test:ups_test@localhost:5434/ups_test?schema=public\" prisma migrate deploy && jest --config ./test/jest-e2e.json",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev",

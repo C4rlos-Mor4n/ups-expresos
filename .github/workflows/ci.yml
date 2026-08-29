@@ -80,6 +80,11 @@ jobs:
       - name: Verify migration status
         run: pnpm prisma migrate status
 
+      - name: Calendar PostgreSQL integration
+        env:
+          RUN_CALENDAR_INTEGRATION: "true"
+        run: pnpm test:calendar:integration
+
       - name: Lint
         run: pnpm lint
 

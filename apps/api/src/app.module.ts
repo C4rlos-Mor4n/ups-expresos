@@ -18,6 +18,7 @@ import { TripFeedbackModule } from './modules/trip-feedback/trip-feedback.module
 import { RouteAssignmentsModule } from './modules/route-assignments/route-assignments.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { DriverOperationsModule } from './modules/driver-operations/driver-operations.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -62,6 +63,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     RouteAssignmentsModule,
     TripsModule,
     DriverOperationsModule,
+    CalendarModule,
   ],
   providers: [
     {
