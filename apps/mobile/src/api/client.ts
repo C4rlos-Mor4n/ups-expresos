@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, create as createAxios, InternalAxiosRequestConfig } from "axios";
 import * as SecureStore from "expo-secure-store";
 
 // ── Configuración de la API ────────────────────────────────────────────────
@@ -24,7 +24,7 @@ const USER_KEY = "user";
 export const API_BASE_URL = API_URL;
 
 // ── Cliente HTTP único ─────────────────────────────────────────────────────
-const api = axios.create({
+const api = createAxios({
   baseURL: API_URL,
   timeout: 10000,
   headers: {

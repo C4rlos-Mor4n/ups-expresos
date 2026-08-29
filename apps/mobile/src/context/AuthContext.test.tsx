@@ -40,18 +40,35 @@ const user: AuthUser = {
 // Harness que expone logout para dispararlo bajo demanda. La asignación se hace
 // en un effect (no durante el render) para no violar la pureza de los componentes.
 const logoutRef: { current: (() => Promise<void>) | null } = { current: null };
+const userRef: { current: AuthUser | null } = { current: null };
 function Harness() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   useEffect(() => {
     logoutRef.current = logout;
-  }, [logout]);
+    userRef.current = user;
+  }, [logout, user]);
   return null;
+}
+
+async function renderHarness(): Promise<void> {
+  await act(async () => {
+    create(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>
+    );
+  });
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(0);
+  });
 }
 
 describe("AuthContext logout after token rotation", () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     logoutRef.current = null;
+    userRef.current = null;
     mockGetMe.mockResolvedValue(user);
     mockLogout.mockResolvedValue({ message: "Logged out" });
     // El refresh token vigente en SecureStore (rotado por el cliente HTTP).
@@ -63,14 +80,12 @@ describe("AuthContext logout after token rotation", () => {
     });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("logs out using the current refresh token persisted in SecureStore, not stale state", async () => {
-    await act(async () => {
-      create(
-        <AuthProvider>
-          <Harness />
-        </AuthProvider>
-      );
-    });
+    await renderHarness();
 
     // El estado React podría quedar stale (R1) tras un refresh, pero el valor
     // vigente en SecureStore es R2. logout debe enviar R2, no R1.
@@ -86,16 +101,17 @@ describe("AuthContext logout after token rotation", () => {
     expect(mockDeleteItem).toHaveBeenCalledWith("user");
   });
 
+  it("restores the server-resolved role without a local role selector", async () => {
+    await renderHarness();
+
+    expect(mockGetMe).toHaveBeenCalledTimes(1);
+    expect(userRef.current?.role).toBe("STUDENT");
+  });
+
   it("clears the local session even when backend logout fails", async () => {
     mockLogout.mockRejectedValue(new Error("network down"));
 
-    await act(async () => {
-      create(
-        <AuthProvider>
-          <Harness />
-        </AuthProvider>
-      );
-    });
+    await renderHarness();
 
     await act(async () => {
       await logoutRef.current!();
@@ -108,13 +124,7 @@ describe("AuthContext logout after token rotation", () => {
   it("does not crash when there is no session", async () => {
     mockGetItem.mockResolvedValue(null);
 
-    await act(async () => {
-      create(
-        <AuthProvider>
-          <Harness />
-        </AuthProvider>
-      );
-    });
+    await renderHarness();
 
     await act(async () => {
       await logoutRef.current!();

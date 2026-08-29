@@ -1,15 +1,14 @@
-import { isPrivateRoute } from "./routes";
+import { canAccessRoleRoute, getRoleHome, isPrivateRoute } from "./routes";
 
 describe("isPrivateRoute (route guard)", () => {
-  it("marks tab routes as private", () => {
-    expect(isPrivateRoute(["(tabs)", "index"])).toBe(true);
-    expect(isPrivateRoute(["(tabs)", "rutas"])).toBe(true);
+  it("marks role-aware application routes as private", () => {
+    expect(isPrivateRoute(["(student)", "(tabs)", "index"])).toBe(true);
+    expect(isPrivateRoute(["(driver)", "(tabs)", "assignments"])).toBe(true);
   });
 
-  it("marks detail routes as private", () => {
-    expect(isPrivateRoute(["route", "[id]"])).toBe(true);
-    expect(isPrivateRoute(["map", "[id]"])).toBe(true);
-    expect(isPrivateRoute(["stop", "[id]"])).toBe(true);
+  it("marks operational detail routes as private", () => {
+    expect(isPrivateRoute(["(student)", "scheduled-departure", "[departureId]"])).toBe(true);
+    expect(isPrivateRoute(["(driver)", "run", "[runId]"])).toBe(true);
   });
 
   it("marks public routes as not private", () => {
@@ -21,5 +20,19 @@ describe("isPrivateRoute (route guard)", () => {
   it("handles empty segments safely", () => {
     expect(isPrivateRoute([])).toBe(false);
     expect(isPrivateRoute([undefined])).toBe(false);
+  });
+
+  it("resolves only supported roles to their own application area", () => {
+    expect(getRoleHome("STUDENT")).toBe("/(student)/(tabs)");
+    expect(getRoleHome("DRIVER")).toBe("/(driver)/(tabs)");
+    expect(getRoleHome("ADMIN")).toBe("/unsupported-role");
+  });
+
+  it("rejects cross-role deep links before a protected screen renders", () => {
+    expect(canAccessRoleRoute("STUDENT", ["(student)", "(tabs)"])).toBe(true);
+    expect(canAccessRoleRoute("DRIVER", ["(driver)", "(tabs)"])).toBe(true);
+    expect(canAccessRoleRoute("DRIVER", ["(student)", "scheduled-departure"])).toBe(false);
+    expect(canAccessRoleRoute("STUDENT", ["(driver)", "run"])).toBe(false);
+    expect(canAccessRoleRoute("ADMIN", ["unsupported-role"])).toBe(true);
   });
 });

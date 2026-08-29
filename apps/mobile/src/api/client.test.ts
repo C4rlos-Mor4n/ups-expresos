@@ -54,7 +54,7 @@ describe("HTTP client", () => {
       return { data: { ok: true }, status: 200 };
     });
 
-    await api.get("/mobile/routes");
+    await api.get("/student/campuses");
   });
 
   it("does not add Authorization when there is no token", async () => {
@@ -63,7 +63,7 @@ describe("HTTP client", () => {
       expect(config.headers.Authorization).toBeUndefined();
       return { data: { ok: true }, status: 200 };
     });
-    await api.get("/mobile/routes");
+    await api.get("/student/campuses");
   });
 
   it("refreshes once and retries the original request on 401", async () => {
@@ -84,7 +84,7 @@ describe("HTTP client", () => {
       return { data: { ok: true }, status: 200 };
     });
 
-    const res = await api.get("/mobile/routes");
+    const res = await api.get("/student/campuses");
     expect(res.data).toEqual({ ok: true });
     expect(postSpy).toHaveBeenCalledTimes(1);
     // La rotación persiste tanto el nuevo access como el nuevo refresh token.
@@ -113,7 +113,7 @@ describe("HTTP client", () => {
       return { data: { ok: true }, status: 200 };
     });
 
-    await api.get("/mobile/routes");
+    await api.get("/student/campuses");
     expect(onRotated).toHaveBeenCalledWith("new-token", "new-refresh-token");
     setOnTokensRotated(null);
     postSpy.mockRestore();
@@ -131,7 +131,7 @@ describe("HTTP client", () => {
       throw { status: 401, data: { message: "Unauthorized" } };
     });
 
-    await expect(api.get("/mobile/routes")).rejects.toBeTruthy();
+    await expect(api.get("/student/campuses")).rejects.toBeTruthy();
     expect(mockDeleteItem).toHaveBeenCalledWith("access_token");
     expect(mockDeleteItem).toHaveBeenCalledWith("refresh_token");
     expect(mockDeleteItem).toHaveBeenCalledWith("user");
@@ -160,8 +160,8 @@ describe("HTTP client", () => {
     });
 
     const [resA, resB] = await Promise.all([
-      api.get("/mobile/routes"),
-      api.get("/mobile/routes"),
+      api.get("/student/campuses"),
+      api.get("/student/campuses"),
     ]);
 
     expect(resA.data).toEqual({ ok: true });
@@ -175,7 +175,7 @@ describe("HTTP client", () => {
     useMockAdapter(async () => {
       throw { isAxiosError: true, message: "Network Error" };
     });
-    await expect(api.get("/mobile/routes")).rejects.toBeTruthy();
+    await expect(api.get("/student/campuses")).rejects.toBeTruthy();
   });
 });
 

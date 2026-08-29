@@ -1,5 +1,6 @@
 import { AxiosError } from "axios";
-import { getErrorMessage, NETWORK_MESSAGE } from "./error-message";
+import { getErrorMessage, getOperationalErrorMessage, NETWORK_MESSAGE } from "./error-message";
+import { OperationalContractError } from "@/services/operational-contract";
 
 function makeAxiosError(status: number, message?: string): AxiosError {
   const error = new AxiosError("boom", undefined, undefined, undefined, {
@@ -39,5 +40,10 @@ describe("getErrorMessage", () => {
   it("returns the network message for non-axios errors", () => {
     expect(getErrorMessage(new Error("boom"))).toBe(NETWORK_MESSAGE);
     expect(getErrorMessage("string error")).toBe(NETWORK_MESSAGE);
+  });
+
+  it("keeps operational authorization and malformed payload errors user-safe", () => {
+    expect(getOperationalErrorMessage(makeAxiosError(403, "Service assignment does not belong to the authenticated driver"))).toBe("No tienes permiso para consultar este servicio.");
+    expect(getOperationalErrorMessage(new OperationalContractError())).toBe("Recibimos información incompleta del servicio. Actualiza e intenta nuevamente.");
   });
 });

@@ -1,4 +1,5 @@
 import { isAxiosError } from "axios";
+import { OperationalContractError } from "@/services/operational-contract";
 
 const NETWORK_MESSAGE =
   "No pudimos conectarnos al servidor. Verifica tu conexión e intenta nuevamente.";
@@ -26,6 +27,23 @@ export function getErrorMessage(error: unknown): string {
     return NETWORK_MESSAGE;
   }
   return NETWORK_MESSAGE;
+}
+
+/**
+ * Los errores de operación no deben filtrar textos internos como la relación
+ * entre una asignación y un conductor. La autorización sigue resolviéndose en
+ * el backend; esta capa solo ofrece una explicación útil para la persona.
+ */
+export function getOperationalErrorMessage(error: unknown): string {
+  if (error instanceof OperationalContractError) {
+    return "Recibimos información incompleta del servicio. Actualiza e intenta nuevamente.";
+  }
+  if (isAxiosError(error) && error.response) {
+    if (error.response.status === 403) return "No tienes permiso para consultar este servicio.";
+    if (error.response.status === 404) return "Este servicio ya no está disponible.";
+    if (error.response.status === 409) return "El estado del servicio cambió. Actualiza para ver la información vigente.";
+  }
+  return getErrorMessage(error);
 }
 
 export { NETWORK_MESSAGE };
