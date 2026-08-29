@@ -14,6 +14,7 @@ module.exports = defineConfig([
       "react-hooks/immutability": "warn",
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/exhaustive-deps": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {

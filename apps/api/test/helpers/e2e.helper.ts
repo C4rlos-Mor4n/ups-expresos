@@ -31,18 +31,26 @@ export async function createTestApp(): Promise<{
 }
 
 export async function cleanDatabase(prisma: PrismaService): Promise<void> {
-  // Limpiar en orden para evitar violaciones de FK
-  await prisma.tripFeedback.deleteMany();
   await prisma.auditLog.deleteMany();
-  await prisma.notice.deleteMany();
-  await prisma.schedule.deleteMany();
-  await prisma.routeStop.deleteMany();
+  await prisma.serviceRun.deleteMany();
+  await prisma.serviceAssignment.deleteMany();
+  await prisma.scheduledDeparture.deleteMany();
+  await prisma.scheduledStopTime.deleteMany();
+  await prisma.scheduleJourneyTemplate.deleteMany();
+  await prisma.scheduleTime.deleteMany();
+  await prisma.schedulePatternDay.deleteMany();
+  await prisma.schedulePattern.deleteMany();
+  await prisma.serviceException.deleteMany();
+  await prisma.serviceCalendar.deleteMany();
+  await prisma.routePathStop.deleteMany();
+  await prisma.routePath.deleteMany();
+  await prisma.serviceLine.deleteMany();
+  await prisma.campus.deleteMany();
   await prisma.session.deleteMany();
   await prisma.authVerificationCode.deleteMany();
   await prisma.driver.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.stop.deleteMany();
-  await prisma.route.deleteMany();
   await prisma.user.deleteMany();
   await prisma.allowedEmailDomain.deleteMany();
 }

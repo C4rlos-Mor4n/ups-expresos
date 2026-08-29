@@ -4,7 +4,7 @@ export class HealthResponseDto {
   @ApiProperty({ example: 'ok' })
   status!: string;
 
-  @ApiProperty({ example: 'UPS ExpresosApp API' })
+  @ApiProperty({ example: 'UPS GO API' })
   service!: string;
 
   @ApiProperty({ example: '2026-07-09T02:16:44.580Z' })

@@ -131,21 +131,21 @@ describe('AuthService', () => {
         updateMany: mockSessionUpdateMany,
       },
       $transaction: mockTransaction,
-    } as unknown as PrismaService;
+    };
 
     const jwtMock = {
       signAsync: mockSignAsync,
       verifyAsync: mockVerifyAsync,
       decode: mockDecode,
-    } as unknown as JwtService;
+    };
 
     const configMock = {
       get: mockConfigGet,
-    } as unknown as ConfigService;
+    };
 
     const mailMock = {
       sendOtp: mockSendOtp,
-    } as unknown as MailService;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

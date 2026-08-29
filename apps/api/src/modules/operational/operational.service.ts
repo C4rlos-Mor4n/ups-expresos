@@ -38,6 +38,7 @@ const assignmentInclude = {
           id: true,
           code: true,
           name: true,
+          description: true,
           campus: { select: { id: true, code: true, name: true } },
         },
       },
@@ -419,6 +420,7 @@ export class OperationalService {
             id: true,
             code: true,
             name: true,
+            description: true,
             campus: { select: { id: true, code: true, name: true } },
           },
         },
@@ -621,7 +623,13 @@ export class OperationalService {
     serviceDate: Date;
     scheduledTime: Date;
     direction: 'IDA' | 'RETORNO';
-    serviceLine: { id: string; code: string; name: string; campus: { id: string; code: string; name: string } };
+    serviceLine: {
+      id: string;
+      code: string;
+      name: string;
+      description: string | null;
+      campus: { id: string; code: string; name: string };
+    };
     serviceAssignments: AssignmentRecord[];
   }) {
     const assignments = departure.serviceAssignments.map((assignment) => this.mapStudentAssignment(assignment));

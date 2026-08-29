@@ -48,7 +48,7 @@ describeIntegration('Phase 6 operational API integration', () => {
     const jwt = testApp.moduleRef.get(JwtService);
 
     await prisma.campus.create({ data: { id: ids.campus, code: `P6API-${ids.campus.slice(0, 8)}`, name: 'P6 API Campus' } });
-    await prisma.serviceLine.create({ data: { id: ids.line, campusId: ids.campus, code: `P6API-${ids.line.slice(0, 8)}`, name: 'P6 API Line' } });
+    await prisma.serviceLine.create({ data: { id: ids.line, campusId: ids.campus, code: `P6API-${ids.line.slice(0, 8)}`, name: 'P6 API Line', description: 'P6 API line description' } });
     await prisma.serviceCalendar.create({ data: { id: ids.calendar, serviceLineId: ids.line, name: 'P6 API calendar', validFrom: civilDate, validUntil: new Date('2026-09-30T00:00:00.000Z'), status: 'PUBLISHED' } });
     await prisma.schedulePattern.create({ data: { id: ids.pattern, serviceCalendarId: ids.calendar, direction: 'IDA', status: 'PUBLISHED' } });
     await prisma.scheduleTime.create({ data: { id: ids.scheduleTime, schedulePatternId: ids.pattern, departureTime: localTime } });
@@ -78,6 +78,7 @@ describeIntegration('Phase 6 operational API integration', () => {
   });
 
   afterAll(async () => {
+    if (!prisma) return;
     try {
       await prisma.serviceRun.deleteMany({ where: { serviceAssignment: { scheduledDepartureId: ids.departure } } });
       await prisma.serviceAssignment.deleteMany({ where: { scheduledDepartureId: ids.departure } });
@@ -96,7 +97,7 @@ describeIntegration('Phase 6 operational API integration', () => {
       await prisma.user.deleteMany({ where: { id: { in: [ids.admin, ids.student, ids.driverUser, ids.otherDriverUser] } } });
       await prisma.stop.delete({ where: { id: ids.stop } });
     } finally {
-      await app.close();
+      if (app) await app.close();
     }
   });
 
@@ -118,6 +119,11 @@ describeIntegration('Phase 6 operational API integration', () => {
   });
 
   it('serves the student product flow without driver private fields', async () => {
+    await request(app.getHttpServer())
+      .get('/driver/operational/assignments/today')
+      .set('Authorization', `Bearer ${studentToken}`)
+      .expect(403);
+
     await request(app.getHttpServer())
       .get('/student/campuses')
       .set('Authorization', `Bearer ${studentToken}`)
@@ -143,9 +149,28 @@ describeIntegration('Phase 6 operational API integration', () => {
 
   it('binds driver operations to the authenticated Driver.userId and makes start/finish stable', async () => {
     await request(app.getHttpServer())
+      .get('/student/campuses')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .expect(403);
+
+    await request(app.getHttpServer())
       .get(`/driver/operational/assignments/${assignmentId}`)
       .set('Authorization', `Bearer ${otherDriverToken}`)
       .expect(403);
+
+    const assignment = await request(app.getHttpServer())
+      .get(`/driver/operational/assignments/${assignmentId}`)
+      .set('Authorization', `Bearer ${driverToken}`)
+      .expect(200);
+    expect(assignment.body.departure.serviceLine.description).toBe('P6 API line description');
+
+    const noCurrentRun = await request(app.getHttpServer())
+      .get('/driver/operational/service-runs/current')
+      .set('Authorization', `Bearer ${driverToken}`)
+      .expect('content-type', /json/)
+      .expect(200);
+    expect(noCurrentRun.text).toBe('null');
+    expect(noCurrentRun.body).toBeNull();
 
     await request(app.getHttpServer())
       .post(`/driver/operational/assignments/${assignmentId}/start`)

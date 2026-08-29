@@ -2,7 +2,7 @@ import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { StudentDepartureQueryDto } from './dto/operational.dto';
+import { OperationalCampusDto, OperationalDepartureSummaryDto, OperationalServiceLineDto, StudentDepartureDetailDto, StudentDepartureQueryDto } from './dto/operational.dto';
 import { OperationalService } from './operational.service';
 
 @ApiBearerAuth()
@@ -14,7 +14,7 @@ export class StudentOperationalController {
 
   @Get('campuses')
   @ApiOperation({ summary: 'List active campuses available to students' })
-  @ApiOkResponse({ type: Object })
+  @ApiOkResponse({ type: OperationalCampusDto, isArray: true })
   getCampuses() {
     return this.operationalService.getStudentCampuses();
   }
@@ -22,14 +22,14 @@ export class StudentOperationalController {
   @Get('campuses/:campusId/service-lines')
   @ApiOperation({ summary: 'List active service lines for one active campus' })
   @ApiNotFoundResponse({ description: 'Campus not found or inactive' })
-  @ApiOkResponse({ type: Object })
+  @ApiOkResponse({ type: OperationalServiceLineDto, isArray: true })
   getServiceLines(@Param('campusId', ParseUUIDPipe) campusId: string) {
     return this.operationalService.getStudentServiceLines(campusId);
   }
 
   @Get('service-lines/:serviceLineId/departures')
   @ApiOperation({ summary: 'List materialized departures and projected operational state for a civil date' })
-  @ApiOkResponse({ type: Object })
+  @ApiOkResponse({ type: OperationalDepartureSummaryDto, isArray: true })
   getDepartures(
     @Param('serviceLineId', ParseUUIDPipe) serviceLineId: string,
     @Query() query: StudentDepartureQueryDto,
@@ -40,7 +40,7 @@ export class StudentOperationalController {
   @Get('scheduled-departures/:id')
   @ApiOperation({ summary: 'Get a scheduled departure with visible assignments and operational state' })
   @ApiNotFoundResponse({ description: 'Scheduled departure not found' })
-  @ApiOkResponse({ type: Object })
+  @ApiOkResponse({ type: StudentDepartureDetailDto })
   getDeparture(@Param('id', ParseUUIDPipe) id: string) {
     return this.operationalService.getStudentDepartureDetail(id);
   }

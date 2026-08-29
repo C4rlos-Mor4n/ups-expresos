@@ -1,4 +1,4 @@
-# Flujo de Autenticacion - UPS ExpresosApp API
+# Flujo de autenticación — UPS GO API
 
 La API utiliza un sistema de autenticacion basado en **OTP (One-Time Password) por email** + **JWT (JSON Web Tokens)** con rotacion de refresh tokens.
 

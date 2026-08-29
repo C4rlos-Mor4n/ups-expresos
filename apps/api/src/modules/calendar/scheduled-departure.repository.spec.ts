@@ -1,6 +1,8 @@
 import { Direction, ScheduledDepartureSource } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { ScheduledDepartureRepository } from './scheduled-departure.repository';
+import {
+  ScheduledDeparturePrismaPort,
+  ScheduledDepartureRepository,
+} from './scheduled-departure.repository';
 import { ScheduledDepartureWriteInput } from './scheduled-departure-materializer.types';
 
 const write: ScheduledDepartureWriteInput = {
@@ -35,16 +37,16 @@ describe('ScheduledDepartureRepository', () => {
         findMany: jest.fn().mockResolvedValueOnce([row]).mockResolvedValueOnce([row]),
       },
     };
-    const prisma = {
-      $transaction: jest.fn(
-        async (callback: (transaction: typeof tx) => Promise<unknown>) => callback(tx),
-      ),
+    const prisma: ScheduledDeparturePrismaPort = {
+      $transaction: async (callback) => callback(tx),
+      scheduledDeparture: tx.scheduledDeparture,
     };
-    const repository = new ScheduledDepartureRepository(prisma as unknown as PrismaService);
+    const transactionSpy = jest.spyOn(prisma, '$transaction');
+    const repository = new ScheduledDepartureRepository(prisma);
 
     const result = await repository.materializeDate([write]);
 
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(transactionSpy).toHaveBeenCalledTimes(1);
     expect(tx.scheduledDeparture.createMany).toHaveBeenCalledWith({
       data: [
         expect.objectContaining({
@@ -59,10 +61,16 @@ describe('ScheduledDepartureRepository', () => {
   });
 
   it('reads NO_SERVICE scope without creating rows', async () => {
-    const prisma = {
+    const prisma: ScheduledDeparturePrismaPort = {
+      $transaction: async (callback) => callback({
+        scheduledDeparture: {
+          createMany: jest.fn(),
+          findMany: prisma.scheduledDeparture.findMany,
+        },
+      }),
       scheduledDeparture: { findMany: jest.fn().mockResolvedValue([row]) },
     };
-    const repository = new ScheduledDepartureRepository(prisma as unknown as PrismaService);
+    const repository = new ScheduledDepartureRepository(prisma);
 
     const result = await repository.findScopeByInput({
       serviceLineId: write.serviceLineId,

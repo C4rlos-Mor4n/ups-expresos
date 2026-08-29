@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Este documento explica, de forma práctica y sin ejemplos de código, cómo debe integrarse el flujo de autenticación de la API `ups-api` desde la app móvil o desde el frontend web.
+Este documento explica, de forma práctica y sin ejemplos de código, cómo debe integrarse el flujo de autenticación de UPS GO desde la app móvil o desde un futuro frontend web.
 
 La meta es que el equipo frontend implemente el login, el manejo de sesión, la renovación de tokens y el cierre de sesión **sin romper el flujo real del backend**.
 
@@ -35,14 +35,10 @@ Si el frontend sigue usando el token anterior, el backend responderá con error 
 
 ## Dominios de correo permitidos
 
-Actualmente el backend permite autenticación para correos cuyos dominios estén dentro de la configuración activa.
-
-A día de hoy están permitidos:
-
-- `ups.edu.ec`
-- `est.ups.edu.ec`
-
-> Nota: `gmail.com` **no** está en la lista de dominios permitidos. Solo los emails listados en `SUPER_ADMIN_EMAILS` (ej. el super admin) se autentican sin restricción de dominio; los demás deben pertenecer a los dominios institucionales anteriores.
+El backend permite autenticación para correos cuyos dominios estén dentro de
+`ALLOWED_EMAIL_DOMAINS`; los correos explícitos de `SUPER_ADMIN_EMAILS` se
+evalúan conforme a la política de backend. Esta configuración pertenece al
+entorno y nunca debe codificarse en el cliente.
 
 ### Qué debe hacer el frontend con esto
 
@@ -511,7 +507,8 @@ Si esa regla no se respeta, aparecerán errores de token inválido o sesión rev
 
 ## Estado operativo actual
 
-A la fecha de esta guía, el backend fue validado con éxito en el flujo real de autenticación, usando correo Gmail permitido y verificando:
+El flujo debe validarse contra la configuración activa de cada entorno,
+incluidas las cuentas demo locales cuando correspondan. La verificación cubre:
 
 - solicitud de OTP
 - verificación de OTP

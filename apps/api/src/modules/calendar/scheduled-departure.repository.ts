@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { MaterializerInvariantError } from './scheduled-departure-materializer.errors';
@@ -23,6 +23,22 @@ const scheduledDepartureSelect = {
 type ScheduledDepartureRow = Prisma.ScheduledDepartureGetPayload<{
   select: typeof scheduledDepartureSelect;
 }>;
+
+type ScheduledDepartureDelegate = Pick<
+  PrismaService['scheduledDeparture'],
+  'createMany' | 'findMany'
+>;
+
+export interface ScheduledDepartureTransactionPort {
+  scheduledDeparture: ScheduledDepartureDelegate;
+}
+
+export interface ScheduledDeparturePrismaPort {
+  $transaction<T>(
+    callback: (transaction: ScheduledDepartureTransactionPort) => Promise<T>,
+  ): Promise<T>;
+  scheduledDeparture: Pick<PrismaService['scheduledDeparture'], 'findMany'>;
+}
 
 const toIsoDate = (value: Date): string => value.toISOString().slice(0, 10);
 
@@ -72,7 +88,10 @@ const assertSingleScope = (writes: ScheduledDepartureWriteInput[]): ScheduledDep
 
 @Injectable()
 export class ScheduledDepartureRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService)
+    private readonly prisma: ScheduledDeparturePrismaPort,
+  ) {}
 
   async materializeDate(
     writes: ScheduledDepartureWriteInput[],

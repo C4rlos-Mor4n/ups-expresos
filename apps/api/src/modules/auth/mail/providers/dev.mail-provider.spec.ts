@@ -1,4 +1,5 @@
 import { DevMailProvider } from './dev.mail-provider';
+import { Logger } from '@nestjs/common';
 
 describe('DevMailProvider', () => {
   let provider: DevMailProvider;
@@ -6,11 +7,11 @@ describe('DevMailProvider', () => {
 
   beforeEach(() => {
     provider = new DevMailProvider();
-    // Espiar el logger interno del provider
-    loggerSpy = jest.spyOn(
-      (provider as unknown as Record<string, unknown>).logger as { log: (...args: unknown[]) => void },
-      'log',
-    );
+    loggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('sendOtp', () => {

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DriverStatus } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateDriverDto {
   @ApiProperty({ description: 'Driver name', example: 'Juan Pérez' })
@@ -23,13 +23,4 @@ export class CreateDriverDto {
   @IsOptional()
   status?: DriverStatus;
 
-  @ApiPropertyOptional({ format: 'uuid', description: 'Assigned vehicle ID', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID()
-  @IsOptional()
-  assignedVehicleId?: string;
-
-  @ApiPropertyOptional({ format: 'uuid', description: 'Assigned route ID', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID()
-  @IsOptional()
-  assignedRouteId?: string;
 }

@@ -1,0 +1,2495 @@
+{
+  "schemaVersion": "1.0.0-reference",
+  "project": "UPS GO",
+  "datasetName": "Guayaquil transport routes reference for seed/testing",
+  "generatedDate": "2026-08-28",
+  "status": "REFERENCE_DATASET_NOT_PRODUCTION",
+  "city": "Guayaquil",
+  "province": "Guayas",
+  "country": "Ecuador",
+  "timezone": "America/Guayaquil",
+  "importantNotes": [
+    "Los horarios y secuencias de paradas se transcribieron de las imágenes oficiales proporcionadas por el usuario.",
+    "Este archivo está pensado como fuente de referencia para seed, fixtures y QA; no ejecutar backfill o carga productiva automática.",
+    "Las coordenadas incluyen un nivel de confianza y un flag requiresManualValidation.",
+    "Antes de producción se deben revisar manualmente en Google Maps los pins marcados con requiresManualValidation=true.",
+    "No se incluye polyline de conducción. En el producto, la geometría entre paradas debe resolverse posteriormente mediante Google Routes/Directions API o una fuente equivalente, usando los waypoints de cada RoutePath.",
+    "Los perfiles ADMINISTRATIVOS_ESTUDIANTES aparecen únicamente en IDA en las imágenes aportadas; no se inventó un RETORNO.",
+    "Ruta Sur de sábado IDA omite Mi Comisariato Vía a la Costa en la imagen oficial; por eso utiliza un RoutePath distinto."
+  ],
+  "campuses": [
+    {
+      "id": "UPS_MARIA_AUXILIADORA",
+      "name": "Campus María Auxiliadora",
+      "city": "Guayaquil",
+      "country": "Ecuador",
+      "address": "Km. 19 Vía a la Costa",
+      "latitude": -2.198611111,
+      "longitude": -80.041944444,
+      "timezone": "America/Guayaquil"
+    },
+    {
+      "id": "UPS_CENTENARIO",
+      "name": "Campus Centenario",
+      "city": "Guayaquil",
+      "country": "Ecuador",
+      "address": "Robles 107 y Chambers",
+      "latitude": -2.2200375,
+      "longitude": -79.888171875,
+      "timezone": "America/Guayaquil",
+      "note": "La coordenada es ancla del campus; el punto exacto del 'Edificio La Joya' debe validarse."
+    }
+  ],
+  "serviceLines": [
+    {
+      "code": "NORTE",
+      "name": "Ruta Norte",
+      "campusScope": "UPS_MARIA_AUXILIADORA",
+      "typeCandidate": "CAMPUS_ROUTE",
+      "officialTypeConfirmed": false,
+      "directions": [
+        "IDA",
+        "RETORNO"
+      ]
+    },
+    {
+      "code": "SUR",
+      "name": "Ruta Sur",
+      "campusScope": "UPS_MARIA_AUXILIADORA",
+      "typeCandidate": "INTERCAMPUS",
+      "officialTypeConfirmed": false,
+      "note": "La documentación visual conecta Campus Centenario con Campus María Auxiliadora; confirmar clasificación oficial.",
+      "directions": [
+        "IDA",
+        "RETORNO"
+      ]
+    },
+    {
+      "code": "URB_LA_JOYA",
+      "name": "Ruta Urb. La Joya",
+      "campusScope": "UPS_MARIA_AUXILIADORA",
+      "typeCandidate": "CAMPUS_ROUTE",
+      "officialTypeConfirmed": false,
+      "directions": [
+        "IDA",
+        "RETORNO"
+      ]
+    }
+  ],
+  "stops": [
+    {
+      "id": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+      "name": "Avícola Fernández - Av. de las Américas",
+      "aliases": [
+        "Avícola Fernández Garzota",
+        "Avícola Fernández - Av de las Americas"
+      ],
+      "latitude": -2.1423125,
+      "longitude": -79.882671875,
+      "coordinateStatus": "ANCHOR_NEAR_EXACT_STOP",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 80,
+      "coordinateBasis": "Google Maps place located frente a Avícola Fernández, Av. de las Américas (Plus Code V458+3WG), cross-checked with Fernández Garzota address.",
+      "plusCode": "6792V458+3WG",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Av%C3%ADcola%20Fern%C3%A1ndez%20Garzota%20Av.%20de%20las%20Am%C3%A9ricas%20Guayaquil%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_DON_LUCHO_GARZOCENTRO",
+      "name": "Confecciones Don Lucho - Diagonal Garzocentro 2000",
+      "aliases": [
+        "Confecciones Don Lucho",
+        "Diagonal Garzocentro 2000"
+      ],
+      "latitude": -2.1444375,
+      "longitude": -79.892984375,
+      "coordinateStatus": "LANDMARK_ANCHOR",
+      "confidence": "MEDIUM",
+      "accuracyEstimateMeters": 120,
+      "coordinateBasis": "Se usa C.C. Garzocentro 2000 como ancla geográfica porque el horario oficial describe la parada como diagonal a Garzocentro 2000.",
+      "plusCode": "6792V444+6RC",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Confecciones%20Don%20Lucho%20Diagonal%20Garzocentro%202000%20Guayaquil%20Ecuador",
+      "requiresManualValidation": true
+    },
+    {
+      "id": "STOP_COLEGIO_AMERICANO",
+      "name": "Colegio Americano - Av. Juan Tanca Marengo",
+      "aliases": [
+        "Colegio Americano de Guayaquil",
+        "Av. Juan Tanca Marengo Km 6.5"
+      ],
+      "latitude": -2.1384375,
+      "longitude": -79.9303125,
+      "coordinateStatus": "VERIFIED_LANDMARK",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 60,
+      "coordinateBasis": "Colegio Americano de Guayaquil, Av. Juan Tanca Marengo Km 6.5; coordinate cross-check with mapped campus/Open Location Code.",
+      "plusCode": "6792V369+JV",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Colegio%20Americano%20de%20Guayaquil%20Av%20Juan%20Tanca%20Marengo%206.5",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+      "name": "Paso Peatonal Puerto Azul",
+      "aliases": [
+        "Vía a la Costa - Paso Peatonal Puerto Azul"
+      ],
+      "latitude": -2.1917875,
+      "longitude": -79.972359375,
+      "coordinateStatus": "NEARBY_GOOGLE_MAPS_ANCHOR",
+      "confidence": "MEDIUM",
+      "accuracyEstimateMeters": 350,
+      "coordinateBasis": "Google Maps identifica la parada 'Via A La Costa - Paso Peatonal Puerto Azul'; la coordenada se ancla al Plus Code de Puerto Azul y debe ajustarse al punto exacto del paso peatonal antes de producción.",
+      "plusCode": "6792R25H+73J",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Via%20A%20La%20Costa%20Paso%20Peatonal%20Puerto%20Azul%20Guayaquil%20Ecuador",
+      "requiresManualValidation": true
+    },
+    {
+      "id": "STOP_MI_COMISARIATO_VIA_COSTA",
+      "name": "Mi Comisariato Vía a la Costa",
+      "aliases": [
+        "Mi Comisariato Vía a la Costa km 6.9"
+      ],
+      "latitude": -2.1818125,
+      "longitude": -79.995859375,
+      "coordinateStatus": "VERIFIED_GOOGLE_MAPS_PLACE",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 35,
+      "coordinateBasis": "Google Maps/Places: Mi Comisariato Vía a la Costa km. 6.9, Plus Code R293+7MC.",
+      "plusCode": "6792R293+7MC",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Mi%20Comisariato%20V%C3%ADa%20a%20la%20Costa%20km%206.9%20Guayaquil%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_UPS_MARIA_AUXILIADORA",
+      "name": "UPS - Campus María Auxiliadora",
+      "aliases": [
+        "Universidad Politécnica Salesiana Campus María Auxiliadora",
+        "UPS María Auxiliadora Km 19 Vía a la Costa"
+      ],
+      "latitude": -2.198611111,
+      "longitude": -80.041944444,
+      "coordinateStatus": "INSTITUTIONAL_CAMPUS_COORDINATE",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 150,
+      "coordinateBasis": "UPS confirma Campus María Auxiliadora en Km 19 Vía a la Costa; investigación UPS publicada reporta 2°11'55\"S, 80°02'31\"W dentro del campus.",
+      "plusCode": null,
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Universidad%20Polit%C3%A9cnica%20Salesiana%20Campus%20Mar%C3%ADa%20Auxiliadora%20Km%2019%20V%C3%ADa%20a%20la%20Costa%20Guayaquil%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_UPS_CENTENARIO_LA_JOYA",
+      "name": "Campus Centenario - Edificio La Joya",
+      "aliases": [
+        "Campus Centenario Edificio La Joya",
+        "Campus Centenario Edificio Administrativo La Joya",
+        "UPS Campus Centenario"
+      ],
+      "latitude": -2.2200375,
+      "longitude": -79.888171875,
+      "coordinateStatus": "CAMPUS_ANCHOR_NOT_EXACT_BUILDING",
+      "confidence": "MEDIUM",
+      "accuracyEstimateMeters": 180,
+      "coordinateBasis": "UPS confirma Campus Centenario en Robles 107 y Chambers. Coordenada anclada a un punto Google Maps de Universidad Politécnica Salesiana en el sector del campus; falta identificar el punto exacto llamado 'Edificio La Joya'.",
+      "plusCode": "6792Q4H6+XPP",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Universidad%20Polit%C3%A9cnica%20Salesiana%20Campus%20Centenario%20Robles%20Chambers%20Guayaquil%20Ecuador",
+      "requiresManualValidation": true
+    },
+    {
+      "id": "STOP_QUITO_PORTETE",
+      "name": "Quito y Portete",
+      "aliases": [
+        "Av. Quito / Portete de Tarqui",
+        "Avenida Quito y Portete"
+      ],
+      "latitude": -2.2087,
+      "longitude": -79.8937,
+      "coordinateStatus": "APPROXIMATE_INTERSECTION",
+      "confidence": "LOW",
+      "accuracyEstimateMeters": 180,
+      "coordinateBasis": "Intersección confirmada por fuentes de movilidad y directorios locales. Coordenada aproximada por geometría vial y referencias cercanas; requiere fijar el pin exacto en Google Maps antes de producción.",
+      "plusCode": null,
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Avenida%20Quito%20y%20Portete%20de%20Tarqui%20Guayaquil%20Ecuador",
+      "requiresManualValidation": true
+    },
+    {
+      "id": "STOP_KFC_17_PORTETE",
+      "name": "Parada KFC - 17 y Portete",
+      "aliases": [
+        "KFC 17 y Portete",
+        "La 17 y Portete"
+      ],
+      "latitude": -2.2011689,
+      "longitude": -79.915944,
+      "coordinateStatus": "VERIFIED_INTERSECTION_ANCHOR",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 60,
+      "coordinateBasis": "La 17 y Portete, junto al KFC; coordenadas publicadas para un establecimiento en la misma intersección.",
+      "plusCode": null,
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=KFC%2017%20y%20Portete%20Guayaquil%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_REDONDEL_LA_JOYA",
+      "name": "Redondel Urb. La Joya",
+      "aliases": [
+        "Redondel Urb. La Joya (Comisariato del Portal)",
+        "Redondel Urb. La Joya (Administrativos - Estudiantes)",
+        "Redondel La Joya"
+      ],
+      "latitude": -2.02862,
+      "longitude": -79.91306,
+      "coordinateStatus": "VERIFIED_LANDMARK",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 80,
+      "coordinateBasis": "Redondel La Joya georreferenciado; la referencia comercial 'Comisariato del Portal' queda pendiente de pin exacto, pero el redondel está identificado.",
+      "plusCode": "6792X3CP+HQ",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Redondel%20La%20Joya%20Comisariato%20del%20Portal%20Daule%20Guayas%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_CENTRO_COMERCIAL_OASIS",
+      "name": "Centro Comercial Oasis",
+      "aliases": [
+        "C.C. Oasis"
+      ],
+      "latitude": -2.06425,
+      "longitude": -79.90817,
+      "coordinateStatus": "VERIFIED_LANDMARK",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 60,
+      "coordinateBasis": "Centro Comercial Oasis georreferenciado en Guayas; coordenada cross-check con mapa público.",
+      "plusCode": "6792W3PR+8P",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Centro%20Comercial%20Oasis%20Guayaquil%20Guayas%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+      "name": "Avícola Fernández Mucho Lote I",
+      "aliases": [
+        "Avícola Fernández M. Lote",
+        "Avícola Fernández Mucho Lote 1"
+      ],
+      "latitude": -2.0847082,
+      "longitude": -79.91971,
+      "coordinateStatus": "VERIFIED_LANDMARK",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 60,
+      "coordinateBasis": "Avícola Fernández en Mucho Lote 1; dirección oficial reportada como Urb. Mucho Lote 1, primera etapa, y GPS cross-check de mapa público.",
+      "plusCode": "6792W38J+74",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Av%C3%ADcola%20Fern%C3%A1ndez%20Mucho%20Lote%201%20Guayaquil%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+      "name": "Vía a Daule Primax (Parque California)",
+      "aliases": [
+        "Primax California",
+        "Primax Parque California",
+        "Vía Daule Km 11 / Parque California"
+      ],
+      "latitude": -2.1000875,
+      "longitude": -79.936171875,
+      "coordinateStatus": "VERIFIED_GOOGLE_MAPS_PLACE",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 40,
+      "coordinateBasis": "Google Maps/Places: Primax California, Plus Code V3X7+XG8.",
+      "plusCode": "6792V3X7+XG8",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Primax%20California%20V%C3%ADa%20a%20Daule%20Parque%20California%20Guayaquil%20Ecuador",
+      "requiresManualValidation": false
+    },
+    {
+      "id": "STOP_FLORIDA_METROVIA",
+      "name": "Vía a Daule Florida (frente a parada de Metrovía)",
+      "aliases": [
+        "Florida Metrovía",
+        "Parada Florida"
+      ],
+      "latitude": -2.12636,
+      "longitude": -79.9316,
+      "coordinateStatus": "VERIFIED_TRANSIT_STOP",
+      "confidence": "HIGH",
+      "accuracyEstimateMeters": 40,
+      "coordinateBasis": "Parada Florida de Metrovía georreferenciada en Vía a Daule.",
+      "plusCode": "6792V3F9+F9",
+      "googleMapsSearch": "https://www.google.com/maps/search/?api=1&query=Parada%20Florida%20Metrov%C3%ADa%20V%C3%ADa%20a%20Daule%20Guayaquil%20Ecuador",
+      "requiresManualValidation": false
+    }
+  ],
+  "routePaths": [
+    {
+      "code": "NORTE_IDA",
+      "lineCode": "NORTE",
+      "direction": "IDA",
+      "displayName": "Ruta Norte - Ida",
+      "stopIds": [
+        "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+        "STOP_DON_LUCHO_GARZOCENTRO",
+        "STOP_COLEGIO_AMERICANO",
+        "STOP_PASO_PEATONAL_PUERTO_AZUL",
+        "STOP_MI_COMISARIATO_VIA_COSTA",
+        "STOP_UPS_MARIA_AUXILIADORA"
+      ]
+    },
+    {
+      "code": "NORTE_RETORNO",
+      "lineCode": "NORTE",
+      "direction": "RETORNO",
+      "displayName": "Ruta Norte - Retorno",
+      "stopIds": [
+        "STOP_UPS_MARIA_AUXILIADORA",
+        "STOP_MI_COMISARIATO_VIA_COSTA",
+        "STOP_PASO_PEATONAL_PUERTO_AZUL",
+        "STOP_COLEGIO_AMERICANO",
+        "STOP_DON_LUCHO_GARZOCENTRO",
+        "STOP_AVICOLA_FERNANDEZ_AMERICAS"
+      ]
+    },
+    {
+      "code": "SUR_IDA_WEEKDAY",
+      "lineCode": "SUR",
+      "direction": "IDA",
+      "displayName": "Ruta Sur - Ida (Lunes a Viernes)",
+      "stopIds": [
+        "STOP_UPS_CENTENARIO_LA_JOYA",
+        "STOP_QUITO_PORTETE",
+        "STOP_KFC_17_PORTETE",
+        "STOP_PASO_PEATONAL_PUERTO_AZUL",
+        "STOP_MI_COMISARIATO_VIA_COSTA",
+        "STOP_UPS_MARIA_AUXILIADORA"
+      ]
+    },
+    {
+      "code": "SUR_IDA_SATURDAY",
+      "lineCode": "SUR",
+      "direction": "IDA",
+      "displayName": "Ruta Sur - Ida (Sábados)",
+      "stopIds": [
+        "STOP_UPS_CENTENARIO_LA_JOYA",
+        "STOP_QUITO_PORTETE",
+        "STOP_KFC_17_PORTETE",
+        "STOP_PASO_PEATONAL_PUERTO_AZUL",
+        "STOP_UPS_MARIA_AUXILIADORA"
+      ],
+      "note": "El horario oficial de sábado no muestra Mi Comisariato Vía a la Costa en IDA."
+    },
+    {
+      "code": "SUR_RETORNO",
+      "lineCode": "SUR",
+      "direction": "RETORNO",
+      "displayName": "Ruta Sur - Retorno",
+      "stopIds": [
+        "STOP_UPS_MARIA_AUXILIADORA",
+        "STOP_MI_COMISARIATO_VIA_COSTA",
+        "STOP_PASO_PEATONAL_PUERTO_AZUL",
+        "STOP_KFC_17_PORTETE",
+        "STOP_QUITO_PORTETE",
+        "STOP_UPS_CENTENARIO_LA_JOYA"
+      ]
+    },
+    {
+      "code": "LA_JOYA_IDA",
+      "lineCode": "URB_LA_JOYA",
+      "direction": "IDA",
+      "displayName": "Ruta Urb. La Joya - Ida",
+      "stopIds": [
+        "STOP_REDONDEL_LA_JOYA",
+        "STOP_CENTRO_COMERCIAL_OASIS",
+        "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+        "STOP_PRIMAX_PARQUE_CALIFORNIA",
+        "STOP_FLORIDA_METROVIA",
+        "STOP_PASO_PEATONAL_PUERTO_AZUL",
+        "STOP_MI_COMISARIATO_VIA_COSTA",
+        "STOP_UPS_MARIA_AUXILIADORA"
+      ]
+    },
+    {
+      "code": "LA_JOYA_RETORNO",
+      "lineCode": "URB_LA_JOYA",
+      "direction": "RETORNO",
+      "displayName": "Ruta Urb. La Joya - Retorno",
+      "stopIds": [
+        "STOP_UPS_MARIA_AUXILIADORA",
+        "STOP_MI_COMISARIATO_VIA_COSTA",
+        "STOP_PASO_PEATONAL_PUERTO_AZUL",
+        "STOP_FLORIDA_METROVIA",
+        "STOP_PRIMAX_PARQUE_CALIFORNIA",
+        "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+        "STOP_CENTRO_COMERCIAL_OASIS",
+        "STOP_REDONDEL_LA_JOYA"
+      ]
+    }
+  ],
+  "services": [
+    {
+      "code": "NORTE_IDA_WEEKDAY_REGULAR",
+      "lineCode": "NORTE",
+      "direction": "IDA",
+      "routePathCode": "NORTE_IDA",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "REGULAR",
+      "sourceImage": "RUTA-NORTE-DE-LUNES-A-VIERNES-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:40",
+          "arrivalTime": "07:40",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "06:40"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "06:47"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "07:05"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:20"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:25"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:40"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:30",
+          "arrivalTime": "09:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "08:30"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "08:37"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "08:50"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "09:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "09:10"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "09:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "17:00",
+          "arrivalTime": "17:55",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "17:00"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "17:07"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "17:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:35"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:40"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "NORTE_RETORNO_WEEKDAY_REGULAR",
+      "lineCode": "NORTE",
+      "direction": "RETORNO",
+      "routePathCode": "NORTE_RETORNO",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "REGULAR",
+      "sourceImage": "RUTA-NORTE-DE-LUNES-A-VIERNES-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "12:30",
+          "arrivalTime": "13:30",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "12:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "12:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "12:45"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "13:00"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "13:15"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "13:30"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "14:30",
+          "arrivalTime": "15:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "14:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "14:45"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "15:00"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "15:15"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "15:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "17:30",
+          "arrivalTime": "18:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:45"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "18:00"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "18:15"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "18:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_4",
+          "departureTime": "18:15",
+          "arrivalTime": "19:10",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "18:15"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "18:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "18:30"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "18:45"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "19:00"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "19:10"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_5",
+          "departureTime": "20:05",
+          "arrivalTime": "21:15",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "20:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "20:15"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "20:30"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "20:45"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "21:00"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "21:15"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_6",
+          "departureTime": "22:05",
+          "arrivalTime": "23:15",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "22:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "22:15"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "22:30"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "22:45"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "23:00"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "23:15"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "NORTE_IDA_WEEKDAY_ADMIN_STUDENT",
+      "lineCode": "NORTE",
+      "direction": "IDA",
+      "routePathCode": "NORTE_IDA",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "ADMINISTRATIVOS_ESTUDIANTES",
+      "sourceImage": "RUTA-NORTE-IDA-DE-LUNES-A-VIERNES-ADMINISTRATIVO---ESTUDIANTES-copia.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:20",
+          "arrivalTime": "07:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "06:20"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "06:35"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "06:50"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:10"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:00",
+          "arrivalTime": "08:55",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "08:00"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "08:07"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "08:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "08:35"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "08:40"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "08:55"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "16:55",
+          "arrivalTime": "17:50",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "16:55"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "17:02"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "17:15"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:35"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:50"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "NORTE_IDA_SATURDAY",
+      "lineCode": "NORTE",
+      "direction": "IDA",
+      "routePathCode": "NORTE_IDA",
+      "operatingDays": [
+        "SATURDAY"
+      ],
+      "profile": "SATURDAY",
+      "sourceImage": "RUTA-NORTE-SÁBADO-EN-MARIUXI-copia.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:40",
+          "arrivalTime": "07:45",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "06:40"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "06:52"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "07:05"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:25"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:30"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:45"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:30",
+          "arrivalTime": "09:30",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "08:30"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "08:42"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "08:55"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "09:10"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "09:15"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "09:30"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "13:05",
+          "arrivalTime": "14:00",
+          "stopTimes": [
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "13:05"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "13:15"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "13:30"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "13:45"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "13:48"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "NORTE_RETORNO_SATURDAY",
+      "lineCode": "NORTE",
+      "direction": "RETORNO",
+      "routePathCode": "NORTE_RETORNO",
+      "operatingDays": [
+        "SATURDAY"
+      ],
+      "profile": "SATURDAY",
+      "sourceImage": "RUTA-NORTE-SÁBADO-EN-MARIUXI-copia.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "12:30",
+          "arrivalTime": "13:30",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "12:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "12:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "12:45"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "13:00"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "13:15"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "13:30"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "14:30",
+          "arrivalTime": "15:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "14:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "14:45"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "15:00"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "15:15"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "15:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "18:15",
+          "arrivalTime": "19:10",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "18:15"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "18:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "18:30"
+            },
+            {
+              "stopId": "STOP_COLEGIO_AMERICANO",
+              "time": "18:45"
+            },
+            {
+              "stopId": "STOP_DON_LUCHO_GARZOCENTRO",
+              "time": "19:00"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
+              "time": "19:10"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SUR_IDA_WEEKDAY_REGULAR",
+      "lineCode": "SUR",
+      "direction": "IDA",
+      "routePathCode": "SUR_IDA_WEEKDAY",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "REGULAR",
+      "sourceImage": "RUTA-SUR-DE-LUNES-A-VIERNES-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:40",
+          "arrivalTime": "07:45",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "06:40"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "06:55"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "07:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:25"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:30"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:45"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:30",
+          "arrivalTime": "09:45",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "08:30"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "08:40"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "09:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "09:25"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "09:30"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "09:45"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "17:00",
+          "arrivalTime": "17:55",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "17:00"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "17:10"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "17:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:35"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:40"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SUR_RETORNO_WEEKDAY_REGULAR",
+      "lineCode": "SUR",
+      "direction": "RETORNO",
+      "routePathCode": "SUR_RETORNO",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "REGULAR",
+      "sourceImage": "RUTA-SUR-DE-LUNES-A-VIERNES-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "12:30",
+          "arrivalTime": "13:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "12:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "12:40"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "12:55"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "13:05"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "13:15"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "13:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "14:30",
+          "arrivalTime": "15:30",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "14:40"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "15:00"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "15:10"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "15:20"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "15:30"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "17:30",
+          "arrivalTime": "18:35",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:45"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "18:05"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "18:15"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "18:25"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "18:35"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_4",
+          "departureTime": "18:15",
+          "arrivalTime": "19:20",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "18:15"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "18:30"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "18:50"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "19:00"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "19:10"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "19:20"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_5",
+          "departureTime": "20:05",
+          "arrivalTime": "21:10",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "20:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "20:30"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "20:40"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "20:50"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "21:00"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "21:10"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_6",
+          "departureTime": "22:05",
+          "arrivalTime": "23:10",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "22:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "22:30"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "22:40"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "22:50"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "23:00"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "23:10"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SUR_IDA_WEEKDAY_ADMIN_STUDENT",
+      "lineCode": "SUR",
+      "direction": "IDA",
+      "routePathCode": "SUR_IDA_WEEKDAY",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "ADMINISTRATIVOS_ESTUDIANTES",
+      "sourceImage": "RUTA-SUR-IDA-DE-LUNES-A-VIERNES-ADMINISTRATIVO---ESTUDIANTES-copia-2.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:20",
+          "arrivalTime": "07:20",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "06:20"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "06:35"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "06:50"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:10"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:20"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:00",
+          "arrivalTime": "08:55",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "08:00"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "08:10"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "08:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "08:35"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "08:40"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "08:55"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "16:55",
+          "arrivalTime": "17:55",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "16:55"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "17:10"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "17:25"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:40"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:45"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SUR_IDA_SATURDAY",
+      "lineCode": "SUR",
+      "direction": "IDA",
+      "routePathCode": "SUR_IDA_SATURDAY",
+      "operatingDays": [
+        "SATURDAY"
+      ],
+      "profile": "SATURDAY",
+      "sourceImage": "RUTA-SUR-SÁBADO-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:40",
+          "arrivalTime": "07:40",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "06:40"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "06:55"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "07:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:25"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:40"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:30",
+          "arrivalTime": "09:30",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "08:30"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "08:45"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "09:00"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "09:15"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "09:30"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "13:05",
+          "arrivalTime": "14:00",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "13:05"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "13:15"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "13:30"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "13:45"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SUR_RETORNO_SATURDAY",
+      "lineCode": "SUR",
+      "direction": "RETORNO",
+      "routePathCode": "SUR_RETORNO",
+      "operatingDays": [
+        "SATURDAY"
+      ],
+      "profile": "SATURDAY",
+      "sourceImage": "RUTA-SUR-SÁBADO-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "12:30",
+          "arrivalTime": "13:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "12:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "12:40"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "12:55"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "13:05"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "13:15"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "13:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "14:30",
+          "arrivalTime": "15:30",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "14:40"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "15:00"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "15:10"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "15:20"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "15:30"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "18:05",
+          "arrivalTime": "19:00",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "18:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "18:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "18:30"
+            },
+            {
+              "stopId": "STOP_KFC_17_PORTETE",
+              "time": "18:40"
+            },
+            {
+              "stopId": "STOP_QUITO_PORTETE",
+              "time": "18:50"
+            },
+            {
+              "stopId": "STOP_UPS_CENTENARIO_LA_JOYA",
+              "time": "19:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "LA_JOYA_IDA_WEEKDAY_REGULAR",
+      "lineCode": "URB_LA_JOYA",
+      "direction": "IDA",
+      "routePathCode": "LA_JOYA_IDA",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "REGULAR",
+      "sourceImage": "RUTA-URB.-LA-JOYA-IDA-DE-LUNES-A-VIERNES.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:40",
+          "arrivalTime": "07:40",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "06:40"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "06:45"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "06:55"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "07:05"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "07:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:25"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:28"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:40"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:35",
+          "arrivalTime": "09:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "08:35"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "08:38"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "08:45"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "09:00"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "09:05"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "09:08"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "09:20"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "09:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "16:50",
+          "arrivalTime": "17:50",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "16:50"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "16:55"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "17:05"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "17:15"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "17:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:35"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:40"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:50"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "LA_JOYA_RETORNO_WEEKDAY_REGULAR",
+      "lineCode": "URB_LA_JOYA",
+      "direction": "RETORNO",
+      "routePathCode": "LA_JOYA_RETORNO",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "REGULAR",
+      "sourceImage": "RUTA-URB.-LA-JOYA-IDA-DE-LUNES-A-VIERNES.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "12:30",
+          "arrivalTime": "13:40",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "12:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "12:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "12:40"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "13:00"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "13:10"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "13:20"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "13:30"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "13:40"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "14:30",
+          "arrivalTime": "15:40",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "14:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "14:40"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "15:00"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "15:10"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "15:20"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "15:30"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "15:40"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "17:30",
+          "arrivalTime": "18:45",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:40"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:45"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "18:05"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "18:15"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "18:25"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "18:35"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "18:45"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_4",
+          "departureTime": "18:15",
+          "arrivalTime": "19:30",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "18:15"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "18:25"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "18:30"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "18:50"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "19:00"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "19:10"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "19:20"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "19:30"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_5",
+          "departureTime": "20:05",
+          "arrivalTime": "21:15",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "20:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "20:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "20:30"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "20:40"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "20:50"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "21:00"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "21:10"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "21:15"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_6",
+          "departureTime": "22:05",
+          "arrivalTime": "23:15",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "22:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "22:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "22:30"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "22:40"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "22:50"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "23:00"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "23:10"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "23:15"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "LA_JOYA_IDA_WEEKDAY_ADMIN_STUDENT",
+      "lineCode": "URB_LA_JOYA",
+      "direction": "IDA",
+      "routePathCode": "LA_JOYA_IDA",
+      "operatingDays": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
+      "profile": "ADMINISTRATIVOS_ESTUDIANTES",
+      "sourceImage": "RUTA-URB.-LA-JOYA-IDA-DE-LUNES-A-VIERNES-ADMINISTRATIVO---ESTUDIANTES.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:20",
+          "arrivalTime": "07:25",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "06:20"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "06:25"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "06:35"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "06:45"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "06:50"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:10"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:25"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "07:40",
+          "arrivalTime": "08:50",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "07:40"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "07:45"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "08:00"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "08:10"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "08:17"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "08:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "08:35"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "08:50"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "16:50",
+          "arrivalTime": "17:50",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "16:50"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "16:55"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "17:05"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "17:15"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "17:20"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "17:35"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "17:40"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "17:50"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "LA_JOYA_IDA_SATURDAY",
+      "lineCode": "URB_LA_JOYA",
+      "direction": "IDA",
+      "routePathCode": "LA_JOYA_IDA",
+      "operatingDays": [
+        "SATURDAY"
+      ],
+      "profile": "SATURDAY",
+      "sourceImage": "RUTA-URB.-LA-JOYA-SÁBADO-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "06:40",
+          "arrivalTime": "07:40",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "06:40"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "06:45"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "06:55"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "07:05"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "07:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "07:25"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "07:28"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "07:40"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "08:30",
+          "arrivalTime": "09:20",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "08:30"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "08:35"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "08:38"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "08:45"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "08:50"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "09:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "09:08"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "09:20"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "13:05",
+          "arrivalTime": "14:00",
+          "stopTimes": [
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "13:05"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "13:08"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "13:15"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "13:20"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "13:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "13:38"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "13:50"
+            },
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "LA_JOYA_RETORNO_SATURDAY",
+      "lineCode": "URB_LA_JOYA",
+      "direction": "RETORNO",
+      "routePathCode": "LA_JOYA_RETORNO",
+      "operatingDays": [
+        "SATURDAY"
+      ],
+      "profile": "SATURDAY",
+      "sourceImage": "RUTA-URB.-LA-JOYA-SÁBADO-EN-MARIUXI.webp",
+      "trips": [
+        {
+          "label": "HORARIO_1",
+          "departureTime": "12:30",
+          "arrivalTime": "14:00",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "12:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "12:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "12:40"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "13:00"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "13:10"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "13:20"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "13:30"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "14:00"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_2",
+          "departureTime": "14:30",
+          "arrivalTime": "15:40",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "14:30"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "14:35"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "14:40"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "15:00"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "15:10"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "15:20"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "15:30"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "15:40"
+            }
+          ]
+        },
+        {
+          "label": "HORARIO_3",
+          "departureTime": "18:05",
+          "arrivalTime": "19:15",
+          "stopTimes": [
+            {
+              "stopId": "STOP_UPS_MARIA_AUXILIADORA",
+              "time": "18:05"
+            },
+            {
+              "stopId": "STOP_MI_COMISARIATO_VIA_COSTA",
+              "time": "18:10"
+            },
+            {
+              "stopId": "STOP_PASO_PEATONAL_PUERTO_AZUL",
+              "time": "18:30"
+            },
+            {
+              "stopId": "STOP_FLORIDA_METROVIA",
+              "time": "18:40"
+            },
+            {
+              "stopId": "STOP_PRIMAX_PARQUE_CALIFORNIA",
+              "time": "18:50"
+            },
+            {
+              "stopId": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
+              "time": "19:00"
+            },
+            {
+              "stopId": "STOP_CENTRO_COMERCIAL_OASIS",
+              "time": "19:10"
+            },
+            {
+              "stopId": "STOP_REDONDEL_LA_JOYA",
+              "time": "19:15"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "futureSeedGuidance": {
+    "recommendedMode": "DEVELOPMENT_REFERENCE_FIXTURE",
+    "doNotTreatAsOfficialProductionCatalog": true,
+    "recommendedEntities": [
+      "Campus",
+      "ServiceLine",
+      "RoutePath",
+      "RoutePathStop",
+      "Stop",
+      "ServiceCalendar",
+      "SchedulePattern",
+      "ScheduleTime",
+      "ScheduledStopTime"
+    ],
+    "coordinateRule": "Reject or flag coordinates whose requiresManualValidation is true before production import.",
+    "routingRule": "Build actual road geometry from ordered stop coordinates with Google Routes/Directions API at runtime or during an explicitly authorized route-publication workflow."
+  },
+  "validation": {
+    "valid": true,
+    "errors": [],
+    "serviceLineCount": 3,
+    "stopCount": 14,
+    "routePathCount": 7,
+    "serviceScheduleCount": 15,
+    "tripTemplateCount": 54,
+    "scheduledStopTimeCount": 357,
+    "coordinatesRequiringManualValidation": [
+      "STOP_DON_LUCHO_GARZOCENTRO",
+      "STOP_PASO_PEATONAL_PUERTO_AZUL",
+      "STOP_UPS_CENTENARIO_LA_JOYA",
+      "STOP_QUITO_PORTETE"
+    ]
+  }
+}

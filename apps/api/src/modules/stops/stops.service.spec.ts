@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { StopsService } from './stops.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -39,29 +38,16 @@ describe('StopsService', () => {
     mockStopCount = jest.fn();
     mockLogAction = jest.fn().mockResolvedValue(undefined);
 
-    const prismaMock = {
-      stop: {
-        findUnique: mockStopFindUnique,
-        create: mockStopCreate,
-        update: mockStopUpdate,
-        count: mockStopCount,
-        findMany: mockStopFindMany,
-      },
-    } as unknown as PrismaService;
+    const prisma = new PrismaService();
+    jest.spyOn(prisma.stop, 'findUnique').mockImplementation(mockStopFindUnique);
+    jest.spyOn(prisma.stop, 'create').mockImplementation(mockStopCreate);
+    jest.spyOn(prisma.stop, 'update').mockImplementation(mockStopUpdate);
+    jest.spyOn(prisma.stop, 'count').mockImplementation(mockStopCount);
+    jest.spyOn(prisma.stop, 'findMany').mockImplementation(mockStopFindMany);
 
-    const auditMock = {
-      logAction: mockLogAction,
-    } as unknown as AuditLogsService;
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        StopsService,
-        { provide: PrismaService, useValue: prismaMock },
-        { provide: AuditLogsService, useValue: auditMock },
-      ],
-    }).compile();
-
-    service = module.get<StopsService>(StopsService);
+    const auditLogsService = new AuditLogsService(prisma);
+    jest.spyOn(auditLogsService, 'logAction').mockImplementation(mockLogAction);
+    service = new StopsService(prisma, auditLogsService);
   });
 
   describe('create', () => {

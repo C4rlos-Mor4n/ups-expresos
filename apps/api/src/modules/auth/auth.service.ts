@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   BadRequestException,
   UnauthorizedException,
   NotFoundException,
@@ -25,13 +26,21 @@ interface RefreshTokenPayload {
   type: string;
 }
 
+type AuthConfigPort = Pick<ConfigService, 'get'>;
+type AuthJwtPort = Pick<JwtService, 'decode' | 'signAsync' | 'verifyAsync'>;
+type AuthPrismaPort = Pick<
+  PrismaService,
+  '$transaction' | 'authVerificationCode' | 'session' | 'user'
+>;
+type AuthMailPort = Pick<MailService, 'sendOtp'>;
+
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly configService: ConfigService,
-    private readonly jwtService: JwtService,
-    private readonly prisma: PrismaService,
-    private readonly mailService: MailService,
+    @Inject(ConfigService) private readonly configService: AuthConfigPort,
+    @Inject(JwtService) private readonly jwtService: AuthJwtPort,
+    @Inject(PrismaService) private readonly prisma: AuthPrismaPort,
+    @Inject(MailService) private readonly mailService: AuthMailPort,
   ) {}
 
   async requestCode(dto: RequestCodeDto): Promise<{ message: string; devCode?: string }> {
