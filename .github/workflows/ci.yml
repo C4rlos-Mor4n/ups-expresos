@@ -123,6 +123,9 @@ jobs:
       - name: OpenAPI contract
         run: pnpm test:openapi
 
+      - name: Verify generated mobile API contracts
+        run: pnpm verify:mobile-contracts
+
   mobile:
     name: Mobile Quality Gate
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 import api, { API_BASE_URL, setOnSessionExpired, setOnTokensRotated, validateApiUrl } from "./client";
 import * as SecureStore from "expo-secure-store";
-import axios from "axios";
+import axios, { AxiosAdapter, AxiosError, AxiosHeaders, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 jest.mock("expo-secure-store", () => ({
   getItemAsync: jest.fn(),
@@ -12,9 +12,22 @@ const mockGetItem = SecureStore.getItemAsync as jest.Mock;
 const mockSetItem = SecureStore.setItemAsync as jest.Mock;
 const mockDeleteItem = SecureStore.deleteItemAsync as jest.Mock;
 
+type MockAdapterResult = { data: unknown; status: number };
+type MockAdapterFailure = { status?: number; data?: unknown };
+
+function isMockAdapterFailure(value: unknown): value is MockAdapterFailure {
+  return typeof value === "object" && value !== null;
+}
+
+function axiosResponse<T>(data: T, config: InternalAxiosRequestConfig): AxiosResponse<T> {
+  return { data, status: 200, statusText: "OK", headers: {}, config };
+}
+
+const refreshRequestConfig: InternalAxiosRequestConfig = { headers: new AxiosHeaders() };
+
 // Adaptador mock: permite ejercitar los interceptores sin red real.
-function useMockAdapter(handler: (config: any) => Promise<{ data: unknown; status: number }>) {
-  api.defaults.adapter = (async (config: any) => {
+function useMockAdapter(handler: (config: InternalAxiosRequestConfig) => Promise<MockAdapterResult>) {
+  const adapter: AxiosAdapter = async (config) => {
     try {
       const result = await handler(config);
       return {
@@ -23,16 +36,19 @@ function useMockAdapter(handler: (config: any) => Promise<{ data: unknown; statu
         statusText: "OK",
         headers: {},
         config,
-      } as any;
-    } catch (e) {
-      const err = e as any;
-      return Promise.reject({
+      };
+    } catch (error: unknown) {
+      const failure = isMockAdapterFailure(error) ? error : {};
+      return Promise.reject(new AxiosError("Mock request failed", undefined, config, undefined, {
+        data: failure.data,
+        status: failure.status ?? 500,
+        statusText: "Mock error",
+        headers: {},
         config,
-        response: { status: err.status ?? 500, data: err.data },
-        isAxiosError: true,
-      });
+      }));
     }
-  }) as any;
+  };
+  api.defaults.adapter = adapter;
 }
 
 describe("HTTP client", () => {
@@ -72,9 +88,9 @@ describe("HTTP client", () => {
       .mockResolvedValueOnce("refresh-token") // refreshAccessToken
       .mockResolvedValueOnce("new-token"); // request interceptor (retry)
 
-    const postSpy = jest.spyOn(axios, "post").mockResolvedValue({
-      data: { accessToken: "new-token", refreshToken: "new-refresh-token" },
-    } as any);
+    const postSpy = jest.spyOn(axios, "post").mockResolvedValue(
+      axiosResponse({ accessToken: "new-token", refreshToken: "new-refresh-token" }, refreshRequestConfig),
+    );
 
     let calls = 0;
     useMockAdapter(async (config) => {
@@ -99,9 +115,9 @@ describe("HTTP client", () => {
       .mockResolvedValueOnce("refresh-token") // refreshAccessToken
       .mockResolvedValueOnce("new-token"); // request interceptor (retry)
 
-    const postSpy = jest.spyOn(axios, "post").mockResolvedValue({
-      data: { accessToken: "new-token", refreshToken: "new-refresh-token" },
-    } as any);
+    const postSpy = jest.spyOn(axios, "post").mockResolvedValue(
+      axiosResponse({ accessToken: "new-token", refreshToken: "new-refresh-token" }, refreshRequestConfig),
+    );
 
     const onRotated = jest.fn();
     setOnTokensRotated(onRotated);
@@ -147,9 +163,9 @@ describe("HTTP client", () => {
       .mockResolvedValueOnce("new-token") // retry interceptor (A)
       .mockResolvedValueOnce("new-token"); // retry interceptor (B)
 
-    const postSpy = jest.spyOn(axios, "post").mockResolvedValue({
-      data: { accessToken: "new-token", refreshToken: "new-refresh-token" },
-    } as any);
+    const postSpy = jest.spyOn(axios, "post").mockResolvedValue(
+      axiosResponse({ accessToken: "new-token", refreshToken: "new-refresh-token" }, refreshRequestConfig),
+    );
 
     let calls = 0;
     useMockAdapter(async (config) => {
@@ -192,12 +208,12 @@ describe("HTTP client — logout retry after expired access (RC2)", () => {
       .mockResolvedValueOnce("A3");
 
     // El refresh responde con la sesión rotada A3/R3.
-    const postSpy = jest.spyOn(axios, "post").mockResolvedValue({
-      data: { accessToken: "A3", refreshToken: "R3" },
-    } as any);
+    const postSpy = jest.spyOn(axios, "post").mockResolvedValue(
+      axiosResponse({ accessToken: "A3", refreshToken: "R3" }, refreshRequestConfig),
+    );
 
     let calls = 0;
-    useMockAdapter(async (config: any) => {
+    useMockAdapter(async (config) => {
       calls += 1;
       const body = JSON.parse(config.data);
       if (calls === 1) {

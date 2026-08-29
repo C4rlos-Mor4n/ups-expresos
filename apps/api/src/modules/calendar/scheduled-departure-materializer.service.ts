@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { CalendarResolverService } from "./calendar-resolver.service";
 import {
   MaterializerInfrastructureError,
@@ -22,6 +22,12 @@ import {
   ScheduledDepartureWriteInput,
 } from "./scheduled-departure-materializer.types";
 
+type CalendarResolutionPort = Pick<CalendarResolverService, "resolveSchedule">;
+type ScheduledDeparturePersistencePort = Pick<
+  ScheduledDepartureRepository,
+  "findScopeByInput" | "materializeDate"
+>;
+
 @Injectable()
 export class ScheduledDepartureMaterializerService {
   private readonly logger = new Logger(
@@ -29,8 +35,10 @@ export class ScheduledDepartureMaterializerService {
   );
 
   constructor(
-    private readonly calendarResolver: CalendarResolverService,
-    private readonly scheduledDepartureRepository: ScheduledDepartureRepository,
+    @Inject(CalendarResolverService)
+    private readonly calendarResolver: CalendarResolutionPort,
+    @Inject(ScheduledDepartureRepository)
+    private readonly scheduledDepartureRepository: ScheduledDeparturePersistencePort,
   ) {}
 
   async materialize(

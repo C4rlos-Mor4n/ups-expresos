@@ -1,12 +1,10 @@
 import { Direction, ScheduledDepartureSource } from "@prisma/client";
 import { Logger } from "@nestjs/common";
-import { CalendarResolverService } from "./calendar-resolver.service";
 import {
   MaterializerInfrastructureError,
   MaterializerInputError,
 } from "./scheduled-departure-materializer.errors";
 import { ScheduledDepartureMaterializerService } from "./scheduled-departure-materializer.service";
-import { ScheduledDepartureRepository } from "./scheduled-departure.repository";
 import {
   ExistingScheduledDeparture,
   ScheduledDepartureWriteInput,
@@ -75,8 +73,8 @@ describe("ScheduledDepartureMaterializerService", () => {
     findScopeByInput: jest.fn(),
   };
   const service = new ScheduledDepartureMaterializerService(
-    resolver as unknown as CalendarResolverService,
-    repository as unknown as ScheduledDepartureRepository,
+    resolver,
+    repository,
   );
 
   beforeEach(() => {

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailService } from './mail.service';
 import { MailProvider, MAIL_PROVIDER } from './interfaces/mail-provider.interface';
+import { Logger } from '@nestjs/common';
 
 describe('MailService', () => {
   let service: MailService;
@@ -8,13 +9,14 @@ describe('MailService', () => {
 
   beforeEach(async () => {
     mockSendOtp = jest.fn();
+    const provider: MailProvider = { sendOtp: mockSendOtp };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MailService,
         {
           provide: MAIL_PROVIDER,
-          useValue: { sendOtp: mockSendOtp } as unknown as MailProvider,
+          useValue: provider,
         },
       ],
     }).compile();
@@ -51,10 +53,7 @@ describe('MailService', () => {
       mockSendOtp.mockRejectedValue(providerError);
 
       // Espiar el logger interno del servicio
-      const loggerSpy = jest.spyOn(
-        (service as unknown as Record<string, unknown>).logger as { error: (...args: unknown[]) => void },
-        'error',
-      );
+      const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
 
       // Act
       await expect(service.sendOtp('user@test.com', '654321'))
@@ -65,6 +64,7 @@ describe('MailService', () => {
         'Failed to send OTP email',
         expect.stringContaining('SMTP timeout'),
       );
+      loggerSpy.mockRestore();
     });
 
     it('should not throw when provider succeeds', async () => {
@@ -81,10 +81,7 @@ describe('MailService', () => {
       mockSendOtp.mockRejectedValue('string-error');
 
       // Espiar el logger
-      const loggerSpy = jest.spyOn(
-        (service as unknown as Record<string, unknown>).logger as { error: (...args: unknown[]) => void },
-        'error',
-      );
+      const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
 
       // Act
       await expect(service.sendOtp('user@test.com', '111111'))
@@ -95,6 +92,7 @@ describe('MailService', () => {
         'Failed to send OTP email',
         'string-error',
       );
+      loggerSpy.mockRestore();
     });
   });
 });

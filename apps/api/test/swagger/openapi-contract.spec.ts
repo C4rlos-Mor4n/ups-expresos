@@ -26,12 +26,21 @@ async function main() {
   assert.ok(requestCodeResponses['400'], 'request-code should document 400 responses');
   assert.ok(requestCodeResponses['201'], 'request-code should document 201 responses');
 
+  assert.equal(
+    document.paths['/admin/routes/{id}/stops/order'],
+    undefined,
+    'Legacy route-order endpoint must not be resurrected in the operational API contract',
+  );
+
   const targets = [
     ['get', '/health', '200'],
     ['get', '/health/db', '200'],
     ['post', '/auth/request-code', '201'],
     ['post', '/auth/logout', '200'],
-    ['patch', '/admin/routes/{id}/stops/order', '200'],
+    ['get', '/student/campuses', '200'],
+    ['get', '/driver/operational/assignments/today', '200'],
+    ['post', '/driver/operational/assignments/{id}/start', '200'],
+    ['post', '/admin/operational/service-assignments', '201'],
   ] as const;
 
   for (const [method, path, code] of targets) {

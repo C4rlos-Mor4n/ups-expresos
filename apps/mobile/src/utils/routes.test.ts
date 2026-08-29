@@ -26,6 +26,7 @@ describe("isPrivateRoute (route guard)", () => {
     expect(getRoleHome("STUDENT")).toBe("/(student)/(tabs)");
     expect(getRoleHome("DRIVER")).toBe("/(driver)/(tabs)");
     expect(getRoleHome("ADMIN")).toBe("/unsupported-role");
+    expect(getRoleHome("SUPER_ADMIN")).toBe("/unsupported-role");
   });
 
   it("rejects cross-role deep links before a protected screen renders", () => {
@@ -34,5 +35,6 @@ describe("isPrivateRoute (route guard)", () => {
     expect(canAccessRoleRoute("DRIVER", ["(student)", "scheduled-departure"])).toBe(false);
     expect(canAccessRoleRoute("STUDENT", ["(driver)", "run"])).toBe(false);
     expect(canAccessRoleRoute("ADMIN", ["unsupported-role"])).toBe(true);
+    expect(canAccessRoleRoute("SUPER_ADMIN", ["unsupported-role"])).toBe(true);
   });
 });

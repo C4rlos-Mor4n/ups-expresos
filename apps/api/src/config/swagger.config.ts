@@ -3,28 +3,22 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function buildSwaggerDocumentConfig(): Omit<ReturnType<DocumentBuilder['build']>, never> {
   const builder = new DocumentBuilder()
-    .setTitle('UPS ExpresosApp API')
+    .setTitle('UPS GO API')
     .setDescription(
-      'Backend API for UPS ExpresosApp MVP - Institutional transport management system for Universidad Politécnica Salesiana. ' +
-      'This phase includes: OTP-based authentication, route management, stops, schedules, vehicles, drivers, notices, and audit logging.',
+      'Backend API for UPS GO, the operational transport system for Universidad Politécnica Salesiana. ' +
+      'It exposes authentication, the scheduled transport domain, student read models, driver operations, and administrative operational planning.',
     )
     .setVersion('1.0.0')
     .addServer('http://localhost:3000', 'Local development')
     .addBearerAuth()
     .addTag('Health', 'Service health checks')
     .addTag('Auth', 'Authentication and OTP verification')
-    .addTag('Mobile', 'Mobile read-only API for students')
-    .addTag('Admin Routes', 'Admin route management')
     .addTag('Admin Stops', 'Admin stop management')
-    .addTag('Admin Schedules', 'Admin schedule management')
     .addTag('Admin Vehicles', 'Admin vehicle management')
     .addTag('Admin Drivers', 'Admin driver management')
-    .addTag('Admin Notices', 'Admin notice management')
-    .addTag('Admin Route Assignments', 'Admin route assignment management')
-    .addTag('Driver Operations', 'Driver operational endpoints (manual trip start/finish)')
     .addTag('Student Operations', 'Student read-only API backed by the scheduled operational domain')
-    .addTag('Admin Operational', 'Admin operational planning and ServiceRun monitoring')
-    .addTag('Trip Feedback', 'Trip feedback and ratings from students');
+    .addTag('Driver Operational', 'Driver operational endpoints backed by ServiceAssignment and ServiceRun')
+    .addTag('Admin Operational', 'Admin operational planning and ServiceRun monitoring');
 
   const publicUrl = process.env['APP_PUBLIC_URL']?.trim();
   if (publicUrl) {

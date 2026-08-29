@@ -1,7 +1,7 @@
 {
   "name": "ups-expresos-api",
   "version": "1.0.0",
-  "description": "UPS ExpresosApp API - Backend for institutional transport management",
+  "description": "UPS GO API - institutional transport operations backend",
   "private": true,
   "main": "dist/src/main.js",
   "scripts": {
@@ -21,11 +21,12 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:seed:report": "tsx scripts/seed-report.ts",
-    "prisma:seed:phase6:qa": "tsx scripts/seed-phase-6-qa.ts",
-    "test:seed": "node --import tsx --test prisma/seed-data.spec.ts",
+    "prisma:seed:demo": "tsx scripts/seed-demo.ts",
+    "prisma:reset:demo": "UPS_GO_DEMO_MODE=cleanup UPS_GO_DEMO_CONFIRM=DELETE tsx scripts/seed-demo.ts && tsx scripts/seed-demo.ts",
     "prisma:studio": "prisma studio",
     "export:openapi": "ts-node src/export-openapi.ts",
+    "generate:mobile-contracts": "pnpm export:openapi && openapi-typescript openapi-spec.json --output ../mobile/src/api/generated/openapi.ts",
+    "verify:mobile-contracts": "pnpm generate:mobile-contracts && git diff --exit-code -- ../mobile/src/api/generated/openapi.ts",
     "test:openapi": "ts-node test/swagger/openapi-contract.spec.ts"
   },
   "jest": {
@@ -64,7 +65,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "helmet": "^8.2.0",
-    "nodemailer": "^9.0.3",
+    "nodemailer": "^9.0.6",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -88,6 +89,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^10.6.0",
     "jest": "^29.7.0",
+    "openapi-typescript": "7.10.1",
     "prisma": "^6.19.3",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",

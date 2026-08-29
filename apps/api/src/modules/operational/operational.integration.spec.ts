@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { ConflictException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { PrismaService } from '../../database/prisma.service';
 import { OperationalService } from './operational.service';
@@ -9,11 +8,10 @@ import { OperationalService } from './operational.service';
 const integrationEnabled = process.env['RUN_PHASE_6_OPERATIONAL_INTEGRATION'] === 'true';
 const describeIntegration = integrationEnabled ? describe : describe.skip;
 
-const prisma = new PrismaClient();
-const auditLogsService = {
-  logAction: jest.fn().mockResolvedValue(undefined),
-} as unknown as AuditLogsService;
-const service = new OperationalService(prisma as unknown as PrismaService, auditLogsService);
+const prisma = new PrismaService();
+const auditLogsService = new AuditLogsService(prisma);
+jest.spyOn(auditLogsService, 'logAction').mockResolvedValue(undefined);
+const service = new OperationalService(prisma, auditLogsService);
 
 const fixture = {
   campusId: randomUUID(),

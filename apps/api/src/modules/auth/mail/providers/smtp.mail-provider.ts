@@ -46,11 +46,11 @@ export class SmtpMailProvider implements MailProvider {
       const info = await this.transporter.sendMail({
         from: `"${appName}" <${fromAddress}>`,
         to: email,
-        subject: 'Codigo de verificacion UPS ExpresosApp',
+        subject: 'Código de verificación UPS GO',
         text: `Tu codigo de verificacion es: ${code}`,
         html: `
           <div style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2>UPS ExpresosApp</h2>
+            <h2>UPS GO</h2>
             <p>Tu codigo de verificacion es:</p>
             <h1 style="color: #0066cc; letter-spacing: 5px;">${code}</h1>
             <p>Este codigo expira en 10 minutos.</p>

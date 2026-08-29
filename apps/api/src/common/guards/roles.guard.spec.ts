@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import { UserRole } from '@prisma/client';
 import { RolesGuard } from './roles.guard';
 
@@ -14,13 +15,7 @@ describe('RolesGuard', () => {
   });
 
   function buildContext(user?: { role: UserRole }): ExecutionContext {
-    return {
-      getHandler: jest.fn(),
-      getClass: jest.fn(),
-      switchToHttp: () => ({
-        getRequest: () => ({ user }),
-      }),
-    } as unknown as ExecutionContext;
+    return new ExecutionContextHost([{ user }]);
   }
 
   it('should allow access when no roles are required', () => {
