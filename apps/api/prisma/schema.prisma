@@ -116,6 +116,16 @@ enum ServiceLineType {
   INTERCAMPUS
 }
 
+enum ServiceAssignmentStatus {
+  ASSIGNED
+  CANCELLED
+}
+
+enum ServiceRunStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
 // ==================== MODELS ====================
 
 model AllowedEmailDomain {
@@ -139,14 +149,14 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-// Relations
-  sessions          Session[]
-  authVerification  AuthVerificationCode?
-  createdNotices    Notice[]          @relation("NoticeCreator")
-  auditLogs         AuditLog[]
-  tripFeedbacks     TripFeedback[]
-  createdDomains    AllowedEmailDomain[] @relation("AllowedDomainCreator")
-  driverProfile     Driver?
+  // Relations
+  sessions         Session[]
+  authVerification AuthVerificationCode?
+  createdNotices   Notice[]              @relation("NoticeCreator")
+  auditLogs        AuditLog[]
+  tripFeedbacks    TripFeedback[]
+  createdDomains   AllowedEmailDomain[]  @relation("AllowedDomainCreator")
+  driverProfile    Driver?
 
   @@map("users")
 }
@@ -160,7 +170,7 @@ model AuthVerificationCode {
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 
-  user      User      @relation(fields: [email], references: [email])
+  user User @relation(fields: [email], references: [email])
 
   @@map("auth_verification_codes")
 }
@@ -264,9 +274,10 @@ model Vehicle {
   updatedAt DateTime      @updatedAt
 
   // Relations
-  drivers Driver[]
-  assignments RouteAssignment[]
-  trips       Trip[]
+  drivers            Driver[]
+  assignments        RouteAssignment[]
+  trips              Trip[]
+  serviceAssignments ServiceAssignment[]
 
   @@map("vehicles")
 }
@@ -279,16 +290,17 @@ model Driver {
   status            DriverStatus @default(ACTIVE)
   assignedVehicleId String?      @db.Uuid
   assignedRouteId   String?      @db.Uuid
-  userId            String?      @db.Uuid @unique
+  userId            String?      @unique @db.Uuid
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
-  assignedVehicle Vehicle? @relation(fields: [assignedVehicleId], references: [id])
-  assignedRoute   Route?   @relation(fields: [assignedRouteId], references: [id])
-  user            User?    @relation(fields: [userId], references: [id])
-  tripFeedbacks   TripFeedback[]
-  assignments     RouteAssignment[]
-  trips           Trip[]
+  assignedVehicle    Vehicle?            @relation(fields: [assignedVehicleId], references: [id])
+  assignedRoute      Route?              @relation(fields: [assignedRouteId], references: [id])
+  user               User?               @relation(fields: [userId], references: [id])
+  tripFeedbacks      TripFeedback[]
+  assignments        RouteAssignment[]
+  trips              Trip[]
+  serviceAssignments ServiceAssignment[]
 
   @@index([assignedVehicleId])
   @@index([assignedRouteId])
@@ -297,16 +309,16 @@ model Driver {
 }
 
 model Notice {
-  id             String        @id @default(uuid()) @db.Uuid
+  id             String         @id @default(uuid()) @db.Uuid
   title          String
   message        String
   severity       NoticeSeverity @default(INFO)
   publishedFrom  DateTime
   publishedUntil DateTime?
-  isActive       Boolean       @default(true)
-  createdById    String        @db.Uuid
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  isActive       Boolean        @default(true)
+  createdById    String         @db.Uuid
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   createdBy User @relation("NoticeCreator", fields: [createdById], references: [id])
 
@@ -331,14 +343,14 @@ model AuditLog {
 }
 
 model TripFeedback {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid
-  routeId    String   @db.Uuid
-  driverId   String?  @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  routeId    String    @db.Uuid
+  driverId   String?   @db.Uuid
   rating     Int
   comment    String?
   travelDate DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   user   User    @relation(fields: [userId], references: [id])
   route  Route   @relation(fields: [routeId], references: [id])
@@ -350,18 +362,18 @@ model TripFeedback {
 }
 
 model RouteAssignment {
-  id          String     @id @default(uuid()) @db.Uuid
-  routeId     String     @db.Uuid
-  driverId    String     @db.Uuid
-  vehicleId   String     @db.Uuid
+  id        String @id @default(uuid()) @db.Uuid
+  routeId   String @db.Uuid
+  driverId  String @db.Uuid
+  vehicleId String @db.Uuid
 
   serviceDate DateTime
   status      TripStatus @default(SCHEDULED)
 
-  notes     String?
-  isActive  Boolean     @default(true)
+  notes         String?
+  isActive      Boolean   @default(true)
   suspendReason String?
-  suspendedAt DateTime?
+  suspendedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -380,8 +392,8 @@ model RouteAssignment {
 }
 
 model Trip {
-  id           String     @id @default(uuid()) @db.Uuid
-  assignmentId String     @db.Uuid
+  id           String @id @default(uuid()) @db.Uuid
+  assignmentId String @db.Uuid
 
   routeId   String @db.Uuid
   driverId  String @db.Uuid
@@ -464,8 +476,8 @@ model RoutePath {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  serviceLine ServiceLine     @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
-  stops       RoutePathStop[]
+  serviceLine      ServiceLine               @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
+  stops            RoutePathStop[]
   journeyTemplates ScheduleJourneyTemplate[]
 
   @@unique([serviceLineId, code])
@@ -481,8 +493,8 @@ model RoutePathStop {
   notes       String?
   createdAt   DateTime @default(now())
 
-  routePath RoutePath @relation(fields: [routePathId], references: [id], onDelete: Restrict)
-  stop      Stop      @relation(fields: [stopId], references: [id], onDelete: Restrict)
+  routePath          RoutePath           @relation(fields: [routePathId], references: [id], onDelete: Restrict)
+  stop               Stop                @relation(fields: [stopId], references: [id], onDelete: Restrict)
   scheduledStopTimes ScheduledStopTime[]
 
   @@unique([routePathId, stopId])
@@ -502,7 +514,7 @@ model ServiceCalendar {
   createdAt     DateTime                  @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime                  @updatedAt @db.Timestamptz(3)
 
-  serviceLine ServiceLine        @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
+  serviceLine         ServiceLine          @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
   patterns            SchedulePattern[]
   exceptions          ServiceException[]
   scheduledDepartures ScheduledDeparture[]
@@ -551,8 +563,8 @@ model ScheduleTime {
   createdAt              DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt              DateTime  @updatedAt @db.Timestamptz(3)
 
-  pattern          SchedulePattern           @relation(fields: [schedulePatternId], references: [id], onDelete: Restrict)
-  journeyTemplates ScheduleJourneyTemplate[]
+  pattern             SchedulePattern           @relation(fields: [schedulePatternId], references: [id], onDelete: Restrict)
+  journeyTemplates    ScheduleJourneyTemplate[]
   scheduledDepartures ScheduledDeparture[]
 
   @@unique([schedulePatternId, departureTime])
@@ -566,9 +578,10 @@ model ScheduleJourneyTemplate {
   createdAt      DateTime @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime @updatedAt @db.Timestamptz(3)
 
-  scheduleTime ScheduleTime        @relation(fields: [scheduleTimeId], references: [id], onDelete: Restrict)
-  routePath    RoutePath           @relation(fields: [routePathId], references: [id], onDelete: Restrict)
-  stopTimes    ScheduledStopTime[]
+  scheduleTime       ScheduleTime        @relation(fields: [scheduleTimeId], references: [id], onDelete: Restrict)
+  routePath          RoutePath           @relation(fields: [routePathId], references: [id], onDelete: Restrict)
+  stopTimes          ScheduledStopTime[]
+  serviceAssignments ServiceAssignment[]
 
   @@unique([scheduleTimeId, routePathId])
   @@index([routePathId])
@@ -603,7 +616,7 @@ model ServiceException {
   createdAt         DateTime               @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime               @updatedAt @db.Timestamptz(3)
 
-  serviceCalendar     ServiceCalendar   @relation(fields: [serviceCalendarId], references: [id], onDelete: Restrict)
+  serviceCalendar     ServiceCalendar      @relation(fields: [serviceCalendarId], references: [id], onDelete: Restrict)
   replacementPatterns SchedulePattern[]
   scheduledDepartures ScheduledDeparture[]
 
@@ -624,14 +637,55 @@ model ScheduledDeparture {
   sourceExceptionId    String?                  @db.Uuid
   createdAt            DateTime                 @default(now()) @db.Timestamptz(3)
 
-  sourceScheduleTime ScheduleTime      @relation(fields: [sourceScheduleTimeId], references: [id], onDelete: Restrict)
-  serviceCalendar    ServiceCalendar   @relation(fields: [serviceCalendarId], references: [id], onDelete: Restrict)
-  serviceLine        ServiceLine       @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
-  sourceException    ServiceException? @relation(fields: [sourceExceptionId], references: [id], onDelete: Restrict)
+  sourceScheduleTime ScheduleTime        @relation(fields: [sourceScheduleTimeId], references: [id], onDelete: Restrict)
+  serviceCalendar    ServiceCalendar     @relation(fields: [serviceCalendarId], references: [id], onDelete: Restrict)
+  serviceLine        ServiceLine         @relation(fields: [serviceLineId], references: [id], onDelete: Restrict)
+  sourceException    ServiceException?   @relation(fields: [sourceExceptionId], references: [id], onDelete: Restrict)
+  serviceAssignments ServiceAssignment[]
 
   @@unique([sourceScheduleTimeId, serviceDate])
   @@index([serviceLineId, serviceDate, direction, scheduledTime])
   @@index([serviceCalendarId, serviceDate])
   @@index([sourceExceptionId])
   @@map("scheduled_departures")
+}
+
+model ServiceAssignment {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  scheduledDepartureId String                  @db.Uuid
+  vehicleId            String                  @db.Uuid
+  driverId             String                  @db.Uuid
+  journeyTemplateId    String                  @db.Uuid
+  plannedStartAt       DateTime                @db.Timestamptz(3)
+  plannedEndAt         DateTime                @db.Timestamptz(3)
+  status               ServiceAssignmentStatus @default(ASSIGNED)
+  createdAt            DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime                @updatedAt @db.Timestamptz(3)
+
+  scheduledDeparture ScheduledDeparture      @relation(fields: [scheduledDepartureId], references: [id], onDelete: Restrict)
+  vehicle            Vehicle                 @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  driver             Driver                  @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  journeyTemplate    ScheduleJourneyTemplate @relation(fields: [journeyTemplateId], references: [id], onDelete: Restrict)
+  serviceRun         ServiceRun?
+
+  @@index([scheduledDepartureId])
+  @@index([vehicleId, plannedStartAt])
+  @@index([driverId, plannedStartAt])
+  @@index([status])
+  @@map("service_assignments")
+}
+
+model ServiceRun {
+  id                  String           @id @default(uuid()) @db.Uuid
+  serviceAssignmentId String           @unique @db.Uuid
+  status              ServiceRunStatus @default(IN_PROGRESS)
+  startedAt           DateTime         @db.Timestamptz(3)
+  completedAt         DateTime?        @db.Timestamptz(3)
+  createdAt           DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(3)
+
+  serviceAssignment ServiceAssignment @relation(fields: [serviceAssignmentId], references: [id], onDelete: Restrict)
+
+  @@index([status, startedAt])
+  @@map("service_runs")
 }
