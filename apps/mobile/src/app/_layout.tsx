@@ -1,10 +1,27 @@
-import { Stack, useRootNavigationState, useRouter, useSegments } from "expo-router";
+import {
+  Stack,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
+import { StatusBar as NativeStatusBar } from "react-native";
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { canAccessRoleRoute, getRoleHome, isPrivateRoute } from "@/utils/routes";
+import { Colors } from "@/constants/Colors";
+import {
+  canAccessRoleRoute,
+  getRoleHome,
+  isPrivateRoute,
+} from "@/utils/routes";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,17 +39,52 @@ function AppContent() {
       router.replace("/(auth)/login");
       return;
     }
-    if (isAuthenticated && (onAuthRoute || !privateRoute || !canAccessRoleRoute(user?.role, segments))) {
+    if (
+      isAuthenticated &&
+      (onAuthRoute ||
+        !privateRoute ||
+        !canAccessRoleRoute(user?.role, segments))
+    ) {
       router.replace(getRoleHome(user?.role));
     }
-  }, [isAuthenticated, loading, navigationState?.key, router, segments, user?.role]);
+  }, [
+    isAuthenticated,
+    loading,
+    navigationState?.key,
+    router,
+    segments,
+    user?.role,
+  ]);
 
-  return <><StatusBar style="light" /><Stack screenOptions={{ headerShown: false }}><Stack.Screen name="index" /><Stack.Screen name="(auth)" /><Stack.Screen name="(student)" /><Stack.Screen name="(driver)" /><Stack.Screen name="unsupported-role" /></Stack></>;
+  return (
+    <>
+      <StatusBar style="light" />
+      <NativeStatusBar barStyle="light-content" backgroundColor={Colors.navy} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(student)" />
+        <Stack.Screen name="(driver)" />
+        <Stack.Screen name="unsupported-role" />
+      </Stack>
+    </>
+  );
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ "Inter-Regular": Inter_400Regular, "Inter-Medium": Inter_500Medium, "Inter-SemiBold": Inter_600SemiBold, "Inter-Bold": Inter_700Bold });
-  useEffect(() => { if (fontsLoaded) void SplashScreen.hideAsync(); }, [fontsLoaded]);
+  const [fontsLoaded] = useFonts({
+    "Inter-Regular": Inter_400Regular,
+    "Inter-Medium": Inter_500Medium,
+    "Inter-SemiBold": Inter_600SemiBold,
+    "Inter-Bold": Inter_700Bold,
+  });
+  useEffect(() => {
+    if (fontsLoaded) void SplashScreen.hideAsync();
+  }, [fontsLoaded]);
   if (!fontsLoaded) return null;
-  return <AuthProvider><AppContent /></AuthProvider>;
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }

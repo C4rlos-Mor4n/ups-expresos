@@ -78,3 +78,5 @@ example
 
 # ── API-specific ───────────────────────────────────────────────
 apps/api/openapi-spec.json
+
+.agents/
