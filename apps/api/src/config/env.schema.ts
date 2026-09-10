@@ -31,8 +31,6 @@ export const envSchema = z.object({
   SWAGGER_PATH: z.string().default('docs'),
   THROTTLE_TTL: z.coerce.number().int().positive().default(60000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(60),
-  THROTTLE_AUTH_TTL: z.coerce.number().int().positive().default(60000),
-  THROTTLE_AUTH_LIMIT: z.coerce.number().int().positive().default(3),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
@@ -77,5 +75,3 @@ export const envSchema = z.object({
   },
   { message: 'Production environment validation failed. Check console for details.' },
 );
-
-export type EnvValidation = z.infer<typeof envSchema>;

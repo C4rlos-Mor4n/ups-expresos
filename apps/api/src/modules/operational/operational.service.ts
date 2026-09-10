@@ -4,27 +4,36 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   DriverStatus,
   Prisma,
   ServiceAssignmentStatus,
   ServiceRunStatus,
   VehicleStatus,
-} from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { AuditLogsService } from '../audit-logs/audit-logs.service';
+} from "@prisma/client";
+import { PrismaService } from "../../database/prisma.service";
+import { AuditLogsService } from "../audit-logs/audit-logs.service";
 import {
+  AdminOperationalAssignmentsResponseDto,
   AdminOperationalAssignmentsQueryDto,
+  AdminOperationalAssignmentDto,
+  AdminOperationalCampusDto,
+  AdminOperationalServiceLineDto,
+  AdminOperationalServiceLineTimetableDto,
   CreateServiceAssignmentDto,
-} from './dto/operational.dto';
+} from "./dto/operational.dto";
 import {
   calculatePlannedWindow,
   civilDateToIso,
   guayaquilToday,
   nextCivilDate,
   parseCivilDate,
-} from './operational-time.functions';
+} from "./operational-time.functions";
+import {
+  AssignmentOperationalState,
+  deriveScheduledDepartureState,
+} from "./operational-state.functions";
 
 const assignmentInclude = {
   scheduledDeparture: {
@@ -49,6 +58,26 @@ const assignmentInclude = {
   journeyTemplate: {
     select: {
       id: true,
+      stopTimes: {
+        orderBy: { offsetMinutes: "asc" },
+        select: {
+          offsetMinutes: true,
+          routePathStop: {
+            select: {
+              stopOrder: true,
+              stop: {
+                select: {
+                  id: true,
+                  name: true,
+                  reference: true,
+                  latitude: true,
+                  longitude: true,
+                },
+              },
+            },
+          },
+        },
+      },
       routePath: {
         select: {
           id: true,
@@ -56,35 +85,49 @@ const assignmentInclude = {
           displayName: true,
           direction: true,
           stops: {
-            orderBy: { stopOrder: 'asc' },
+            orderBy: { stopOrder: "asc" },
             select: {
               stopOrder: true,
-              stop: { select: { id: true, name: true, reference: true } },
+              stop: {
+                select: {
+                  id: true,
+                  name: true,
+                  reference: true,
+                  latitude: true,
+                  longitude: true,
+                },
+              },
             },
           },
         },
       },
     },
   },
-  serviceRun: { select: { id: true, status: true, startedAt: true, completedAt: true } },
+  serviceRun: {
+    select: { id: true, status: true, startedAt: true, completedAt: true },
+  },
 } satisfies Prisma.ServiceAssignmentInclude;
 
-type AssignmentRecord = Prisma.ServiceAssignmentGetPayload<{ include: typeof assignmentInclude }>;
+type AssignmentRecord = Prisma.ServiceAssignmentGetPayload<{
+  include: typeof assignmentInclude;
+}>;
 
 const formatTime = (value: Date): string => value.toISOString().slice(11, 19);
 
-const operationalState = (assignment: AssignmentRecord): 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' => {
-  if (!assignment.serviceRun) return 'ASSIGNED';
+const operationalState = (assignment: {
+  serviceRun?: { status: "IN_PROGRESS" | "COMPLETED" } | null;
+}): "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" => {
+  if (!assignment.serviceRun) return "ASSIGNED";
   return assignment.serviceRun.status;
 };
 
 const conflictMessage = (error: unknown): string | null => {
   if (!(error instanceof Error)) return null;
-  if (error.message.includes('service_assignments_vehicle_window_excl')) {
-    return 'VEHICLE_CONFLICT: vehicle has an incompatible planned window';
+  if (error.message.includes("service_assignments_vehicle_window_excl")) {
+    return "VEHICLE_CONFLICT: vehicle has an incompatible planned window";
   }
-  if (error.message.includes('service_assignments_driver_window_excl')) {
-    return 'DRIVER_CONFLICT: driver has an incompatible planned window';
+  if (error.message.includes("service_assignments_driver_window_excl")) {
+    return "DRIVER_CONFLICT: driver has an incompatible planned window";
   }
   return null;
 };
@@ -96,7 +139,10 @@ export class OperationalService {
     private readonly auditLogsService: AuditLogsService,
   ) {}
 
-  async createAssignment(dto: CreateServiceAssignmentDto, actorId: string): Promise<ReturnType<OperationalService['mapAdminAssignment']>> {
+  async createAssignment(
+    dto: CreateServiceAssignmentDto,
+    actorId: string,
+  ): Promise<AdminOperationalAssignmentDto> {
     const [departure, journeyTemplate, vehicle, driver] = await Promise.all([
       this.prisma.scheduledDeparture.findUnique({
         where: { id: dto.scheduledDepartureId },
@@ -120,22 +166,30 @@ export class OperationalService {
       this.prisma.driver.findUnique({ where: { id: dto.driverId } }),
     ]);
 
-    if (!departure) throw new NotFoundException('Scheduled departure not found');
-    if (!journeyTemplate) throw new NotFoundException('Schedule journey template not found');
-    if (!vehicle) throw new NotFoundException('Vehicle not found');
-    if (!driver) throw new NotFoundException('Driver not found');
-    if (vehicle.status !== VehicleStatus.ACTIVE) throw new BadRequestException('Vehicle is not active');
-    if (driver.status !== DriverStatus.ACTIVE) throw new BadRequestException('Driver is not active');
+    if (!departure)
+      throw new NotFoundException("Scheduled departure not found");
+    if (!journeyTemplate)
+      throw new NotFoundException("Schedule journey template not found");
+    if (!vehicle) throw new NotFoundException("Vehicle not found");
+    if (!driver) throw new NotFoundException("Driver not found");
+    if (vehicle.status !== VehicleStatus.ACTIVE)
+      throw new BadRequestException("Vehicle is not active");
+    if (driver.status !== DriverStatus.ACTIVE)
+      throw new BadRequestException("Driver is not active");
 
     if (
       journeyTemplate.scheduleTimeId !== departure.sourceScheduleTimeId ||
       journeyTemplate.routePath.serviceLineId !== departure.serviceLineId ||
       journeyTemplate.routePath.direction !== departure.direction
     ) {
-      throw new ConflictException('INVALID_JOURNEY: journey template does not belong to this departure');
+      throw new ConflictException(
+        "INVALID_JOURNEY: journey template does not belong to this departure",
+      );
     }
 
-    const maximumOffsetMinutes = Math.max(...journeyTemplate.stopTimes.map((stopTime) => stopTime.offsetMinutes));
+    const maximumOffsetMinutes = Math.max(
+      ...journeyTemplate.stopTimes.map((stopTime) => stopTime.offsetMinutes),
+    );
     const plannedWindow = calculatePlannedWindow(
       departure.serviceDate,
       departure.scheduledTime,
@@ -143,7 +197,7 @@ export class OperationalService {
     );
     if (!plannedWindow) {
       throw new ConflictException(
-        'INVALID_JOURNEY: journey template needs a positive final scheduled stop offset',
+        "INVALID_JOURNEY: journey template needs a positive final scheduled stop offset",
       );
     }
 
@@ -166,19 +220,24 @@ export class OperationalService {
       throw error;
     }
 
-    await this.auditLogsService.logAction(actorId, 'SERVICE_ASSIGNMENT_CREATE', 'ServiceAssignment', assignment.id, {
-      scheduledDepartureId: assignment.scheduledDepartureId,
-      vehicleId: assignment.vehicleId,
-      driverId: assignment.driverId,
-      journeyTemplateId: assignment.journeyTemplateId,
-    });
+    await this.auditLogsService.logAction(
+      actorId,
+      "SERVICE_ASSIGNMENT_CREATE",
+      "ServiceAssignment",
+      assignment.id,
+      {
+        scheduledDepartureId: assignment.scheduledDepartureId,
+        vehicleId: assignment.vehicleId,
+        driverId: assignment.driverId,
+        journeyTemplateId: assignment.journeyTemplateId,
+      },
+    );
     return this.mapAdminAssignment(assignment);
   }
 
-  async listAdminAssignments(query: AdminOperationalAssignmentsQueryDto): Promise<{
-    data: Array<ReturnType<OperationalService['mapAdminAssignment']>>;
-    meta: { page: number; limit: number; total: number; totalPages: number };
-  }> {
+  async listAdminAssignments(
+    query: AdminOperationalAssignmentsQueryDto,
+  ): Promise<AdminOperationalAssignmentsResponseDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const date = query.date ? this.requiredCivilDate(query.date) : null;
@@ -187,7 +246,9 @@ export class OperationalService {
         ? {
             scheduledDeparture: {
               serviceDate: { gte: date, lt: nextCivilDate(date) },
-              ...(query.serviceLineId ? { serviceLineId: query.serviceLineId } : {}),
+              ...(query.serviceLineId
+                ? { serviceLineId: query.serviceLineId }
+                : {}),
             },
           }
         : query.serviceLineId
@@ -197,7 +258,7 @@ export class OperationalService {
     const [assignments, total] = await Promise.all([
       this.prisma.serviceAssignment.findMany({
         where,
-        orderBy: { plannedStartAt: 'asc' },
+        orderBy: { plannedStartAt: "asc" },
         skip: (page - 1) * limit,
         take: limit,
         include: assignmentInclude,
@@ -205,15 +266,16 @@ export class OperationalService {
       this.prisma.serviceAssignment.count({ where }),
     ]);
     return {
-      data: assignments.map((assignment) => this.mapAdminAssignment(assignment)),
+      data: assignments.map((assignment) =>
+        this.mapAdminAssignment(assignment),
+      ),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  async listAdminRuns(query: AdminOperationalAssignmentsQueryDto): Promise<{
-    data: Array<ReturnType<OperationalService['mapAdminAssignment']>>;
-    meta: { page: number; limit: number; total: number; totalPages: number };
-  }> {
+  async listAdminRuns(
+    query: AdminOperationalAssignmentsQueryDto,
+  ): Promise<AdminOperationalAssignmentsResponseDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const civilDate = query.date ? this.requiredCivilDate(query.date) : null;
@@ -223,7 +285,9 @@ export class OperationalService {
         ? {
             scheduledDeparture: {
               serviceDate: { gte: civilDate, lt: nextCivilDate(civilDate) },
-              ...(query.serviceLineId ? { serviceLineId: query.serviceLineId } : {}),
+              ...(query.serviceLineId
+                ? { serviceLineId: query.serviceLineId }
+                : {}),
             },
           }
         : query.serviceLineId
@@ -233,7 +297,7 @@ export class OperationalService {
     const [assignments, total] = await Promise.all([
       this.prisma.serviceAssignment.findMany({
         where,
-        orderBy: { plannedStartAt: 'asc' },
+        orderBy: { plannedStartAt: "asc" },
         include: assignmentInclude,
         skip: (page - 1) * limit,
         take: limit,
@@ -241,27 +305,41 @@ export class OperationalService {
       this.prisma.serviceAssignment.count({ where }),
     ]);
     return {
-      data: assignments.map((assignment) => this.mapAdminAssignment(assignment)),
+      data: assignments.map((assignment) =>
+        this.mapAdminAssignment(assignment),
+      ),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  async getStudentCampuses(): Promise<Array<{ id: string; code: string; name: string; address: string | null }>> {
+  async getStudentCampuses(): Promise<
+    Array<{ id: string; code: string; name: string; address: string | null }>
+  > {
     return this.prisma.campus.findMany({
       where: { isActive: true },
       select: { id: true, code: true, name: true, address: true },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
-  async getAdminCampuses() {
+  async getAdminCampuses(): Promise<AdminOperationalCampusDto[]> {
     return this.prisma.campus.findMany({
-      select: { id: true, code: true, name: true, address: true, isActive: true, createdAt: true, updatedAt: true },
-      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        address: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { name: "asc" },
     });
   }
 
-  async getAdminServiceLines(campusId?: string) {
+  async getAdminServiceLines(
+    campusId?: string,
+  ): Promise<AdminOperationalServiceLineDto[]> {
     return this.prisma.serviceLine.findMany({
       where: campusId ? { campusId } : undefined,
       select: {
@@ -274,11 +352,14 @@ export class OperationalService {
         campus: { select: { id: true, code: true, name: true } },
         destinationCampus: { select: { id: true, code: true, name: true } },
       },
-      orderBy: [{ campus: { name: 'asc' } }, { name: 'asc' }],
+      orderBy: [{ campus: { name: "asc" } }, { name: "asc" }],
     });
   }
 
-  async getAdminServiceLineTimetable(serviceLineId: string, dateValue?: string) {
+  async getAdminServiceLineTimetable(
+    serviceLineId: string,
+    dateValue?: string,
+  ): Promise<AdminOperationalServiceLineTimetableDto> {
     const serviceDate = this.requiredCivilDate(dateValue ?? guayaquilToday());
     const line = await this.prisma.serviceLine.findUnique({
       where: { id: serviceLineId },
@@ -297,11 +378,14 @@ export class OperationalService {
             direction: true,
             isActive: true,
             stops: {
-              orderBy: { stopOrder: 'asc' },
-              select: { stopOrder: true, stop: { select: { id: true, name: true, reference: true } } },
+              orderBy: { stopOrder: "asc" },
+              select: {
+                stopOrder: true,
+                stop: { select: { id: true, name: true, reference: true } },
+              },
             },
           },
-          orderBy: [{ direction: 'asc' }, { code: 'asc' }],
+          orderBy: [{ direction: "asc" }, { code: "asc" }],
         },
         calendars: {
           select: {
@@ -322,22 +406,29 @@ export class OperationalService {
                     id: true,
                     departureTime: true,
                     approximateArrivalTime: true,
-                    journeyTemplates: { select: { id: true, routePathId: true } },
+                    journeyTemplates: {
+                      select: { id: true, routePathId: true },
+                    },
                   },
-                  orderBy: { departureTime: 'asc' },
+                  orderBy: { departureTime: "asc" },
                 },
               },
             },
           },
-          orderBy: { validFrom: 'desc' },
+          orderBy: { validFrom: "desc" },
         },
       },
     });
-    if (!line) throw new NotFoundException('Service line not found');
+    if (!line) throw new NotFoundException("Service line not found");
     const departures = await this.prisma.scheduledDeparture.findMany({
       where: { serviceLineId, serviceDate },
-      orderBy: [{ direction: 'asc' }, { scheduledTime: 'asc' }],
-      include: { serviceAssignments: { include: assignmentInclude, orderBy: { plannedStartAt: 'asc' } } },
+      orderBy: [{ direction: "asc" }, { scheduledTime: "asc" }],
+      include: {
+        serviceAssignments: {
+          include: assignmentInclude,
+          orderBy: { plannedStartAt: "asc" },
+        },
+      },
     });
     return {
       serviceDate: civilDateToIso(serviceDate),
@@ -346,35 +437,70 @@ export class OperationalService {
         id: departure.id,
         scheduledTime: formatTime(departure.scheduledTime),
         direction: departure.direction,
-        assignments: departure.serviceAssignments.map((assignment) => this.mapAdminAssignment(assignment)),
+        assignments: departure.serviceAssignments.map((assignment) =>
+          this.mapAdminAssignment(assignment),
+        ),
       })),
     };
   }
 
-  async getStudentServiceLines(campusId: string): Promise<Array<{ id: string; code: string; name: string; description: string | null }>> {
-    const campus = await this.prisma.campus.findFirst({ where: { id: campusId, isActive: true } });
-    if (!campus) throw new NotFoundException('Active campus not found');
+  async getStudentServiceLines(campusId: string): Promise<
+    Array<{
+      id: string;
+      code: string;
+      name: string;
+      description: string | null;
+    }>
+  > {
+    const campus = await this.prisma.campus.findFirst({
+      where: { id: campusId, isActive: true },
+    });
+    if (!campus) throw new NotFoundException("Active campus not found");
     return this.prisma.serviceLine.findMany({
-      where: { campusId, isActive: true },
+      where: {
+        isActive: true,
+        servedCampuses: {
+          some: {
+            campusId,
+            campus: { isActive: true },
+          },
+        },
+      },
       select: { id: true, code: true, name: true, description: true },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
-  async getStudentDepartures(serviceLineId: string, dateValue: string, direction?: 'IDA' | 'RETORNO'): Promise<Array<{
-    id: string;
-    serviceDate: string;
-    scheduledTime: string;
-    direction: 'IDA' | 'RETORNO';
-    state: 'SCHEDULED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
-    assignmentCount: number;
-  }>> {
+  async getStudentDepartures(
+    serviceLineId: string,
+    dateValue: string,
+    direction?: "IDA" | "RETORNO",
+  ): Promise<
+    Array<{
+      id: string;
+      serviceDate: string;
+      scheduledTime: string;
+      direction: "IDA" | "RETORNO";
+      state: "SCHEDULED" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED";
+      assignmentCount: number;
+      originStop: string | null;
+      destinationStop: string | null;
+      stopsCount: number;
+      assignedVehicles: Array<{
+        id: string;
+        code: string;
+        plate: string;
+        driverName: string | null;
+      }>;
+    }>
+  > {
     const serviceDate = this.requiredCivilDate(dateValue);
     const serviceLine = await this.prisma.serviceLine.findFirst({
       where: { id: serviceLineId, isActive: true, campus: { isActive: true } },
       select: { id: true },
     });
-    if (!serviceLine) throw new NotFoundException('Active service line not found');
+    if (!serviceLine)
+      throw new NotFoundException("Active service line not found");
 
     const departures = await this.prisma.scheduledDeparture.findMany({
       where: {
@@ -382,24 +508,71 @@ export class OperationalService {
         serviceDate,
         ...(direction ? { direction } : {}),
       },
-      orderBy: [{ scheduledTime: 'asc' }, { id: 'asc' }],
+      orderBy: [{ scheduledTime: "asc" }, { id: "asc" }],
       include: {
         serviceAssignments: {
           where: { status: ServiceAssignmentStatus.ASSIGNED },
-          select: { status: true, serviceRun: { select: { status: true } } },
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            status: true,
+            vehicle: { select: { code: true, plate: true } },
+            driver: {
+              select: { name: true, user: { select: { name: true } } },
+            },
+            serviceRun: { select: { status: true } },
+          },
+        },
+        sourceScheduleTime: {
+          include: {
+            journeyTemplates: {
+              include: {
+                routePath: {
+                  include: {
+                    stops: {
+                      orderBy: { stopOrder: "asc" },
+                      include: { stop: { select: { name: true } } },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     });
 
     return departures.map((departure) => {
-      const states = departure.serviceAssignments.map((assignment) => assignment.serviceRun?.status ?? 'ASSIGNED');
-      const state = states.includes(ServiceRunStatus.IN_PROGRESS)
-        ? 'IN_PROGRESS'
-        : states.includes(ServiceRunStatus.COMPLETED)
-          ? 'COMPLETED'
-          : states.includes('ASSIGNED')
-            ? 'ASSIGNED'
-            : 'SCHEDULED';
+      const assignmentStates: AssignmentOperationalState[] =
+        departure.serviceAssignments.map(
+          (assignment) => assignment.serviceRun?.status ?? "ASSIGNED",
+        );
+      const state = deriveScheduledDepartureState(assignmentStates);
+
+      const assignedVehicles = (departure.serviceAssignments || []).map(
+        (a) => ({
+          id: a.id,
+          code: a.vehicle?.code ?? "BUS",
+          plate: a.vehicle?.plate ?? "S/P",
+          driverName: a.driver?.user?.name ?? a.driver?.name ?? null,
+        }),
+      );
+
+      const templates = departure.sourceScheduleTime?.journeyTemplates ?? [];
+      let originStop: string | null = null;
+      let destinationStop: string | null = null;
+      let stopsCount = 0;
+
+      if (templates.length === 1) {
+        const stops = templates[0]?.routePath?.stops ?? [];
+        originStop = stops[0]?.stop?.name ?? null;
+        destinationStop =
+          stops.length > 1
+            ? (stops[stops.length - 1]?.stop?.name ?? null)
+            : null;
+        stopsCount = stops.length;
+      }
+
       return {
         id: departure.id,
         serviceDate: civilDateToIso(departure.serviceDate),
@@ -407,13 +580,22 @@ export class OperationalService {
         direction: departure.direction,
         state,
         assignmentCount: departure.serviceAssignments.length,
+        originStop,
+        destinationStop,
+        stopsCount,
+        assignedVehicles,
       };
     });
   }
 
-  async getStudentDepartureDetail(id: string): Promise<ReturnType<OperationalService['mapStudentDeparture']>> {
+  async getStudentDepartureDetail(
+    id: string,
+  ): Promise<ReturnType<OperationalService["mapStudentDeparture"]>> {
     const departure = await this.prisma.scheduledDeparture.findFirst({
-      where: { id, serviceLine: { isActive: true, campus: { isActive: true } } },
+      where: {
+        id,
+        serviceLine: { isActive: true, campus: { isActive: true } },
+      },
       include: {
         serviceLine: {
           select: {
@@ -424,54 +606,117 @@ export class OperationalService {
             campus: { select: { id: true, code: true, name: true } },
           },
         },
+        sourceScheduleTime: {
+          include: {
+            journeyTemplates: {
+              include: {
+                stopTimes: {
+                  orderBy: { offsetMinutes: "asc" },
+                  include: {
+                    routePathStop: {
+                      include: {
+                        stop: {
+                          select: {
+                            id: true,
+                            name: true,
+                            reference: true,
+                            latitude: true,
+                            longitude: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                routePath: {
+                  include: {
+                    stops: {
+                      orderBy: { stopOrder: "asc" },
+                      include: {
+                        stop: {
+                          select: {
+                            id: true,
+                            name: true,
+                            reference: true,
+                            latitude: true,
+                            longitude: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         serviceAssignments: {
           where: { status: ServiceAssignmentStatus.ASSIGNED },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
           include: assignmentInclude,
         },
       },
     });
-    if (!departure) throw new NotFoundException('Scheduled departure not found');
+    if (!departure)
+      throw new NotFoundException("Scheduled departure not found");
     return this.mapStudentDeparture(departure);
   }
 
-  async getDriverAssignmentsToday(userId: string): Promise<Array<ReturnType<OperationalService['mapDriverAssignment']>>> {
+  async getDriverAssignmentsToday(
+    userId: string,
+  ): Promise<Array<ReturnType<OperationalService["mapDriverAssignment"]>>> {
     const driver = await this.resolveActiveDriver(userId);
     const date = this.requiredCivilDate(guayaquilToday());
     const assignments = await this.prisma.serviceAssignment.findMany({
       where: {
         driverId: driver.id,
         status: ServiceAssignmentStatus.ASSIGNED,
-        scheduledDeparture: { serviceDate: { gte: date, lt: nextCivilDate(date) } },
+        scheduledDeparture: {
+          serviceDate: { gte: date, lt: nextCivilDate(date) },
+        },
       },
-      orderBy: { plannedStartAt: 'asc' },
+      orderBy: { plannedStartAt: "asc" },
       include: assignmentInclude,
     });
-    return assignments.map((assignment) => this.mapDriverAssignment(assignment));
+    return assignments.map((assignment) =>
+      this.mapDriverAssignment(assignment),
+    );
   }
 
-  async getDriverAssignment(userId: string, assignmentId: string): Promise<ReturnType<OperationalService['mapDriverAssignment']>> {
+  async getDriverAssignment(
+    userId: string,
+    assignmentId: string,
+  ): Promise<ReturnType<OperationalService["mapDriverAssignment"]>> {
     const driver = await this.resolveActiveDriver(userId);
     const assignment = await this.prisma.serviceAssignment.findUnique({
       where: { id: assignmentId },
       include: assignmentInclude,
     });
-    if (!assignment) throw new NotFoundException('Service assignment not found');
+    if (!assignment)
+      throw new NotFoundException("Service assignment not found");
     if (assignment.driverId !== driver.id) {
-      throw new ForbiddenException('Service assignment does not belong to the authenticated driver');
+      throw new ForbiddenException(
+        "Service assignment does not belong to the authenticated driver",
+      );
     }
     return this.mapDriverAssignment(assignment);
   }
 
-  async startDriverRun(userId: string, assignmentId: string): Promise<ReturnType<OperationalService['mapDriverAssignment']>> {
+  async startDriverRun(
+    userId: string,
+    assignmentId: string,
+  ): Promise<ReturnType<OperationalService["mapDriverAssignment"]>> {
     const driver = await this.resolveActiveDriver(userId);
     const assignment = await this.prisma.serviceAssignment.findUnique({
       where: { id: assignmentId },
       select: { id: true, driverId: true, vehicleId: true },
     });
-    if (!assignment) throw new NotFoundException('Service assignment not found');
+    if (!assignment)
+      throw new NotFoundException("Service assignment not found");
     if (assignment.driverId !== driver.id) {
-      throw new ForbiddenException('Service assignment does not belong to the authenticated driver');
+      throw new ForbiddenException(
+        "Service assignment does not belong to the authenticated driver",
+      );
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -484,62 +729,95 @@ export class OperationalService {
         where: { id: assignment.id },
         include: assignmentInclude,
       });
-      if (!locked) throw new NotFoundException('Service assignment not found');
+      if (!locked) throw new NotFoundException("Service assignment not found");
       if (locked.status !== ServiceAssignmentStatus.ASSIGNED) {
-        throw new ConflictException('Service assignment is not available to start');
+        throw new ConflictException(
+          "Service assignment is not available to start",
+        );
       }
       if (locked.serviceRun) {
-        if (locked.serviceRun.status === ServiceRunStatus.IN_PROGRESS) return locked;
-        throw new ConflictException('ALREADY_COMPLETED: assignment already has a completed service run');
+        if (locked.serviceRun.status === ServiceRunStatus.IN_PROGRESS)
+          return locked;
+        throw new ConflictException(
+          "ALREADY_COMPLETED: assignment already has a completed service run",
+        );
       }
 
       const currentRun = await tx.serviceRun.findFirst({
         where: {
           status: ServiceRunStatus.IN_PROGRESS,
           serviceAssignment: {
-            OR: [{ driverId: locked.driverId }, { vehicleId: locked.vehicleId }],
+            OR: [
+              { driverId: locked.driverId },
+              { vehicleId: locked.vehicleId },
+            ],
           },
         },
         select: { id: true },
       });
       if (currentRun) {
-        throw new ConflictException('Driver or vehicle already has a service run in progress');
+        throw new ConflictException(
+          "Driver or vehicle already has a service run in progress",
+        );
       }
 
       return tx.serviceAssignment.update({
         where: { id: locked.id },
-        data: { serviceRun: { create: { status: ServiceRunStatus.IN_PROGRESS, startedAt: new Date() } } },
+        data: {
+          serviceRun: {
+            create: {
+              status: ServiceRunStatus.IN_PROGRESS,
+              startedAt: new Date(),
+            },
+          },
+        },
         include: assignmentInclude,
       });
     });
 
-    await this.auditLogsService.logAction(userId, 'SERVICE_RUN_START', 'ServiceRun', result.serviceRun?.id, {
-      serviceAssignmentId: result.id,
-      vehicleId: result.vehicleId,
-      driverId: result.driverId,
-    });
+    await this.auditLogsService.logAction(
+      userId,
+      "SERVICE_RUN_START",
+      "ServiceRun",
+      result.serviceRun?.id,
+      {
+        serviceAssignmentId: result.id,
+        vehicleId: result.vehicleId,
+        driverId: result.driverId,
+      },
+    );
     return this.mapDriverAssignment(result);
   }
 
-  async getCurrentDriverRun(userId: string): Promise<ReturnType<OperationalService['mapDriverAssignment']> | null> {
+  async getCurrentDriverRun(
+    userId: string,
+  ): Promise<ReturnType<OperationalService["mapDriverAssignment"]> | null> {
     const driver = await this.resolveActiveDriver(userId);
     const assignment = await this.prisma.serviceAssignment.findFirst({
-      where: { driverId: driver.id, serviceRun: { is: { status: ServiceRunStatus.IN_PROGRESS } } },
-      orderBy: { plannedStartAt: 'desc' },
+      where: {
+        driverId: driver.id,
+        serviceRun: { is: { status: ServiceRunStatus.IN_PROGRESS } },
+      },
+      orderBy: { plannedStartAt: "desc" },
       include: assignmentInclude,
     });
     return assignment ? this.mapDriverAssignment(assignment) : null;
   }
 
-  async finishDriverRun(userId: string, runId: string): Promise<ReturnType<OperationalService['mapDriverAssignment']>> {
+  async finishDriverRun(
+    userId: string,
+    runId: string,
+  ): Promise<ReturnType<OperationalService["mapDriverAssignment"]>> {
     const driver = await this.resolveActiveDriver(userId);
     const run = await this.prisma.serviceRun.findUnique({
       where: { id: runId },
       include: { serviceAssignment: { select: { id: true, driverId: true } } },
     });
-    if (!run) throw new NotFoundException('Service run not found');
+    if (!run) throw new NotFoundException("Service run not found");
     if (run.serviceAssignment.driverId !== driver.id) {
-      throw new ForbiddenException('Service run does not belong to the authenticated driver');
+      throw new ForbiddenException(
+        "Service run does not belong to the authenticated driver",
+      );
     }
 
     const completedAt = new Date();
@@ -551,15 +829,25 @@ export class OperationalService {
       where: { id: run.serviceAssignmentId },
       include: assignmentInclude,
     });
-    if (!assignment?.serviceRun) throw new NotFoundException('Service assignment for run not found');
-    if (updated.count === 0 && assignment.serviceRun.status !== ServiceRunStatus.COMPLETED) {
-      throw new ConflictException('Service run is not in progress');
+    if (!assignment?.serviceRun)
+      throw new NotFoundException("Service assignment for run not found");
+    if (
+      updated.count === 0 &&
+      assignment.serviceRun.status !== ServiceRunStatus.COMPLETED
+    ) {
+      throw new ConflictException("Service run is not in progress");
     }
 
     if (updated.count === 1) {
-      await this.auditLogsService.logAction(userId, 'SERVICE_RUN_FINISH', 'ServiceRun', run.id, {
-        serviceAssignmentId: assignment.id,
-      });
+      await this.auditLogsService.logAction(
+        userId,
+        "SERVICE_RUN_FINISH",
+        "ServiceRun",
+        run.id,
+        {
+          serviceAssignmentId: assignment.id,
+        },
+      );
     }
     return this.mapDriverAssignment(assignment);
   }
@@ -569,18 +857,28 @@ export class OperationalService {
       where: { userId },
       select: { id: true, status: true },
     });
-    if (!driver) throw new NotFoundException('Driver profile not found for authenticated user');
-    if (driver.status !== DriverStatus.ACTIVE) throw new ForbiddenException('Driver profile is inactive');
+    if (!driver)
+      throw new NotFoundException(
+        "Driver profile not found for authenticated user",
+      );
+    if (driver.status !== DriverStatus.ACTIVE)
+      throw new ForbiddenException("Driver profile is inactive");
     return driver;
   }
 
   private requiredCivilDate(value: string): Date {
     const date = parseCivilDate(value);
-    if (!date) throw new BadRequestException('date must use a real YYYY-MM-DD civil date');
+    if (!date)
+      throw new BadRequestException(
+        "date must use a real YYYY-MM-DD civil date",
+      );
     return date;
   }
 
-  private async lockOperationalResources(tx: Prisma.TransactionClient, resources: string[]): Promise<void> {
+  private async lockOperationalResources(
+    tx: Prisma.TransactionClient,
+    resources: string[],
+  ): Promise<void> {
     for (const resource of [...resources].sort()) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${resource}, 0))`;
     }
@@ -618,11 +916,92 @@ export class OperationalService {
     };
   }
 
-  private mapStudentDeparture(departure: {
+  mapJourneyFromTemplate(jt?: {
+    routePath: {
+      id: string;
+      code: string;
+      displayName: string;
+      direction: "IDA" | "RETORNO";
+      stops?: Array<{
+        stopOrder: number;
+        stop: {
+          id: string;
+          name: string;
+          reference: string | null;
+          latitude: Prisma.Decimal | number | unknown;
+          longitude: Prisma.Decimal | number | unknown;
+        };
+      }>;
+    };
+    stopTimes?: Array<{
+      offsetMinutes: number;
+      routePathStop: {
+        stopOrder: number;
+        stop: {
+          id: string;
+          name: string;
+          reference: string | null;
+          latitude: Prisma.Decimal | number | unknown;
+          longitude: Prisma.Decimal | number | unknown;
+        };
+      };
+    }>;
+  }) {
+    if (!jt) return null;
+
+    if (jt.stopTimes && jt.stopTimes.length > 0) {
+      const sorted = [...jt.stopTimes].sort(
+        (a, b) => a.routePathStop.stopOrder - b.routePathStop.stopOrder,
+      );
+      const stops = sorted.map((st) => ({
+        order: st.routePathStop.stopOrder,
+        id: st.routePathStop.stop.id,
+        name: st.routePathStop.stop.name,
+        reference: st.routePathStop.stop.reference,
+        latitude: Number(st.routePathStop.stop.latitude),
+        longitude: Number(st.routePathStop.stop.longitude),
+        offsetMinutes: st.offsetMinutes,
+      }));
+      const durationMinutes =
+        stops.length > 0 ? Math.max(...stops.map((s) => s.offsetMinutes)) : 0;
+      return {
+        routePathId: jt.routePath.id,
+        code: jt.routePath.code,
+        displayName: jt.routePath.displayName,
+        direction: jt.routePath.direction,
+        durationMinutes,
+        stops,
+      };
+    }
+
+    const sortedStops = [...(jt.routePath.stops ?? [])].sort(
+      (a, b) => a.stopOrder - b.stopOrder,
+    );
+    const stops = sortedStops.map((rps) => ({
+      order: rps.stopOrder,
+      id: rps.stop.id,
+      name: rps.stop.name,
+      reference: rps.stop.reference,
+      latitude: Number(rps.stop.latitude),
+      longitude: Number(rps.stop.longitude),
+      offsetMinutes: 0,
+    }));
+
+    return {
+      routePathId: jt.routePath.id,
+      code: jt.routePath.code,
+      displayName: jt.routePath.displayName,
+      direction: jt.routePath.direction,
+      durationMinutes: 0,
+      stops,
+    };
+  }
+
+  mapStudentDeparture(departure: {
     id: string;
     serviceDate: Date;
     scheduledTime: Date;
-    direction: 'IDA' | 'RETORNO';
+    direction: "IDA" | "RETORNO";
     serviceLine: {
       id: string;
       code: string;
@@ -630,47 +1009,113 @@ export class OperationalService {
       description: string | null;
       campus: { id: string; code: string; name: string };
     };
-    serviceAssignments: AssignmentRecord[];
+    sourceScheduleTime?: {
+      journeyTemplates?: Array<
+        NonNullable<Parameters<OperationalService["mapJourneyFromTemplate"]>[0]>
+      >;
+    };
+    serviceAssignments: Array<{
+      id: string;
+      status: ServiceAssignmentStatus;
+      vehicle: {
+        code: string;
+        plate: string;
+        capacity: number;
+      };
+      driver: {
+        name: string;
+      };
+      plannedStartAt: Date;
+      plannedEndAt: Date;
+      journeyTemplate?: Parameters<
+        OperationalService["mapJourneyFromTemplate"]
+      >[0];
+      serviceRun: {
+        status: "IN_PROGRESS" | "COMPLETED";
+        startedAt: Date;
+        completedAt: Date | null;
+      } | null;
+    }>;
   }) {
-    const assignments = departure.serviceAssignments.map((assignment) => this.mapStudentAssignment(assignment));
-    const states = assignments.map((assignment) => assignment.operationStatus);
+    const assignments = departure.serviceAssignments.map((assignment) =>
+      this.mapStudentAssignment(assignment),
+    );
+    const assignmentStates: AssignmentOperationalState[] = assignments.map(
+      (assignment) => assignment.operationStatus,
+    );
+    const state = deriveScheduledDepartureState(assignmentStates);
+
+    let scheduledJourney = null;
+
+    if (assignments.length === 1) {
+      // CASE C: 1 assignment -> use assignment's journeyTemplate
+      scheduledJourney = assignments[0]?.journey ?? null;
+    } else if (assignments.length > 1) {
+      // CASE D: Multiple assignments -> if all share same routePath, expose it; otherwise null
+      const firstRouteId = assignments[0]?.journey?.routePathId;
+      const allSame = assignments.every(
+        (a) => a.journey?.routePathId === firstRouteId,
+      );
+      scheduledJourney = allSame ? (assignments[0]?.journey ?? null) : null;
+    } else {
+      // CASE A & B: 0 assignments
+      const templates = departure.sourceScheduleTime?.journeyTemplates ?? [];
+      if (templates.length === 1) {
+        // CASE A: exactly 1 template -> unique programmed journey
+        scheduledJourney = this.mapJourneyFromTemplate(templates[0]);
+      } else {
+        // CASE B: >1 templates -> ambiguous / not determined yet -> null
+        scheduledJourney = null;
+      }
+    }
+
     return {
       id: departure.id,
       serviceDate: civilDateToIso(departure.serviceDate),
       scheduledTime: formatTime(departure.scheduledTime),
       direction: departure.direction,
-      state: states.includes('IN_PROGRESS')
-        ? 'IN_PROGRESS'
-        : states.includes('COMPLETED')
-          ? 'COMPLETED'
-          : states.includes('ASSIGNED')
-            ? 'ASSIGNED'
-            : 'SCHEDULED',
+      state,
+      assignmentCount: assignments.length,
       serviceLine: departure.serviceLine,
+      journey: scheduledJourney,
       assignments,
     };
   }
 
-  private mapStudentAssignment(assignment: AssignmentRecord) {
+  private mapStudentAssignment(assignment: {
+    id: string;
+    status: ServiceAssignmentStatus;
+    vehicle: {
+      code: string;
+      plate: string;
+      capacity: number;
+    };
+    driver: {
+      name: string;
+    };
+    plannedStartAt: Date;
+    plannedEndAt: Date;
+    journeyTemplate?: Parameters<
+      OperationalService["mapJourneyFromTemplate"]
+    >[0];
+    serviceRun: {
+      status: "IN_PROGRESS" | "COMPLETED";
+      startedAt: Date;
+      completedAt: Date | null;
+    } | null;
+  }) {
     return {
       id: assignment.id,
       operationStatus: operationalState(assignment),
-      vehicle: { code: assignment.vehicle.code, plate: assignment.vehicle.plate, capacity: assignment.vehicle.capacity },
+      vehicle: {
+        code: assignment.vehicle.code,
+        plate: assignment.vehicle.plate,
+        capacity: assignment.vehicle.capacity,
+      },
       driverName: assignment.driver.name,
       plannedStartAt: assignment.plannedStartAt,
       plannedEndAt: assignment.plannedEndAt,
-      journey: {
-        routePathId: assignment.journeyTemplate.routePath.id,
-        code: assignment.journeyTemplate.routePath.code,
-        displayName: assignment.journeyTemplate.routePath.displayName,
-        direction: assignment.journeyTemplate.routePath.direction,
-        stops: assignment.journeyTemplate.routePath.stops.map((routePathStop) => ({
-          order: routePathStop.stopOrder,
-          id: routePathStop.stop.id,
-          name: routePathStop.stop.name,
-          reference: routePathStop.stop.reference,
-        })),
-      },
+      journey: this.mapJourneyFromTemplate(assignment.journeyTemplate),
       run: assignment.serviceRun
         ? {
             status: assignment.serviceRun.status,

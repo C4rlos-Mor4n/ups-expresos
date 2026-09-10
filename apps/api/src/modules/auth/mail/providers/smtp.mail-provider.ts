@@ -27,7 +27,7 @@ export class SmtpMailProvider implements MailProvider {
       },
     });
 
-    this.logger.log(`SMTP provider initialized with host: ${smtpConfig.host}`);
+    this.logger.log('SMTP provider initialized');
   }
 
   async sendOtp(email: string, code: string): Promise<void> {
@@ -38,12 +38,8 @@ export class SmtpMailProvider implements MailProvider {
     // Usar SMTP_FROM si está configurado, sino usar SMTP_USER
     const fromAddress = smtpConfig?.from || smtpConfig?.user;
 
-    this.logger.log(`Sending OTP email to: ${email}`);
-    this.logger.log(`From: ${fromAddress}`);
-    this.logger.log(`SMTP Host: ${smtpConfig?.host}:${smtpConfig?.port}`);
-
     try {
-      const info = await this.transporter.sendMail({
+      await this.transporter.sendMail({
         from: `"${appName}" <${fromAddress}>`,
         to: email,
         subject: 'Código de verificación UPS GO',
@@ -59,9 +55,9 @@ export class SmtpMailProvider implements MailProvider {
         `,
       });
 
-      this.logger.log(`Email sent successfully. Message ID: ${info.messageId}`);
+      this.logger.log('OTP email sent');
     } catch (error) {
-      this.logger.error(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error('Mail delivery failed');
       throw error;
     }
   }

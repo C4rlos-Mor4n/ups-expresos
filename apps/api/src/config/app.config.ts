@@ -34,10 +34,6 @@ export interface AppConfig {
   throttle: {
     ttl: number;
     limit: number;
-    auth: {
-      ttl: number;
-      limit: number;
-    };
   };
   smtp: {
     host?: string;
@@ -87,10 +83,6 @@ export const appConfig = registerAs<AppConfig>('app', () => {
     throttle: {
       ttl: parsed.THROTTLE_TTL,
       limit: parsed.THROTTLE_LIMIT,
-      auth: {
-        ttl: parsed.THROTTLE_AUTH_TTL,
-        limit: parsed.THROTTLE_AUTH_LIMIT,
-      },
     },
     smtp: {
       host: parsed.SMTP_HOST,

@@ -110,7 +110,7 @@ El seed clasifica las asignaciones como demo y usa notas de Norte/Sur/La Joya qu
 
 | Modelo | Uso actual | Problema | KEEP | ADAPT | DEPRECATE | REPLACE |
 |---|---|---|---:|---:|---:|---:|
-| `AllowedEmailDomain` | Dominios permitidos para auth | No pertenece al transporte | Sí | No | No | No |
+| `AllowedEmailDomain` | Histórico; la autorización usa `ALLOWED_EMAIL_DOMAINS` de configuración | Modelo DB no usado en runtime; retirado en Fase 3E | No | No | Sí | No |
 | `User` | Cuenta, rol, actor de auditoría | Roles de negocio todavía simples | Sí | Sí, permisos futuros | No | No |
 | `AuthVerificationCode` | OTP | Ninguno para esta evolución | Sí | No | No | No |
 | `Session` | Refresh sessions | Ninguno para esta evolución | Sí | No | No | No |

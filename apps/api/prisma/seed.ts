@@ -2,26 +2,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const buildAllowedDomains = (raw: string | undefined): string[] =>
-  String(raw ?? 'ups.edu.ec,est.ups.edu.ec')
-    .split(',')
-    .map((domain) => domain.trim())
-    .filter(Boolean);
-
-async function seedAllowedDomains(): Promise<void> {
-  const domains = buildAllowedDomains(process.env['ALLOWED_EMAIL_DOMAINS']);
-
-  for (const domain of domains) {
-    await prisma.allowedEmailDomain.upsert({
-      where: { domain },
-      update: { isActive: true },
-      create: { domain },
-    });
-  }
-
-  console.log(`Seeded ${domains.length} allowed email domains`);
-}
-
 async function seedSuperAdmins(): Promise<void> {
   const superAdminEmails = (process.env['SUPER_ADMIN_EMAILS'] ?? '')
     .split(',')
@@ -40,7 +20,6 @@ async function seedSuperAdmins(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  await seedAllowedDomains();
   await seedSuperAdmins();
   console.log('Core seed completed. Use pnpm prisma:seed:demo for the isolated UPS GO operational demo dataset.');
 }

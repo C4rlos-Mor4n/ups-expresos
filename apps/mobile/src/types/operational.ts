@@ -26,6 +26,13 @@ export interface CampusSummary {
   name: string;
 }
 
+export interface AssignedVehiclePreview {
+  id: string;
+  code: string;
+  plate: string;
+  driverName: string | null;
+}
+
 export interface DepartureSummary {
   id: string;
   serviceDate: string;
@@ -33,6 +40,10 @@ export interface DepartureSummary {
   direction: Direction;
   state: OperationalState;
   assignmentCount: number;
+  originStop?: string | null;
+  destinationStop?: string | null;
+  stopsCount?: number;
+  assignedVehicles?: AssignedVehiclePreview[];
 }
 
 export interface VehicleSummary {
@@ -46,6 +57,18 @@ export interface JourneyStop {
   id: string;
   name: string;
   reference: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  offsetMinutes?: number;
+}
+
+export interface StudentJourney {
+  routePathId: string;
+  code: string;
+  displayName: string;
+  direction: Direction;
+  durationMinutes?: number;
+  stops: JourneyStop[];
 }
 
 export interface StudentAssignment {
@@ -55,13 +78,7 @@ export interface StudentAssignment {
   driverName: string | null;
   plannedStartAt: string;
   plannedEndAt: string;
-  journey: {
-    routePathId: string;
-    code: string;
-    displayName: string;
-    direction: Direction;
-    stops: JourneyStop[];
-  };
+  journey: StudentJourney;
   run: {
     status: Exclude<OperationalState, "SCHEDULED" | "ASSIGNED">;
     startedAt: string;
@@ -71,6 +88,7 @@ export interface StudentAssignment {
 
 export interface StudentDepartureDetail extends DepartureSummary {
   serviceLine: ServiceLine & { campus: CampusSummary };
+  journey?: StudentJourney | null;
   assignments: StudentAssignment[];
 }
 

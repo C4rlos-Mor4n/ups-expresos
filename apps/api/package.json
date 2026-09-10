@@ -22,11 +22,13 @@
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:demo": "tsx scripts/seed-demo.ts",
+    "prisma:seed:reference": "tsx scripts/seed-from-reference.ts",
+    "qa:showcase:reset": "tsx scripts/qa-showcase-reset.ts",
     "prisma:reset:demo": "UPS_GO_DEMO_MODE=cleanup UPS_GO_DEMO_CONFIRM=DELETE tsx scripts/seed-demo.ts && tsx scripts/seed-demo.ts",
     "prisma:studio": "prisma studio",
     "export:openapi": "ts-node src/export-openapi.ts",
     "generate:mobile-contracts": "pnpm export:openapi && openapi-typescript openapi-spec.json --output ../mobile/src/api/generated/openapi.ts",
-    "verify:mobile-contracts": "pnpm generate:mobile-contracts && git diff --exit-code -- ../mobile/src/api/generated/openapi.ts",
+    "verify:mobile-contracts": "node scripts/verify-mobile-contracts.cjs",
     "test:openapi": "ts-node test/swagger/openapi-contract.spec.ts"
   },
   "jest": {
@@ -65,7 +67,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "helmet": "^8.2.0",
-    "nodemailer": "^9.0.6",
+    "nodemailer": "^9.1.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",

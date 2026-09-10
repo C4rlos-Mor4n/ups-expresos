@@ -93,17 +93,6 @@ enum ServiceRunStatus {
 
 // ==================== MODELS ====================
 
-model AllowedEmailDomain {
-  id          String   @id @default(uuid()) @db.Uuid
-  domain      String   @unique
-  isActive    Boolean  @default(true)
-  createdById String?  @db.Uuid
-  createdBy   User?    @relation("AllowedDomainCreator", fields: [createdById], references: [id])
-  createdAt   DateTime @default(now())
-
-  @@map("allowed_email_domains")
-}
-
 model User {
   id            String   @id @default(uuid()) @db.Uuid
   name          String?
@@ -118,7 +107,6 @@ model User {
   sessions         Session[]
   authVerification AuthVerificationCode?
   auditLogs        AuditLog[]
-  createdDomains   AllowedEmailDomain[]  @relation("AllowedDomainCreator")
   driverProfile    Driver?
 
   @@map("users")
@@ -197,7 +185,6 @@ model Driver {
   user               User?               @relation(fields: [userId], references: [id])
   serviceAssignments ServiceAssignment[]
 
-  @@index([userId])
   @@map("drivers")
 }
 
@@ -228,8 +215,9 @@ model Campus {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  serviceLines     ServiceLine[] @relation("CampusServiceLines")
-  destinationLines ServiceLine[] @relation("CampusDestinationLines")
+  serviceLines       ServiceLine[]       @relation("CampusServiceLines")
+  destinationLines   ServiceLine[]       @relation("CampusDestinationLines")
+  servedLines        ServiceLineCampus[]
 
   @@index([isActive])
   @@map("campuses")
@@ -252,6 +240,7 @@ model ServiceLine {
   paths               RoutePath[]
   calendars           ServiceCalendar[]
   scheduledDepartures ScheduledDeparture[]
+  servedCampuses      ServiceLineCampus[]
 
   @@unique([campusId, code])
   @@index([campusId, isActive])
@@ -277,6 +266,21 @@ model RoutePath {
   @@unique([serviceLineId, code])
   @@index([serviceLineId, direction, isActive])
   @@map("route_paths")
+}
+
+model ServiceLineCampus {
+  id            String      @id @default(uuid()) @db.Uuid
+  serviceLineId String      @db.Uuid
+  campusId      String      @db.Uuid
+  createdAt     DateTime    @default(now())
+
+  serviceLine   ServiceLine @relation(fields: [serviceLineId], references: [id], onDelete: Cascade)
+  campus        Campus      @relation(fields: [campusId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceLineId, campusId])
+  @@index([campusId])
+  @@index([serviceLineId])
+  @@map("service_line_campuses")
 }
 
 model RoutePathStop {
