@@ -9,11 +9,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { Colors } from "@/constants/Colors";
 import type { OperationalState } from "@/types/operational";
 import { getOperationalStateMeta } from "@/utils/operational";
 
-const appLogo = require("../../assets/images/images_upsgo/logo-ups.png");
+const appLogo = require("../../assets/images/images_upsgo/logo-ups-go-icon.png");
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -39,35 +40,71 @@ export function ScreenHeader({
   right?: ReactNode;
 }) {
   return (
-    <View style={styles.header}>
-      <View style={styles.headerRow}>
-        {back ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-            onPress={onBack}
-            hitSlop={10}
-            style={styles.iconButton}
-          >
-            <Ionicons name="arrow-back" size={22} color={Colors.white} />
-          </Pressable>
-        ) : (
-          <View style={styles.brandMark}>
-            <Image
-              source={appLogo}
-              style={styles.brandLogo}
-              resizeMode="contain"
-            />
+    <View style={styles.headerWrapper}>
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          {back ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+              onPress={onBack}
+              hitSlop={12}
+              style={styles.iconButton}
+            >
+              <Ionicons name="arrow-back" size={22} color={Colors.white} />
+            </Pressable>
+          ) : (
+            <View style={styles.brandMark}>
+              <Image
+                source={appLogo}
+                style={styles.brandLogo}
+                resizeMode="contain"
+              />
+            </View>
+          )}
+          <View style={styles.headerCopy}>
+            <Text
+              style={styles.headerTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text
+                style={styles.headerSubtitle}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {subtitle}
+              </Text>
+            ) : null}
           </View>
-        )}
-        <View style={styles.headerCopy}>
-          <Text style={styles.headerTitle}>{title}</Text>
-          {subtitle ? (
-            <Text style={styles.headerSubtitle}>{subtitle}</Text>
-          ) : null}
+          {right}
         </View>
-        {right}
       </View>
+
+      {/* Dual organic brand wave at bottom */}
+      <Svg
+        pointerEvents="none"
+        width="100%"
+        height={32}
+        viewBox="0 0 390 32"
+        preserveAspectRatio="none"
+        style={styles.headerWave}
+      >
+        {/* Layer 1: Secondary blue depth curve on the right */}
+        <Path
+          d="M 170 32 C 245 22, 320 12, 390 2 L 390 32 Z"
+          fill="#1C62B3"
+          opacity={0.92}
+        />
+        {/* Layer 2: Main canvas surface wave spanning 100% width */}
+        <Path
+          d="M 0 6 C 90 24, 215 28, 305 18 C 340 14, 368 6, 390 2 L 390 32 L 0 32 Z"
+          fill={Colors.background.main}
+        />
+      </Svg>
     </View>
   );
 }
@@ -201,8 +238,8 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
 }
 
 export const uiStyles = StyleSheet.create({
-  content: { padding: 20, gap: 16, paddingBottom: 36 },
-  scrollContent: { padding: 20, gap: 16, paddingBottom: 36 },
+  content: { padding: 16, gap: 16, paddingBottom: 110 },
+  scrollContent: { padding: 16, gap: 16, paddingBottom: 110 },
   card: {
     backgroundColor: Colors.background.card,
     borderRadius: 16,
@@ -243,21 +280,26 @@ export const uiStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.navy },
   screenBody: { flex: 1, backgroundColor: Colors.background.main },
+  headerWrapper: {
+    backgroundColor: Colors.navy,
+    position: "relative",
+  },
   header: {
     backgroundColor: Colors.navy,
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
   },
   headerRow: {
-    minHeight: 40,
+    minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
   brandMark: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: Colors.white,
@@ -267,23 +309,31 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  brandLogo: { width: 34, height: 34 },
+  brandLogo: { width: 38, height: 38, borderRadius: 19 },
   iconButton: {
     width: 44,
     height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: -10,
+    marginLeft: -8,
   },
-  headerCopy: { flex: 1, gap: 2 },
-  headerTitle: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 20 },
+  headerCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  headerTitle: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 21 },
   headerSubtitle: {
-    color: "#C9DBEF",
+    color: "rgba(255, 255, 255, 0.88)",
     fontFamily: "Inter-Regular",
     fontSize: 13,
   },
+  headerWave: {
+    marginBottom: -1,
+  },
   button: {
-    minHeight: 48,
+    minHeight: 50,
     borderRadius: 14,
     paddingHorizontal: 18,
     alignItems: "center",

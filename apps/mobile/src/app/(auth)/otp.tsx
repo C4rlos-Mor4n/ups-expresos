@@ -49,6 +49,14 @@ export default function OtpScreen() {
     }
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(auth)/login");
+    }
+  };
+
   return (
     <ImageBackground
       source={require("../../../assets/images/images_upsgo/fondo.png")}
@@ -58,24 +66,26 @@ export default function OtpScreen() {
       <View style={styles.overlay} />
       <SafeAreaView style={styles.safe}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboard}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             <View style={styles.topRow}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Volver"
-                onPress={() => router.back()}
+                onPress={handleBack}
                 style={styles.back}
               >
                 <Ionicons name="arrow-back" size={22} color={Colors.white} />
               </Pressable>
               <Text style={styles.brandText}>UPS GO</Text>
             </View>
+
             <View style={styles.card}>
               <View style={styles.logoFrame}>
                 <Image
@@ -87,7 +97,7 @@ export default function OtpScreen() {
               <View style={styles.securityChip}>
                 <Ionicons
                   name="shield-checkmark"
-                  size={15}
+                  size={14}
                   color={Colors.primary}
                 />
                 <Text style={styles.securityChipText}>ACCESO SEGURO</Text>
@@ -97,16 +107,18 @@ export default function OtpScreen() {
                 Ingresa el código de seis dígitos que enviamos a tu correo
                 institucional.
               </Text>
+
               <View style={styles.emailPill}>
                 <Ionicons
                   name="mail-outline"
-                  size={17}
+                  size={16}
                   color={Colors.primary}
                 />
                 <Text selectable style={styles.email} numberOfLines={1}>
                   {email || "tu correo institucional"}
                 </Text>
               </View>
+
               <View style={styles.codeSection}>
                 <View style={styles.codeLabelRow}>
                   <Text style={styles.codeLabel}>Código de verificación</Text>
@@ -143,6 +155,7 @@ export default function OtpScreen() {
                   ))}
                 </View>
               </View>
+
               {error ? (
                 <View style={styles.error}>
                   <Ionicons
@@ -153,6 +166,7 @@ export default function OtpScreen() {
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
+
               <PrimaryButton
                 label="Verificar e ingresar"
                 loading={loading}
@@ -160,9 +174,10 @@ export default function OtpScreen() {
                 onPress={verifyCode}
                 icon="checkmark"
               />
+
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.back()}
+                onPress={handleBack}
                 style={styles.change}
               >
                 <Text style={styles.changeText}>Usar otro correo</Text>
@@ -183,8 +198,18 @@ const styles = StyleSheet.create({
   },
   safe: { flex: 1 },
   keyboard: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 },
-  topRow: { minHeight: 52, alignItems: "center", flexDirection: "row", gap: 4 },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    justifyContent: "center",
+  },
+  topRow: {
+    minHeight: 44,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+  },
   back: {
     width: 44,
     height: 44,
@@ -194,33 +219,34 @@ const styles = StyleSheet.create({
   },
   brandText: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 18 },
   card: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "stretch",
     backgroundColor: Colors.white,
     borderRadius: 24,
-    padding: 22,
-    gap: 16,
-    marginVertical: 18,
-    boxShadow: "0 14px 30px rgba(0, 23, 56, 0.30)",
+    padding: 20,
+    gap: 14,
+    marginVertical: 10,
+    shadowColor: Colors.navy,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 4,
   },
   logoFrame: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     padding: 6,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.background.alt,
     alignSelf: "center",
   },
-  upsLogo: { width: 58, height: 58 },
+  upsLogo: { width: 50, height: 50 },
   securityChip: {
     alignSelf: "center",
     backgroundColor: "#EAF1F8",
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     flexDirection: "row",
     gap: 5,
     alignItems: "center",
@@ -234,20 +260,20 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: "Inter-Bold",
     color: Colors.text.dark,
-    fontSize: 25,
-    lineHeight: 31,
+    fontSize: 22,
+    lineHeight: 28,
     textAlign: "center",
   },
   description: {
     color: Colors.text.light,
     fontFamily: "Inter-Regular",
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 19,
     textAlign: "center",
-    marginTop: -7,
+    marginTop: -4,
   },
   emailPill: {
-    minHeight: 42,
+    minHeight: 40,
     backgroundColor: Colors.background.subtle,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -280,15 +306,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   codeInput: {
-    minHeight: 62,
+    minHeight: 56,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: Colors.primary,
     backgroundColor: Colors.background.subtle,
     color: Colors.text.dark,
     fontFamily: "Inter-Bold",
-    fontSize: 27,
-    letterSpacing: 10,
+    fontSize: 26,
+    letterSpacing: 8,
     textAlign: "center",
     fontVariant: ["tabular-nums"],
   },
@@ -296,9 +322,9 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D9E2EE" },
   dotFilled: { backgroundColor: Colors.secondary },
   error: {
+    backgroundColor: "#FDE9E7",
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#FDE9E7",
     flexDirection: "row",
     gap: 8,
     alignItems: "flex-start",
@@ -308,12 +334,13 @@ const styles = StyleSheet.create({
     color: Colors.error,
     fontFamily: "Inter-Medium",
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 18,
   },
   change: { minHeight: 42, alignItems: "center", justifyContent: "center" },
   changeText: {
-    color: Colors.primary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 14,
+    color: Colors.text.light,
+    fontFamily: "Inter-Medium",
+    fontSize: 13,
+    textDecorationLine: "underline",
   },
 });

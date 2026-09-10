@@ -493,7 +493,7 @@ export interface components {
         };
         RequestCodeDto: {
             /**
-             * @description Institutional email address used to request OTP verification
+             * @description Institutional or registered email address used to request OTP verification
              * @example student@est.ups.edu.ec
              */
             email: string;
@@ -509,7 +509,7 @@ export interface components {
         };
         VerifyCodeDto: {
             /**
-             * @description Institutional email address
+             * @description Institutional or registered email address
              * @example student@est.ups.edu.ec
              */
             email: string;
@@ -813,6 +813,13 @@ export interface components {
             name: string;
             description?: string | null;
         };
+        AssignedVehiclePreviewDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            plate: string;
+            driverName?: string | null;
+        };
         OperationalDepartureSummaryDto: {
             /** Format: uuid */
             id: string;
@@ -825,6 +832,10 @@ export interface components {
             /** @enum {string} */
             state: "SCHEDULED" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED";
             assignmentCount: number;
+            originStop?: string | null;
+            destinationStop?: string | null;
+            stopsCount?: number;
+            assignedVehicles?: components["schemas"]["AssignedVehiclePreviewDto"][];
         };
         OperationalCampusSummaryDto: {
             /** Format: uuid */
@@ -840,19 +851,19 @@ export interface components {
             description?: string | null;
             campus: components["schemas"]["OperationalCampusSummaryDto"];
         };
-        OperationalVehicleDto: {
-            /** Format: uuid */
-            id?: string;
-            code: string;
-            plate: string;
-            capacity: number;
-        };
         OperationalJourneyStopDto: {
             order: number;
             /** Format: uuid */
             id: string;
             name: string;
             reference?: string | null;
+            latitude?: number | null;
+            longitude?: number | null;
+            /**
+             * @description Minutes from departure to this stop
+             * @example 15
+             */
+            offsetMinutes: number;
         };
         StudentJourneyDto: {
             /** Format: uuid */
@@ -861,7 +872,19 @@ export interface components {
             displayName: string;
             /** @enum {string} */
             direction: "IDA" | "RETORNO";
+            /**
+             * @description Total duration in minutes
+             * @example 65
+             */
+            durationMinutes: number;
             stops: components["schemas"]["OperationalJourneyStopDto"][];
+        };
+        OperationalVehicleDto: {
+            /** Format: uuid */
+            id?: string;
+            code: string;
+            plate: string;
+            capacity: number;
         };
         OperationalRunDto: {
             /** Format: uuid */
@@ -899,7 +922,12 @@ export interface components {
             /** @enum {string} */
             state: "SCHEDULED" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED";
             assignmentCount: number;
+            originStop?: string | null;
+            destinationStop?: string | null;
+            stopsCount?: number;
+            assignedVehicles?: components["schemas"]["AssignedVehiclePreviewDto"][];
             serviceLine: components["schemas"]["OperationalServiceLineWithCampusDto"];
+            journey?: components["schemas"]["StudentJourneyDto"] | null;
             assignments: components["schemas"]["StudentAssignmentDto"][];
         };
         DriverDepartureDto: {
@@ -970,6 +998,199 @@ export interface components {
              * @description Journey template owned by the scheduled departure source ScheduleTime
              */
             journeyTemplateId: string;
+        };
+        AdminOperationalAssignmentDepartureDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            serviceDate: string;
+            /** @example 06:40 */
+            scheduledTime: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            serviceLine: components["schemas"]["OperationalServiceLineWithCampusDto"];
+        };
+        AdminOperationalAssignmentDriverDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        AdminOperationalAssignmentStopDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            reference?: string | null;
+            latitude?: (number | string) | null;
+            longitude?: (number | string) | null;
+        };
+        AdminOperationalRouteStopDto: {
+            stopOrder: number;
+            stop: components["schemas"]["AdminOperationalAssignmentStopDto"];
+        };
+        AdminOperationalAssignmentRoutePathDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            displayName: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            stops: components["schemas"]["AdminOperationalRouteStopDto"][];
+        };
+        AdminOperationalAssignmentJourneyTemplateDto: {
+            /** Format: uuid */
+            id: string;
+            routePath: components["schemas"]["AdminOperationalAssignmentRoutePathDto"];
+        };
+        AdminOperationalAssignmentOperationDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "IN_PROGRESS" | "COMPLETED";
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            completedAt?: string | null;
+        };
+        AdminOperationalAssignmentDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "ASSIGNED" | "CANCELLED";
+            /** Format: date-time */
+            plannedStartAt: string;
+            /** Format: date-time */
+            plannedEndAt: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            departure: components["schemas"]["AdminOperationalAssignmentDepartureDto"];
+            vehicle: components["schemas"]["OperationalVehicleWithIdDto"];
+            driver: components["schemas"]["AdminOperationalAssignmentDriverDto"];
+            journeyTemplate: components["schemas"]["AdminOperationalAssignmentJourneyTemplateDto"];
+            operation?: components["schemas"]["AdminOperationalAssignmentOperationDto"] | null;
+        };
+        AdminOperationalCampusDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            address?: string | null;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AdminOperationalServiceLineDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            description?: string | null;
+            /** @enum {string} */
+            type: "CAMPUS_ROUTE" | "INTERCAMPUS";
+            isActive: boolean;
+            campus: components["schemas"]["OperationalCampusSummaryDto"];
+            destinationCampus?: components["schemas"]["OperationalCampusSummaryDto"] | null;
+        };
+        AdminOperationalTimetableStopDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            reference?: string | null;
+        };
+        AdminOperationalTimetablePathStopDto: {
+            stopOrder: number;
+            stop: components["schemas"]["AdminOperationalTimetableStopDto"];
+        };
+        AdminOperationalTimetableRoutePathDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            displayName: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            isActive: boolean;
+            stops: components["schemas"]["AdminOperationalTimetablePathStopDto"][];
+        };
+        AdminOperationalSchedulePatternDayDto: {
+            /** @enum {string} */
+            weekday: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+        };
+        AdminOperationalScheduleJourneyTemplateDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            routePathId: string;
+        };
+        AdminOperationalScheduleTimeDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            departureTime: string;
+            /** Format: date-time */
+            approximateArrivalTime?: string | null;
+            journeyTemplates: components["schemas"]["AdminOperationalScheduleJourneyTemplateDto"][];
+        };
+        AdminOperationalSchedulePatternDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+            days: components["schemas"]["AdminOperationalSchedulePatternDayDto"][];
+            times: components["schemas"]["AdminOperationalScheduleTimeDto"][];
+        };
+        AdminOperationalServiceCalendarDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: date-time */
+            validFrom: string;
+            /** Format: date-time */
+            validUntil: string;
+            timezone: string;
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+            patterns: components["schemas"]["AdminOperationalSchedulePatternDto"][];
+        };
+        AdminOperationalTimetableLineDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            description?: string | null;
+            isActive: boolean;
+            campus: components["schemas"]["OperationalCampusSummaryDto"];
+            paths: components["schemas"]["AdminOperationalTimetableRoutePathDto"][];
+            calendars: components["schemas"]["AdminOperationalServiceCalendarDto"][];
+        };
+        AdminOperationalScheduledDepartureDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example 06:40 */
+            scheduledTime: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            assignments: components["schemas"]["AdminOperationalAssignmentDto"][];
+        };
+        AdminOperationalServiceLineTimetableDto: {
+            /** Format: date */
+            serviceDate: string;
+            line: components["schemas"]["AdminOperationalTimetableLineDto"];
+            scheduledDepartures: components["schemas"]["AdminOperationalScheduledDepartureDto"][];
+        };
+        AdminOperationalPaginationMetaDto: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+        };
+        AdminOperationalAssignmentsResponseDto: {
+            data: components["schemas"]["AdminOperationalAssignmentDto"][];
+            meta: components["schemas"]["AdminOperationalPaginationMetaDto"];
         };
     };
     responses: never;
@@ -2134,7 +2355,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["AdminOperationalAssignmentsResponseDto"];
                 };
             };
         };
@@ -2157,7 +2378,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["AdminOperationalAssignmentDto"];
                 };
             };
             /** @description Vehicle/driver window conflict or invalid journey template ownership */
@@ -2183,7 +2404,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["AdminOperationalCampusDto"][];
                 };
             };
         };
@@ -2204,7 +2425,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["AdminOperationalServiceLineDto"][];
                 };
             };
         };
@@ -2227,7 +2448,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["AdminOperationalServiceLineTimetableDto"];
                 };
             };
         };
@@ -2251,7 +2472,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["AdminOperationalAssignmentsResponseDto"];
                 };
             };
         };
