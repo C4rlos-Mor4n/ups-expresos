@@ -14,6 +14,8 @@ export async function createTestApp(): Promise<{
   }).compile();
 
   const app = moduleRef.createNestApplication();
+  // Aislar las solicitudes de cada caso E2E de los límites por IP del guard global.
+  app.getHttpAdapter().getInstance().set('trust proxy', true);
   
   app.useGlobalPipes(
     new ValidationPipe({
@@ -52,18 +54,9 @@ export async function cleanDatabase(prisma: PrismaService): Promise<void> {
   await prisma.vehicle.deleteMany();
   await prisma.stop.deleteMany();
   await prisma.user.deleteMany();
-  await prisma.allowedEmailDomain.deleteMany();
 }
 
 export async function seedTestDatabase(prisma: PrismaService): Promise<void> {
-  // Crear dominios permitidos
-  await prisma.allowedEmailDomain.createMany({
-    data: [
-      { domain: 'ups.edu.ec' },
-      { domain: 'est.ups.edu.ec' },
-    ],
-  });
-
   // Crear super admin
   await prisma.user.create({
     data: {

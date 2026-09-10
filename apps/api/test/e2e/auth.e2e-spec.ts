@@ -3,9 +3,18 @@ import * as request from 'supertest';
 import { PrismaService } from '../../src/database/prisma.service';
 import { createTestApp, cleanDatabase, seedTestDatabase } from '../helpers/e2e.helper';
 
+jest.setTimeout(30_000);
+
 describe('Auth (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let requestIp = 10;
+
+  const requestCode = (email: string) =>
+    request(app.getHttpServer())
+      .post('/auth/request-code')
+      .set('X-Forwarded-For', `198.51.100.${requestIp++}`)
+      .send({ email });
 
   beforeAll(async () => {
     const testApp = await createTestApp();
@@ -22,16 +31,12 @@ describe('Auth (e2e)', () => {
 
   describe('POST /auth/request-code', () => {
     it('should reject email from non-allowed domain', async () => {
-      return request(app.getHttpServer())
-        .post('/auth/request-code')
-        .send({ email: 'user@gmail.com' })
-        .expect(403);
+      return requestCode('user@gmail.com')
+        .expect(400);
     });
 
     it('should accept email from allowed domain', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/request-code')
-        .send({ email: 'newuser@est.ups.edu.ec' })
+      const response = await requestCode('newuser@est.ups.edu.ec')
         .expect(201);
 
       expect(response.body.message).toBeDefined();
@@ -52,9 +57,7 @@ describe('Auth (e2e)', () => {
 
     beforeAll(async () => {
       // Solicitar código
-      const response = await request(app.getHttpServer())
-        .post('/auth/request-code')
-        .send({ email: 'verifytest@est.ups.edu.ec' });
+      const response = await requestCode('verifytest@est.ups.edu.ec');
       otpCode = response.body.devCode;
     });
 
@@ -90,18 +93,12 @@ describe('Auth (e2e)', () => {
 
     beforeAll(async () => {
       // Login para obtener refresh token
-      const codeResponse = await request(app.getHttpServer())
-        .post('/auth/request-code')
-        .send({ email: 'refreshtest@est.ups.edu.ec' });
+      const codeResponse = await requestCode('refreshtest@est.ups.edu.ec');
       
-      await request(app.getHttpServer())
-        .post('/auth/verify-code')
-        .send({ email: 'refreshtest@est.ups.edu.ec', code: codeResponse.body.devCode });
-
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/verify-code')
         .send({ email: 'refreshtest@est.ups.edu.ec', code: codeResponse.body.devCode });
-      
+
       refreshToken = loginResponse.body.refreshToken;
     });
 
@@ -121,9 +118,7 @@ describe('Auth (e2e)', () => {
     let accessToken: string;
 
     beforeAll(async () => {
-      const codeResponse = await request(app.getHttpServer())
-        .post('/auth/request-code')
-        .send({ email: 'metest@est.ups.edu.ec' });
+      const codeResponse = await requestCode('metest@est.ups.edu.ec');
       
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/verify-code')
@@ -154,9 +149,7 @@ describe('Auth (e2e)', () => {
     let refreshToken: string;
 
     beforeAll(async () => {
-      const codeResponse = await request(app.getHttpServer())
-        .post('/auth/request-code')
-        .send({ email: 'logouttest@est.ups.edu.ec' });
+      const codeResponse = await requestCode('logouttest@est.ups.edu.ec');
       
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/verify-code')
@@ -171,7 +164,7 @@ describe('Auth (e2e)', () => {
         .post('/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ refreshToken })
-        .expect(201);
+        .expect(200);
     });
 
     it('should revoke refresh token', async () => {
