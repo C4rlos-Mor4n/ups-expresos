@@ -43,7 +43,7 @@ El estudiante sigue el flujo campus, línea, salida y asignación por bus para c
 
 - Contrato de producto y API: `docs/PHASE_6_FRONTEND_API_CONTRACT.md`.
 - Implementación de los contratos: `apps/api/src/modules/operational/operational.service.ts`.
-- Recursos actuales: `apps/mobile/assets/images/images_busapp/`.
+- Recursos actuales: `apps/mobile/assets/images/images_upsgo/`.
 - No hay diseños, imágenes o requisitos aprobados para tracking GPS, ETA o Admin Web; no se deben inventar.
 
 ## Product Principles

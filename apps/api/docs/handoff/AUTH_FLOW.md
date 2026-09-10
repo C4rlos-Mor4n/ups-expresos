@@ -382,6 +382,4 @@ async function getValidAccessToken(): Promise<string> {
 | `JWT_REFRESH_EXPIRES_IN` | `7d` | Vigencia del refresh token |
 | `OTP_EXPIRES_MINUTES` | `10` | Minutos antes de que expire el codigo OTP |
 | `OTP_MAX_ATTEMPTS` | `5` | Maximo de intentos de verificacion |
-| `THROTTLE_AUTH_TTL` | `60000` | Ventana de rate limit para auth (ms) |
-| `THROTTLE_AUTH_LIMIT` | `3` | Maximo de requests de auth por ventana |
 | `AUTH_DEV_EXPOSE_OTP` | `false` | Exponer OTP en respuesta (solo desarrollo) |
