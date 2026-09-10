@@ -234,6 +234,335 @@ export interface paths {
         patch: operations["DriversController_update"];
         trace?: never;
     };
+    "/admin/schedules/calendars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List administrative service calendars */
+        get: operations["AdminScheduleController_listCalendars"];
+        put?: never;
+        /** Create a DRAFT service calendar */
+        post: operations["AdminScheduleController_createCalendar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/calendars/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get complete calendar configuration */
+        get: operations["AdminScheduleController_getCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a DRAFT service calendar */
+        patch: operations["AdminScheduleController_updateCalendar"];
+        trace?: never;
+    };
+    "/admin/schedules/calendars/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a complete calendar configuration */
+        post: operations["AdminScheduleController_publishCalendar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/calendars/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a service calendar */
+        post: operations["AdminScheduleController_archiveCalendar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/calendars/{calendarId}/patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a regular schedule pattern */
+        post: operations["AdminScheduleController_createPattern"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/patterns/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a schedule pattern */
+        patch: operations["AdminScheduleController_updatePattern"];
+        trace?: never;
+    };
+    "/admin/schedules/patterns/{id}/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Atomically replace pattern weekdays */
+        put: operations["AdminScheduleController_replacePatternDays"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/patterns/{patternId}/times": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a recurrent civil schedule time */
+        post: operations["AdminScheduleController_createTime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/times/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a DRAFT schedule time */
+        delete: operations["AdminScheduleController_removeTime"];
+        options?: never;
+        head?: never;
+        /** Update a schedule time */
+        patch: operations["AdminScheduleController_updateTime"];
+        trace?: never;
+    };
+    "/admin/schedules/times/{timeId}/journeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach a RoutePath journey template to a schedule time */
+        post: operations["AdminScheduleController_createJourney"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/journeys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one journey template */
+        delete: operations["AdminScheduleController_removeJourney"];
+        options?: never;
+        head?: never;
+        /** Change a journey RoutePath in a DRAFT calendar */
+        patch: operations["AdminScheduleController_updateJourney"];
+        trace?: never;
+    };
+    "/admin/schedules/journeys/{id}/stop-times": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a journey itinerary and stop offsets atomically */
+        put: operations["AdminScheduleController_replaceStopTimes"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/calendars/{calendarId}/exceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List calendar service exceptions */
+        get: operations["AdminScheduleController_listExceptions"];
+        put?: never;
+        /** Create a DRAFT service exception */
+        post: operations["AdminScheduleController_createException"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/exceptions/{exceptionId}/patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a replacement/additional pattern for an exception */
+        post: operations["AdminScheduleController_createExceptionPattern"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/exceptions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a service exception */
+        get: operations["AdminScheduleController_getException"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a DRAFT service exception */
+        patch: operations["AdminScheduleController_updateException"];
+        trace?: never;
+    };
+    "/admin/schedules/exceptions/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a complete service exception */
+        post: operations["AdminScheduleController_publishException"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/exceptions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a service exception */
+        post: operations["AdminScheduleController_cancelException"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/timetable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Query the complete administrative timetable */
+        get: operations["AdminScheduleController_timetable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/schedules/materialization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Materialize scheduled departures for a date range */
+        post: operations["AdminScheduleController_materialize"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/student/campuses": {
         parameters: {
             query?: never;
@@ -798,6 +1127,242 @@ export interface components {
              * @enum {string}
              */
             status: "ACTIVE" | "INACTIVE";
+        };
+        AdminCalendarServiceLineDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+        };
+        AdminCalendarListItemDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            serviceLine: components["schemas"]["AdminCalendarServiceLineDto"];
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validUntil: string;
+            timezone: string;
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+            patternCount: number;
+            scheduleTimeCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AdminJourneyStopTimeDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            routePathStopId: string;
+            stopOrder: number;
+            /** Format: uuid */
+            stopId: string;
+            stopName: string;
+            offsetMinutes: number;
+        };
+        AdminJourneyTemplateDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            scheduleTimeId: string;
+            /** Format: uuid */
+            routePathId: string;
+            routePathCode: string;
+            routePathDisplayName: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            stopTimes: components["schemas"]["AdminJourneyStopTimeDto"][];
+        };
+        AdminScheduleTimeDto: {
+            /** Format: uuid */
+            id: string;
+            departureTime: string;
+            approximateArrivalTime?: Record<string, never> | null;
+            journeyTemplates: components["schemas"]["AdminJourneyTemplateDto"][];
+        };
+        AdminSchedulePatternDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            /** @enum {string} */
+            type: "EXPLICIT_TIMES";
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+            name?: Record<string, never> | null;
+            days: ("MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY")[];
+            times: components["schemas"]["AdminScheduleTimeDto"][];
+        };
+        AdminServiceExceptionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            serviceDate: string;
+            /** @enum {string|null} */
+            direction?: "IDA" | "RETORNO" | null;
+            /** @enum {string} */
+            reason: "HOLIDAY" | "VACATION" | "EXAM_PERIOD";
+            /** @enum {string} */
+            effect: "NO_SERVICE" | "REPLACE_TIMES" | "ADD_TIMES";
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "CANCELLED";
+            description: string;
+        };
+        AdminCalendarDetailDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            serviceLine: components["schemas"]["AdminCalendarServiceLineDto"];
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validUntil: string;
+            timezone: string;
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+            patternCount: number;
+            scheduleTimeCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            patterns: components["schemas"]["AdminSchedulePatternDto"][];
+            exceptions: components["schemas"]["AdminServiceExceptionDto"][];
+        };
+        CreateAdminCalendarDto: {
+            /** Format: uuid */
+            serviceLineId: string;
+            /** @example Semestre 2026-A */
+            name: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validUntil: string;
+            /** @default America/Guayaquil */
+            timezone: string;
+        };
+        UpdateAdminCalendarDto: {
+            name?: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validUntil?: string;
+            timezone?: string;
+        };
+        CreateAdminPatternDto: {
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            /**
+             * @default EXPLICIT_TIMES
+             * @enum {string}
+             */
+            type: "EXPLICIT_TIMES";
+            name?: string;
+            days?: ("MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY")[];
+        };
+        UpdateAdminPatternDto: {
+            name?: string;
+        };
+        ReplacePatternDaysDto: {
+            days: ("MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY")[];
+        };
+        CreateScheduleTimeDto: {
+            /** @example 06:40:00 */
+            departureTime: string;
+            /** @example 07:45:00 */
+            approximateArrivalTime?: string;
+        };
+        UpdateScheduleTimeDto: {
+            /** @example 06:40:00 */
+            departureTime?: string;
+            /** @example 07:45:00 */
+            approximateArrivalTime?: Record<string, never> | null;
+        };
+        CreateJourneyTemplateDto: {
+            /** Format: uuid */
+            routePathId: string;
+        };
+        UpdateJourneyTemplateDto: {
+            /** Format: uuid */
+            routePathId: string;
+        };
+        StopOffsetDto: {
+            /** Format: uuid */
+            routePathStopId: string;
+            /** @example 15 */
+            offsetMinutes: number;
+        };
+        ReplaceJourneyStopTimesDto: {
+            stopTimes: components["schemas"]["StopOffsetDto"][];
+        };
+        CreateServiceExceptionDto: {
+            /** Format: date */
+            serviceDate: string;
+            /** @enum {string|null} */
+            direction?: "IDA" | "RETORNO" | null;
+            /** @enum {string} */
+            reason: "HOLIDAY" | "VACATION" | "EXAM_PERIOD";
+            /** @enum {string} */
+            effect: "NO_SERVICE" | "REPLACE_TIMES" | "ADD_TIMES";
+            description: string;
+        };
+        UpdateServiceExceptionDto: {
+            /** @enum {string|null} */
+            direction?: "IDA" | "RETORNO" | null;
+            /** @enum {string} */
+            reason?: "HOLIDAY" | "VACATION" | "EXAM_PERIOD";
+            /** @enum {string} */
+            effect?: "NO_SERVICE" | "REPLACE_TIMES" | "ADD_TIMES";
+            description?: string;
+        };
+        AdminTimetableRowDto: {
+            /** Format: uuid */
+            scheduleTimeId: string;
+            /** Format: uuid */
+            patternId: string;
+            /** Format: uuid */
+            calendarId: string;
+            /** Format: uuid */
+            serviceLineId: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            days: ("MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY")[];
+            departureTime: string;
+            journeyTemplates: components["schemas"]["AdminJourneyTemplateDto"][];
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+        };
+        MaterializeAdminSchedulesDto: {
+            /** Format: uuid */
+            serviceLineId: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            /** Format: date */
+            fromDate: string;
+            /** Format: date */
+            toDate: string;
+        };
+        AdminMaterializationResponseDto: {
+            /** Format: uuid */
+            serviceLineId: string;
+            /** @enum {string} */
+            direction: "IDA" | "RETORNO";
+            /** Format: date */
+            fromDate: string;
+            /** Format: date */
+            toDate: string;
+            totalDates: number;
+            processedDates: number;
+            noServiceDates: number;
+            created: number;
+            existingSame: number;
+            existingDifferent: number;
+            missingFromCurrentResolution: number;
+            errors: number;
         };
         OperationalCampusDto: {
             /** Format: uuid */
@@ -2112,6 +2677,584 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    AdminScheduleController_listCalendars: {
+        parameters: {
+            query?: {
+                serviceLineId?: string;
+                status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+                effectiveDate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCalendarListItemDto"][];
+                };
+            };
+        };
+    };
+    AdminScheduleController_createCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminCalendarDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCalendarDetailDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_getCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCalendarDetailDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_updateCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAdminCalendarDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCalendarDetailDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_publishCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCalendarDetailDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_archiveCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCalendarDetailDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_createPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                calendarId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminPatternDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSchedulePatternDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_updatePattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAdminPatternDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSchedulePatternDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_replacePatternDays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplacePatternDaysDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSchedulePatternDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_createTime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patternId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScheduleTimeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminScheduleTimeDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_removeTime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminScheduleController_updateTime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateScheduleTimeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminScheduleTimeDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_createJourney: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJourneyTemplateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminScheduleTimeDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_removeJourney: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminScheduleController_updateJourney: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateJourneyTemplateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminScheduleTimeDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_replaceStopTimes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceJourneyStopTimesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminScheduleTimeDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_listExceptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                calendarId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceExceptionDto"][];
+                };
+            };
+        };
+    };
+    AdminScheduleController_createException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                calendarId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceExceptionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceExceptionDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_createExceptionPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exceptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminPatternDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSchedulePatternDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_getException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceExceptionDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_updateException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateServiceExceptionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceExceptionDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_publishException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceExceptionDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_cancelException: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceExceptionDto"];
+                };
+            };
+        };
+    };
+    AdminScheduleController_timetable: {
+        parameters: {
+            query?: {
+                serviceLineId?: string;
+                direction?: "IDA" | "RETORNO";
+                calendarId?: string;
+                effectiveDate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTimetableRowDto"][];
+                };
+            };
+        };
+    };
+    AdminScheduleController_materialize: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterializeAdminSchedulesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMaterializationResponseDto"];
+                };
             };
         };
     };
