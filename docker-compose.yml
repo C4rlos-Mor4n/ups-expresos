@@ -63,7 +63,7 @@ services:
       - "3000"
     environment:
       <<: *database-url
-      NODE_ENV: production
+      NODE_ENV: ${APP_ENV:-production}
       PORT: 3000
       TZ: America/Guayaquil
       APP_NAME: ${APP_NAME:-UPS GO API}
@@ -73,7 +73,8 @@ services:
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       OTP_EXPIRES_MINUTES: ${OTP_EXPIRES_MINUTES:-10}
       OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
-      AUTH_DEV_EXPOSE_OTP: "false"
+      # Solo true en entornos de PRUEBA sin SMTP (APP_ENV=development). La API lo rechaza en production.
+      AUTH_DEV_EXPOSE_OTP: ${AUTH_DEV_EXPOSE_OTP:-false}
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ups.edu.ec,est.ups.edu.ec}
       SUPER_ADMIN_EMAILS: ${SUPER_ADMIN_EMAILS:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
@@ -83,12 +84,25 @@ services:
       THROTTLE_TTL: ${THROTTLE_TTL:-60000}
       THROTTLE_LIMIT: ${THROTTLE_LIMIT:-60}
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
-      SMTP_HOST: ${SMTP_HOST:?Define SMTP_HOST en .env (obligatorio en producción)}
+      SMTP_HOST: ${SMTP_HOST:-}  # obligatorio si APP_ENV=production (la API lo valida)
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:?Define SMTP_USER en .env}
-      SMTP_PASS: ${SMTP_PASS:?Define SMTP_PASS en .env}
-      SMTP_FROM: ${SMTP_FROM:?Define SMTP_FROM en .env}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+
+  # Túnel público opcional (ngrok) para pruebas sin dominio propio.
+  # Actívalo con COMPOSE_PROFILES=tunnel + NGROK_AUTHTOKEN + NGROK_URL en el entorno.
+  # Apunta directo a la API (no pasa por Traefik), así que no necesita dominio en Dokploy.
+  ngrok:
+    image: ngrok/ngrok:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: ["http", "api:3000", "--url", "${NGROK_URL:?Define NGROK_URL (dominio ngrok)}"]
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?Define NGROK_AUTHTOKEN}
+    depends_on:
+      - api
 
 volumes:
   ups_go_pgdata:
