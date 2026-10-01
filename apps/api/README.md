@@ -1,7 +1,7 @@
 # UPS GO API
 
-API NestJS/Prisma de UPS GO. El dominio operativo activo separa el horario
-publicado de la ejecución real:
+Backend NestJS + Prisma + PostgreSQL de UPS GO. La documentación completa vive en
+[`docs/api`](../../docs/api/README.md); este archivo es la guía rápida.
 
 ```text
 Campus → ServiceLine → ServiceCalendar → SchedulePattern → ScheduleTime
@@ -9,99 +9,46 @@ Campus → ServiceLine → ServiceCalendar → SchedulePattern → ScheduleTime
        → ServiceAssignment → ServiceRun
 ```
 
-Las entidades `Route`, `Schedule`, `Trip`, `RouteAssignment`, `Notice` y
-`TripFeedback` pertenecen al dominio retirado y no forman parte del contrato
-actual.
-
 ## Requisitos
 
-- Node.js 20
-- pnpm 10.34.5
-- PostgreSQL 17
+- Node.js 20 y pnpm 10
+- PostgreSQL 17 (o Docker)
 
-Configura variables locales a partir de `.env.example`. Nunca subas `.env`.
-
-## Desarrollo
-
-Desde el checkout principal, el flujo habitual para API, Metro y Android es:
+## Inicio rápido
 
 ```bash
-cd ~/ups-expresos
-./scripts/dev-stack.sh
-```
-
-Para detener únicamente esos procesos del checkout actual:
-
-```bash
-./scripts/dev-stack.sh --stop
-```
-
-Para ejecutar la API por separado:
-
-```bash
+cp .env.example .env
+docker compose -f docker-compose.dev.yml up -d     # PostgreSQL de desarrollo (5433) y test (5434)
 pnpm install --frozen-lockfile
+pnpm prisma migrate deploy
 pnpm prisma generate
-pnpm start:dev
+pnpm start:dev                                      # http://localhost:3000, Swagger en /docs
 ```
 
-## Dataset de demostración
+Sin SMTP, usa `AUTH_DEV_EXPOSE_OTP=true` en `.env` para recibir el OTP en la respuesta de `/auth/request-code`.
 
-En un entorno local no productivo:
+## Comandos habituales
 
 ```bash
-pnpm prisma:reset:demo
+pnpm lint && pnpm typecheck && pnpm build
+pnpm exec jest --runInBand                  # unitarias
+pnpm test:openapi && pnpm verify:mobile-contracts
+pnpm generate:mobile-contracts              # tras cambiar DTOs: regenera los tipos de la app
+pnpm prisma:seed:reference                  # carga el dataset de referencia de Guayaquil (entorno descartable)
 ```
 
-El reset elimina únicamente datos identificados como `UPS-GO-DEMO` y recrea
-tres usuarios, un conductor, un vehículo, dos salidas y una asignación en
-estado `ASSIGNED`, sin `ServiceRun`. El script se bloquea con
-`NODE_ENV=production`.
+Pruebas de integración y E2E (PostgreSQL aislado): [`docs/api/testing.md`](../../docs/api/testing.md).
 
-## Calidad y migraciones
+## Despliegue
 
-```bash
-pnpm prisma format
-pnpm prisma validate
-pnpm prisma generate
-pnpm prisma migrate status
-pnpm lint
-pnpm typecheck
-pnpm build
-pnpm exec jest --runInBand
-pnpm test:openapi
-pnpm verify:mobile-contracts
-```
+`Dockerfile` en este directorio y `docker-compose.yml` en la raíz del repositorio.
+Guía: [`docs/api/deployment.md`](../../docs/api/deployment.md).
 
-Las transiciones de esquema usan exclusivamente migraciones controladas. No
-uses `prisma db push` para modificar el esquema.
+## Reglas esenciales
 
-## Contrato API a Mobile
+- Cambios de esquema **solo con migraciones**; nunca `prisma db push`.
+- Contrato: DTOs → OpenAPI → `apps/mobile/src/api/generated/openapi.ts` (no se edita a mano).
+- Sin `any`; toda ruta declara `@Roles` o `@Public`.
+- El backend es la autoridad de roles, propiedad y estados.
 
-La fuente de verdad del contrato es el encadenamiento:
-
-```text
-DTOs NestJS → OpenAPI generado → apps/mobile/src/api/generated/openapi.ts
-```
-
-Después de cambiar DTOs o anotaciones Swagger:
-
-```bash
-pnpm generate:mobile-contracts
-pnpm verify:mobile-contracts
-```
-
-El segundo comando falla si el tipo generado no está sincronizado con el API.
-No se mantiene un archivo OpenAPI manual o un handoff estático en paralelo.
-
-## Superficies activas
-
-- Auth: OTP, refresh, logout y perfil.
-- Student: campus, líneas de servicio y salidas materializadas.
-- Driver: asignaciones propias, recorrido actual, inicio y finalización.
-- Admin operacional: consulta de dominio operativo y creación de asignaciones.
-
-El backend sigue siendo la autoridad de autenticación y roles. La aplicación
-móvil solo ofrece flujos para `STUDENT` y `DRIVER`; `SUPER_ADMIN` no recibe un
-flujo móvil operativo.
-
-Admin Web, GPS, tiempo real y ETA no forman parte de este alcance.
+Más en [`docs/api/conventions.md`](../../docs/api/conventions.md).

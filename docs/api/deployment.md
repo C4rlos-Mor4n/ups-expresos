@@ -1,0 +1,87 @@
+# Despliegue de la API
+
+La API se despliega como contenedor Docker junto con PostgreSQL. Los archivos están en la raíz del repositorio:
+
+| Archivo | Función |
+|---|---|
+| [`apps/api/Dockerfile`](../../apps/api/Dockerfile) | Imagen multi-etapa (Node 20, OpenSSL para Prisma, pnpm 10.34.5). Corre como usuario no root con `HEALTHCHECK` sobre `/health`. |
+| [`docker-compose.yml`](../../docker-compose.yml) | Servicios `postgres`, `migrate` (aplica migraciones y termina) y `api`. |
+| [`docker-compose.local.yml`](../../docker-compose.local.yml) | Override opcional que publica el puerto de la API en el host (pruebas sin reverse proxy). |
+| [`.env.example`](../../.env.example) | Variables que consume el compose. |
+
+La imagen conserva todas las dependencias (incluida la CLI de Prisma) para poder ejecutar migraciones y seeds
+desde el mismo artefacto. Es más grande que una imagen mínima, pero evita desajustes entre migrar y servir.
+
+## Pasos (servidor propio o Dokploy)
+
+1. Clona el repositorio en el servidor.
+2. `cp .env.example .env` y reemplaza **todos** los placeholders: contraseña de base de datos, secretos JWT
+   (`openssl rand -base64 48`), SMTP real, `ALLOWED_EMAIL_DOMAINS`, `SUPER_ADMIN_EMAILS`.
+3. `docker compose up -d --build`.
+4. `docker compose logs -f migrate api` hasta ver la API escuchando. `migrate` debe terminar con código 0.
+5. Verifica `GET https://<tu-dominio>/health` y `/health/db`.
+6. Crea los administradores iniciales (opcional si inician sesión con `SUPER_ADMIN_EMAILS`):
+   `docker compose exec api node_modules/.bin/tsx prisma/seed.ts`.
+
+El compose **no publica puertos**: la API queda en el puerto interno `3000` y se expone con el reverse proxy.
+Con Dokploy, crea la aplicación de tipo *Compose*, apunta al repositorio, define las variables en su panel y asigna el
+dominio al servicio `api` con el puerto `3000` (HTTPS lo gestiona Traefik). Mantén `TRUST_PROXY_HOPS=1`.
+
+Para una prueba local sin proxy:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   # http://localhost:3000
+```
+
+## Después de desplegar
+
+1. Define `CORS_ORIGINS` solo si habrá un cliente web; la app móvil no necesita CORS.
+2. En la app móvil, apunta `EXPO_PUBLIC_API_URL` al dominio HTTPS (ver [`../app/build-and-release.md`](../app/build-and-release.md)).
+3. Carga datos: no hay datos de transporte por defecto. Para un entorno de pruebas puedes cargar la referencia de
+   Guayaquil desde una máquina con acceso a la base (ver *Datos* abajo). En producción, los datos se administran
+   mediante la API de Admin.
+
+## Datos de prueba (solo entornos descartables)
+
+Los seeds necesitan el dataset `docs/ups_go_routes_reference_guayaquil.json` y el código fuente, por lo que se ejecutan
+desde un checkout del repositorio apuntando `DATABASE_URL` a la base destino:
+
+```bash
+cd apps/api
+pnpm prisma:seed:reference     # campus, líneas, paradas, horarios y salidas materializadas
+```
+
+`pnpm qa:showcase:reset` es **destructivo**: borra y recrea datos. Solo con `CONFIRM_LOCAL_QA_RESET=YES`, en una base
+local descartable, nunca en producción.
+
+## Migraciones
+
+- Se aplican automáticamente en cada `docker compose up` mediante el servicio `migrate` (`prisma migrate deploy`, idempotente).
+- Nunca se usa `prisma db push` en entornos compartidos.
+- Antes de una migración que altere datos, respalda la base.
+
+## Respaldo y restauración
+
+```bash
+# Respaldo
+docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup-$(date +%F).sql
+# Restauración (base vacía)
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < backup-YYYY-MM-DD.sql
+```
+
+Programa los respaldos fuera del contenedor (cron del servidor o la función de backups de Dokploy) y guarda copias fuera del servidor.
+
+## Observabilidad y operación
+
+- Salud: `GET /health` (proceso) y `GET /health/db` (conexión a PostgreSQL). El `HEALTHCHECK` de la imagen usa `/health`.
+- Logs: `docker compose logs -f api`. La API no registra OTP, tokens ni credenciales SMTP.
+- Actualizar: `git pull && docker compose up -d --build`.
+- Reiniciar: `docker compose restart api`.
+
+## Lista de verificación antes de abrir a usuarios
+
+- [ ] `.env` con secretos únicos (ninguno empieza con `change-me`) y SMTP probado (llega el OTP).
+- [ ] Dominio con HTTPS y `TRUST_PROXY_HOPS=1`.
+- [ ] `AUTH_DEV_EXPOSE_OTP=false` (el compose lo fija así) y Swagger apagado o protegido.
+- [ ] Respaldo programado y restauración probada.
+- [ ] La app compilada apunta al dominio correcto.

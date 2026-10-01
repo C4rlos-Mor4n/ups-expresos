@@ -1,7 +1,23 @@
-# UPS GO — QA local
+# Pruebas y QA
 
-Esta guía reúne los gates reproducibles del API y de Mobile. No contiene
-secretos y no sustituye la revisión de despliegue ni el QA manual del usuario.
+Esta guía reúne los gates reproducibles de la API y de la app móvil. No contiene secretos y no sustituye la revisión
+de despliegue ni el QA manual en dispositivo.
+
+## Variables mínimas para pruebas que cargan la aplicación
+
+`test:openapi` y `verify:mobile-contracts` instancian la aplicación Nest y exigen el entorno mínimo (en CI ya están definidas):
+
+```bash
+export NODE_ENV=test DATABASE_URL='postgresql://u:p@localhost:5432/db?schema=public' \
+  JWT_ACCESS_SECRET=a JWT_REFRESH_SECRET=b ALLOWED_EMAIL_DOMAINS=ups.edu.ec SWAGGER_ENABLED=false
+```
+
+Sin esas variables el comando falla sin mensaje claro.
+
+## Base de referencia
+
+Tras el saneamiento previo al despliegue: API con 18 suites unitarias (144 pruebas, incluye el esquema de entorno);
+integración (9 suites, 45 pruebas) y E2E (2 suites, 12 pruebas) sobre PostgreSQL aislado; app móvil con 11 suites (62 pruebas).
 
 ## API
 
