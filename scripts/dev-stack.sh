@@ -130,7 +130,7 @@ stop_owned_listener() {
 }
 
 api_needs_build() {
-  [ "$REBUILD" = "1" ] || [ ! -f "$API_DIR/dist/main.js" ] || find "$API_DIR/src" -type f -newer "$API_DIR/dist/main.js" -print -quit | grep -q .
+  [ "$REBUILD" = "1" ] || [ ! -f "$API_DIR/dist/src/main.js" ] || find "$API_DIR/src" -type f -newer "$API_DIR/dist/src/main.js" -print -quit | grep -q .
 }
 
 # Actualiza EXPO_PUBLIC_API_URL del .env con la IP actual de WSL (puede cambiar entre reinicios).
@@ -226,7 +226,7 @@ start_api() {
     ( cd "$API_DIR" && pnpm run build )
   fi
   log "Arrancando API (puerto 3000)..."
-  ( cd "$API_DIR" && setsid bash -c "cd '$API_DIR' && exec node dist/main.js" </dev/null >"$API_LOG" 2>&1 & disown )
+  ( cd "$API_DIR" && setsid bash -c "cd '$API_DIR' && exec node dist/src/main.js" </dev/null >"$API_LOG" 2>&1 & disown )
   for i in $(seq 1 20); do
     port_open 3000 && { log "API lista ✅ (http://${WSL_IP}:3000)"; return 0; }
     sleep 3

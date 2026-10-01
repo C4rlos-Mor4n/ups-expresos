@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+*.log
+openapi-spec.json
+test
+**/*.spec.ts
+Dockerfile
+.dockerignore
+docker-compose*.yml

@@ -26,7 +26,7 @@ export const envSchema = z.object({
   ALLOWED_EMAIL_DOMAINS: z.string().min(1),
   SUPER_ADMIN_EMAILS: z.string().default(''),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
-  APP_PUBLIC_URL: z.string().url().optional(),
+  APP_PUBLIC_URL: z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional()),
   SWAGGER_ENABLED: parseBoolean.default(false),
   SWAGGER_PATH: z.string().default('docs'),
   THROTTLE_TTL: z.coerce.number().int().positive().default(60000),

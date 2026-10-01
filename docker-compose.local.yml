@@ -1,0 +1,6 @@
+# Override para pruebas locales sin reverse proxy: publica la API en el host.
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+services:
+  api:
+    ports:
+      - "${API_PORT:-3000}:3000"

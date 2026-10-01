@@ -1,3 +1,6 @@
+# Servicios de DESARROLLO/TEST de la API (PostgreSQL local en 5433 y de pruebas en 5434).
+# Para desplegar la API usa docker-compose.yml en la raíz del repositorio.
+#   docker compose -f apps/api/docker-compose.dev.yml up -d
 services:
   postgres:
     image: postgres:16

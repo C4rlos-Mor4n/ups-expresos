@@ -1,0 +1,94 @@
+# UPS GO — despliegue de la API (PostgreSQL + migraciones + NestJS).
+#
+# Uso (servidor o Dokploy):
+#   1. cp .env.example .env   y completa los valores (secretos, SMTP, dominios).
+#   2. docker compose up -d --build
+#
+# Servicios:
+#   postgres  Base de datos (volumen persistente, sin puerto publicado).
+#   migrate   Ejecuta `prisma migrate deploy` y termina. Es idempotente.
+#   api       API NestJS en el puerto interno 3000, detrás del reverse proxy.
+#
+# La API NO publica puertos al host: expónla con el reverse proxy / dominio de
+# Dokploy (puerto del contenedor: 3000). Para pruebas locales sin proxy:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+
+name: ups-go
+
+x-api-build: &api-build
+  context: ./apps/api
+  dockerfile: Dockerfile
+
+x-database-url: &database-url
+  DATABASE_URL: postgresql://${POSTGRES_USER:-ups_go}:${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}@postgres:5432/${POSTGRES_DB:-ups_go}?schema=public
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ups_go}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ups_go}
+      TZ: America/Guayaquil
+    volumes:
+      - ups_go_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build: *api-build
+    image: ups-go-api:latest
+    command: ["node_modules/.bin/prisma", "migrate", "deploy"]
+    restart: "no"
+    environment:
+      <<: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: *api-build
+    image: ups-go-api:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    expose:
+      - "3000"
+    environment:
+      <<: *database-url
+      NODE_ENV: production
+      PORT: 3000
+      TZ: America/Guayaquil
+      APP_NAME: ${APP_NAME:-UPS GO API}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Define JWT_ACCESS_SECRET en .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Define JWT_REFRESH_SECRET en .env}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      OTP_EXPIRES_MINUTES: ${OTP_EXPIRES_MINUTES:-10}
+      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
+      AUTH_DEV_EXPOSE_OTP: "false"
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-ups.edu.ec,est.ups.edu.ec}
+      SUPER_ADMIN_EMAILS: ${SUPER_ADMIN_EMAILS:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      SWAGGER_PATH: ${SWAGGER_PATH:-docs}
+      THROTTLE_TTL: ${THROTTLE_TTL:-60000}
+      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-60}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      SMTP_HOST: ${SMTP_HOST:?Define SMTP_HOST en .env (obligatorio en producción)}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:?Define SMTP_USER en .env}
+      SMTP_PASS: ${SMTP_PASS:?Define SMTP_PASS en .env}
+      SMTP_FROM: ${SMTP_FROM:?Define SMTP_FROM en .env}
+
+volumes:
+  ups_go_pgdata:
