@@ -16,7 +16,7 @@ Sin esas variables el comando falla sin mensaje claro.
 
 ## Base de referencia
 
-Tras el saneamiento previo al despliegue: API con 18 suites unitarias (144 pruebas, incluye el esquema de entorno);
+Tras el saneamiento previo al despliegue: API con 18 suites unitarias (145 pruebas, incluye el esquema de entorno);
 integración (9 suites, 45 pruebas) y E2E (2 suites, 12 pruebas) sobre PostgreSQL aislado; app móvil con 11 suites (62 pruebas).
 
 ## API

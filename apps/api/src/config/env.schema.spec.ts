@@ -45,6 +45,14 @@ describe('envSchema', () => {
     expect(() => envSchema.parse({ ...base, APP_PUBLIC_URL: 'not-a-url' })).toThrow();
   });
 
+  it('treats empty SMTP values (as injected by docker-compose) as unset outside production', () => {
+    const parsed = envSchema.parse({ ...base, SMTP_HOST: '', SMTP_PORT: '', SMTP_USER: '', SMTP_PASS: '', SMTP_FROM: '' });
+    expect(parsed.SMTP_HOST).toBeUndefined();
+    expect(parsed.SMTP_PORT).toBeUndefined();
+    expect(parsed.SMTP_FROM).toBeUndefined();
+    expect(() => envSchema.parse({ ...base, SMTP_FROM: 'not-an-email' })).toThrow();
+  });
+
   it('parses boolean flags from strings', () => {
     expect(envSchema.parse({ ...base, SWAGGER_ENABLED: 'true' }).SWAGGER_ENABLED).toBe(true);
     expect(envSchema.parse({ ...base, SWAGGER_ENABLED: '0' }).SWAGGER_ENABLED).toBe(false);

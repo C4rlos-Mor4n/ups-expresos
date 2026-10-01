@@ -11,6 +11,9 @@ const parseBoolean = z
   })
   .default(false);
 
+// Variables opcionales que docker-compose inyecta como cadena vacía cuando no se definen.
+const emptyToUndefined = (v: unknown) => (v === '' ? undefined : v);
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -26,18 +29,18 @@ export const envSchema = z.object({
   ALLOWED_EMAIL_DOMAINS: z.string().min(1),
   SUPER_ADMIN_EMAILS: z.string().default(''),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
-  APP_PUBLIC_URL: z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional()),
+  APP_PUBLIC_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   SWAGGER_ENABLED: parseBoolean.default(false),
   SWAGGER_PATH: z.string().default('docs'),
   THROTTLE_TTL: z.coerce.number().int().positive().default(60000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(60),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_HOST: z.preprocess(emptyToUndefined, z.string().optional()),
+  SMTP_PORT: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
   SMTP_SECURE: parseBoolean,
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().email().optional(),
+  SMTP_USER: z.preprocess(emptyToUndefined, z.string().optional()),
+  SMTP_PASS: z.preprocess(emptyToUndefined, z.string().optional()),
+  SMTP_FROM: z.preprocess(emptyToUndefined, z.string().email().optional()),
 }).refine(
   (data) => {
     if (data.NODE_ENV === 'production') {
