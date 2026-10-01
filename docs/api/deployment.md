@@ -85,3 +85,25 @@ Programa los respaldos fuera del contenedor (cron del servidor o la función de 
 - [ ] `AUTH_DEV_EXPOSE_OTP=false` (el compose lo fija así) y Swagger apagado o protegido.
 - [ ] Respaldo programado y restauración probada.
 - [ ] La app compilada apunta al dominio correcto.
+
+## Entorno de pruebas sin dominio (ngrok)
+
+Para probar sin comprar dominio ni configurar SMTP, el `docker-compose.yml` incluye un servicio `ngrok`
+bajo el perfil `tunnel` que apunta directo a `api:3000` (sin pasar por Traefik). Variables de entorno
+en Dokploy (nunca en el repositorio):
+
+```
+COMPOSE_PROFILES=tunnel
+NGROK_AUTHTOKEN=<secreto>
+NGROK_URL=https://<dominio-estatico>.ngrok-free.app
+APP_ENV=development          # permite AUTH_DEV_EXPOSE_OTP
+AUTH_DEV_EXPOSE_OTP=true     # el OTP vuelve en la respuesta de /auth/request-code
+SWAGGER_ENABLED=true
+APP_PUBLIC_URL=<NGROK_URL>
+```
+
+Notas:
+- **Solo pruebas.** En producción `APP_ENV=production`, `AUTH_DEV_EXPOSE_OTP=false`, SMTP completo y dominio propio.
+- ngrok gratuito muestra una página intermedia a los navegadores; los clientes de API (la app) no la ven. En
+  `curl`/Postman añade la cabecera `ngrok-skip-browser-warning: 1`.
+- El authtoken de ngrok se debe rotar si se ha compartido fuera de Dokploy.
