@@ -1,5 +1,6 @@
 import axios, { AxiosError, create as createAxios, InternalAxiosRequestConfig } from "axios";
 import * as SecureStore from "expo-secure-store";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from "./session-keys";
 
 // ── Configuración de la API ────────────────────────────────────────────────
 // La URL debe venir de configuración explícita y es fail-fast: si falta o no es
@@ -17,9 +18,6 @@ export function validateApiUrl(rawUrl: string | undefined): string {
 
 const API_URL = validateApiUrl(process.env.EXPO_PUBLIC_API_URL);
 
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
-const USER_KEY = "user";
 
 export const API_BASE_URL = API_URL;
 

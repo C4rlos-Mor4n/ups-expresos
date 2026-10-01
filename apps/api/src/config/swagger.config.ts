@@ -17,8 +17,9 @@ export function buildSwaggerDocumentConfig(): Omit<ReturnType<DocumentBuilder['b
     .addTag('Admin Vehicles', 'Admin vehicle management')
     .addTag('Admin Drivers', 'Admin driver management')
     .addTag('Student Operations', 'Student read-only API backed by the scheduled operational domain')
-    .addTag('Driver Operational', 'Driver operational endpoints backed by ServiceAssignment and ServiceRun')
-    .addTag('Admin Operational', 'Admin operational planning and ServiceRun monitoring');
+    .addTag('Driver Operations', 'Driver operational endpoints backed by ServiceAssignment and ServiceRun')
+    .addTag('Admin Operational', 'Admin operational planning and ServiceRun monitoring')
+    .addTag('Admin Schedules', 'Admin calendars, patterns, times, journeys, exceptions and departure materialization');
 
   const publicUrl = process.env['APP_PUBLIC_URL']?.trim();
   if (publicUrl) {

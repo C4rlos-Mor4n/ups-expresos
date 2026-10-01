@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";import * as SecureStore from 'expo-secure-store';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import * as SecureStore from 'expo-secure-store';
 import { setOnSessionExpired, setOnTokensRotated } from "../api/client";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from "../api/session-keys";
 import { authService } from '../services/auth.service';
 
 import { AuthUser } from "@/types/auth";
@@ -21,10 +23,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
-const USER_KEY = "user";
 
 interface Props {
   readonly children: ReactNode;

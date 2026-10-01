@@ -7,7 +7,7 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "jest",
@@ -46,13 +46,7 @@
       "**/*.ts"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^@common/(.*)$": "<rootDir>/common/$1",
-      "^@config/(.*)$": "<rootDir>/config/$1",
-      "^@database/(.*)$": "<rootDir>/database/$1",
-      "^@modules/(.*)$": "<rootDir>/modules/$1"
-    }
+    "testEnvironment": "node"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.27",
@@ -78,7 +72,6 @@
     "@nestjs/cli": "^11.0.23",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.27",
-    "@prisma/config": "6.19.3",
     "@types/express": "^5.0.6",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.20.0",
