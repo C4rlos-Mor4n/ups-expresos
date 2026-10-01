@@ -80,3 +80,5 @@ example
 apps/api/openapi-spec.json
 
 .agents/
+
+artifacts/
