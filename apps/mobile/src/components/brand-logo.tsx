@@ -1,44 +1,26 @@
-import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { Image, type ImageStyle, type StyleProp } from "react-native";
 
-const logo = require("../../assets/images/images_upsgo/logo-ups-go-ui.png");
+// Logo completo de UPS GO con contorno blanco tipo sticker: se lee sobre los fondos navy
+// y claros de la app sin necesidad de una caja blanca detrás.
+const logo = require("../../assets/images/images_upsgo/logo-ups-go-outline.png");
 // Relación de aspecto del PNG (ancho / alto).
-const ASPECT = 720 / 422;
+const ASPECT = 900 / 526;
 
-// Logo completo de UPS GO sobre una "píldora" blanca: las letras azul oscuro del
-// logo no se leen directamente sobre los fondos navy de la app.
 export function BrandLogo({
   height = 44,
   style,
 }: {
   height?: number;
-  style?: StyleProp<ViewStyle>;
+  style?: StyleProp<ImageStyle>;
 }) {
-  const pad = Math.round(height * 0.12);
   return (
-    <View
+    <Image
+      source={logo}
+      resizeMode="contain"
       accessible
       accessibilityRole="image"
       accessibilityLabel="UPS GO"
-      style={[
-        styles.pill,
-        { height, borderRadius: Math.round(height * 0.28), paddingHorizontal: pad },
-        style,
-      ]}
-    >
-      <Image
-        source={logo}
-        resizeMode="contain"
-        style={{ height: height - pad * 2, width: (height - pad * 2) * ASPECT }}
-      />
-    </View>
+      style={[{ height, width: height * ASPECT, alignSelf: "flex-start" }, style]}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  pill: {
-    alignSelf: "flex-start",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-  },
-});
