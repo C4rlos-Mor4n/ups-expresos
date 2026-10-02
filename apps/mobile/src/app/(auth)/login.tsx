@@ -170,6 +170,26 @@ export default function LoginScreen() {
                 </Text>
               </View>
             </View>
+
+            <Text style={styles.legal}>
+              Al continuar aceptas los{" "}
+              <Text
+                accessibilityRole="link"
+                style={styles.legalLink}
+                onPress={() => router.push({ pathname: "/legal", params: { doc: "terms" } })}
+              >
+                Términos de uso
+              </Text>{" "}
+              y la{" "}
+              <Text
+                accessibilityRole="link"
+                style={styles.legalLink}
+                onPress={() => router.push({ pathname: "/legal", params: { doc: "privacy" } })}
+              >
+                Política de privacidad
+              </Text>
+              .
+            </Text>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -294,6 +314,20 @@ const styles = StyleSheet.create({
     gap: 7,
     alignItems: "center",
     justifyContent: "center",
+  },
+  legal: {
+    color: "#D9E8F8",
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 18,
+    paddingHorizontal: 12,
+  },
+  legalLink: {
+    color: Colors.white,
+    fontFamily: "Inter-SemiBold",
+    textDecorationLine: "underline",
   },
   help: {
     flexShrink: 1,

@@ -1,4 +1,4 @@
-import { canAccessRoleRoute, getRoleHome, isPrivateRoute } from "./routes";
+import { canAccessRoleRoute, getRoleHome, isPrivateRoute, isSharedRoute } from "./routes";
 
 describe("isPrivateRoute (route guard)", () => {
   it("marks role-aware application routes as private", () => {
@@ -15,6 +15,13 @@ describe("isPrivateRoute (route guard)", () => {
     expect(isPrivateRoute(["index"])).toBe(false);
     expect(isPrivateRoute(["(auth)", "login"])).toBe(false);
     expect(isPrivateRoute(["(auth)", "otp"])).toBe(false);
+  });
+
+  it("keeps legal pages open with or without a session", () => {
+    expect(isSharedRoute(["legal"])).toBe(true);
+    expect(isPrivateRoute(["legal"])).toBe(false);
+    expect(isSharedRoute(["(auth)", "login"])).toBe(false);
+    expect(isSharedRoute(["(student)", "(tabs)"])).toBe(false);
   });
 
   it("handles empty segments safely", () => {

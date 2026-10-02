@@ -22,6 +22,7 @@ import {
   canAccessRoleRoute,
   getRoleHome,
   isPrivateRoute,
+  isSharedRoute,
 } from "@/utils/routes";
 
 SplashScreen.preventAutoHideAsync();
@@ -34,6 +35,7 @@ function AppContent() {
 
   useEffect(() => {
     if (loading || !navigationState?.key) return;
+    if (isSharedRoute(segments)) return;
     const privateRoute = isPrivateRoute(segments);
     const onAuthRoute = segments[0] === "(auth)";
     if (!isAuthenticated && privateRoute) {
@@ -68,6 +70,7 @@ function AppContent() {
         <Stack.Screen name="(student)" />
         <Stack.Screen name="(driver)" />
         <Stack.Screen name="unsupported-role" />
+        <Stack.Screen name="legal" />
       </Stack>
     </>
   );

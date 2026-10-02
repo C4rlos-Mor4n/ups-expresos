@@ -15,6 +15,7 @@ apps/mobile/
       (student)/        pestañas Inicio / Servicios / Perfil; selección de campus, línea y detalle de salida
       (driver)/         pestañas Inicio / Servicios / Perfil; detalle de asignación y recorrido
       unsupported-role.tsx
+      legal.tsx         Política de privacidad y Términos de uso (abierta con o sin sesión: `isSharedRoute`)
     api/
       client.ts         instancia Axios, interceptores, renovación de sesión
       session-keys.ts   claves de SecureStore
@@ -23,7 +24,7 @@ apps/mobile/
     services/         auth, operación (Student/Driver), preferencias de campus y de estudiante, validación de contrato
     components/       UI compartida (operational-ui), UI del estudiante (student-ui), logo, perfil, aviso de actualización
     hooks/            use-guayaquil-clock (reloj que refresca los "en X min")
-    constants/Colors.ts, types/, utils/ (operational, schedule)
+    constants/Colors.ts, constants/legal.ts (textos legales versionados), types/, utils/ (operational, schedule)
 ```
 
 Alias de importación: `@/*` → `src/*`.
@@ -37,6 +38,15 @@ Alias de importación: `@/*` → `src/*`.
 - `logout` revoca la sesión en el backend (best-effort) y limpia siempre el almacenamiento local.
 - El guard de `_layout.tsx` impide abrir el espacio de otro rol mediante deep links (`canAccessRoleRoute`); es una
   comodidad visual, no seguridad: el backend autoriza cada endpoint.
+- Rutas compartidas (`legal`): el guard no redirige; se abren desde el login (antes de ingresar) y desde el perfil.
+
+## Textos legales
+
+`src/constants/legal.ts` contiene la Política de privacidad y los Términos de uso (versión y fecha incluidas), redactados
+de forma general para la fase de pruebas con base en la LOPDP de Ecuador. Pendiente antes de tiendas/producción:
+revisión legal, definir la entidad responsable del tratamiento y completar `LEGAL_CONTACT_EMAIL` (mientras sea `null`,
+el texto remite a los canales oficiales de soporte de la UPS). Al cambiar el contenido, subir `LEGAL_VERSION` y
+`LEGAL_UPDATED_AT`. Las tiendas exigirán además una URL pública con la política (se servirá desde el portal web).
 
 ## Contrato con la API
 

@@ -9,6 +9,13 @@ function normalizeFirstSegment(segment: string | undefined): string {
   return segment.replace(/^\(|\)$/g, "");
 }
 
+// Pantallas abiertas con o sin sesión (p. ej. textos legales enlazados desde el login y el perfil).
+const SHARED_SEGMENTS = new Set(["legal"]);
+
+export function isSharedRoute(segments: (string | undefined)[]): boolean {
+  return SHARED_SEGMENTS.has(normalizeFirstSegment(segments[0]));
+}
+
 export function isPrivateRoute(segments: (string | undefined)[]): boolean {
   return PRIVATE_SEGMENTS.has(normalizeFirstSegment(segments[0]));
 }

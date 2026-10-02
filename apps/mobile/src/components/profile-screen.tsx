@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Updates from "expo-updates";
 import Constants from "expo-constants";
+import { useRouter } from "expo-router";
 import {
   AppScreen,
   ScreenHeader,
@@ -215,6 +216,12 @@ export function ProfileScreen({
           </Pressable>
         </View>
 
+        <View style={uiStyles.card}>
+          <LegalLink icon="shield-checkmark-outline" title="Política de privacidad" doc="privacy" />
+          <View style={styles.separator} />
+          <LegalLink icon="document-text-outline" title="Términos de uso" doc="terms" />
+        </View>
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Cerrar sesión"
@@ -226,6 +233,30 @@ export function ProfileScreen({
         </Pressable>
       </ScrollView>
     </AppScreen>
+  );
+}
+
+function LegalLink({
+  icon,
+  title,
+  doc,
+}: {
+  icon: ComponentProps<typeof Ionicons>["name"];
+  title: string;
+  doc: "privacy" | "terms";
+}) {
+  const router = useRouter();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={title}
+      onPress={() => router.push({ pathname: "/legal", params: { doc } })}
+      style={({ pressed }) => [styles.updateRow, pressed && uiStyles.cardPressed]}
+    >
+      <Ionicons name={icon} size={19} color={Colors.primary} />
+      <Text style={[styles.infoTitle, styles.legalTitle]}>{title}</Text>
+      <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+    </Pressable>
   );
 }
 
@@ -348,6 +379,7 @@ const styles = StyleSheet.create({
     marginVertical: 14,
   },
   updateRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  legalTitle: { flex: 1 },
   logout: {
     minHeight: 52,
     borderRadius: 14,
