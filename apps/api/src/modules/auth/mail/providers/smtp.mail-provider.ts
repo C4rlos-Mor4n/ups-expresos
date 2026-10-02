@@ -1,13 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import * as nodemailer from 'nodemailer';
 import { MailProvider } from '../interfaces/mail-provider.interface';
 import { AppConfig } from '../../../../config/app.config';
+import { OTP_EMAIL_LOGO_CID, renderOtpEmail } from '../templates/otp-email.template';
+
+// Relativo al directorio de trabajo: `apps/api` en local y `/app` en la imagen Docker.
+const LOGO_PATH = join(process.cwd(), 'assets', 'email', 'logo-ups-go.png');
 
 @Injectable()
 export class SmtpMailProvider implements MailProvider {
   private readonly logger = new Logger(SmtpMailProvider.name);
   private transporter: nodemailer.Transporter;
+  private readonly logo: Buffer | null;
 
   constructor(private readonly configService: ConfigService<AppConfig>) {
     const appConfig = this.configService.get<AppConfig>('app', { infer: true });
@@ -27,6 +34,10 @@ export class SmtpMailProvider implements MailProvider {
       },
     });
 
+    // Sin el logo el correo sigue siendo válido: muestra el nombre en texto.
+    this.logo = existsSync(LOGO_PATH) ? readFileSync(LOGO_PATH) : null;
+    if (!this.logo) this.logger.warn(`Email logo not found at ${LOGO_PATH}`);
+
     this.logger.log('SMTP provider initialized');
   }
 
@@ -39,20 +50,20 @@ export class SmtpMailProvider implements MailProvider {
     const fromAddress = smtpConfig?.from || smtpConfig?.user;
 
     try {
+      const message = renderOtpEmail({
+        code,
+        expiresMinutes: appConfig?.otp.expiresMinutes ?? 10,
+        withLogo: this.logo !== null,
+      });
       await this.transporter.sendMail({
         from: `"${appName}" <${fromAddress}>`,
         to: email,
-        subject: 'Código de verificación UPS GO',
-        text: `Tu codigo de verificacion es: ${code}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2>UPS GO</h2>
-            <p>Tu codigo de verificacion es:</p>
-            <h1 style="color: #0066cc; letter-spacing: 5px;">${code}</h1>
-            <p>Este codigo expira en 10 minutos.</p>
-            <p>Si no solicitaste este codigo, ignora este mensaje.</p>
-          </div>
-        `,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        attachments: this.logo
+          ? [{ filename: 'ups-go.png', content: this.logo, cid: OTP_EMAIL_LOGO_CID, contentType: 'image/png' }]
+          : [],
       });
 
       this.logger.log('OTP email sent');

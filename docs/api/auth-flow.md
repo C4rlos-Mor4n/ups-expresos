@@ -59,6 +59,11 @@ Content-Type: application/json
 
 > **En desarrollo** (`AUTH_DEV_EXPOSE_OTP=true`), la respuesta incluye el campo `devCode` con el codigo OTP en texto plano para facilitar testing sin SMTP.
 
+**Correo del código:** plantilla en `src/modules/auth/mail/templates/otp-email.template.ts` (HTML en tablas con
+estilos en línea, versión de texto plano y vencimiento tomado de `OTP_EXPIRES_MINUTES`). El logo
+`assets/email/logo-ups-go.png` se adjunta inline (`cid:`), así se ve en Gmail/Outlook sin URL pública; la imagen
+Docker copia `assets/`. Si el archivo falta, el correo sale igual con el nombre en texto.
+
 ### Errores posibles
 
 | Status | Causa | Mensaje |
