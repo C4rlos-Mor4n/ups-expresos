@@ -8,7 +8,10 @@
       "android": {
         "buildType": "apk"
       },
-      "environment": "preview"
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://robust-strong-cattle.ngrok-free.app"
+      }
     },
     "production": {
       "android": {

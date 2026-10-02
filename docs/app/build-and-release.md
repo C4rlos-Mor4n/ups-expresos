@@ -75,3 +75,14 @@ iOS requiere cuenta de Apple Developer y no se ha validado en dispositivo.
 
 Alinear Expo SDK y React Native con los parches recomendados por `npx expo-doctor` y revisar la advertencia de Hermes V1;
 no mezclarlo con una funcionalidad. QA nativo en iOS pendiente.
+
+## Build de pruebas contra el entorno ngrok
+
+El perfil `preview` de `eas.json` fija `EXPO_PUBLIC_API_URL=https://robust-strong-cattle.ngrok-free.app`
+(URL pública, no secreta; cámbiala al pasar a un dominio propio). Desde `apps/mobile`:
+
+```sh
+npx eas-cli login          # cuenta Expo que será dueña del proyecto
+npx eas-cli init           # crea/enlaza el proyecto y actualiza extra.eas.projectId en app.json
+npx eas-cli build -p android --profile preview   # APK interno; al terminar da el enlace de instalación
+```
