@@ -18,23 +18,27 @@ export const DEVELOPMENT_TEAM: Contributor[] = [
   {
     name: "Carlos Andrés Morán Vásquez",
     initials: "CM",
-    role: "Líder de desarrollo",
-    description: "Coordinó todo el desarrollo y apoyó en el backend, la infraestructura y la app.",
+    role: "Líder de Proyecto y Desarrollador Full Stack",
+    description:
+      "Lideró el proyecto de principio a fin y participó en todas sus piezas: backend, app móvil, infraestructura y despliegue.",
   },
   {
     name: "Denisse Andrea Pazmiño Méndez",
     initials: "DP",
-    role: "Diseñadora y jefa de arquitectura",
-    description: "Lideró el diseño de la experiencia y la arquitectura de la solución.",
+    role: "Diseñadora UX/UI y Desarrolladora Backend",
+    description:
+      "Diseñó la experiencia y la imagen de UPS GO, y construyó servicios del backend que la hacen funcionar.",
   },
   {
     name: "Misael Ariel Delgado Reyes",
     initials: "MD",
-    role: "Desarrollador",
+    role: "Desarrollador de la App Móvil",
+    description: "Colaboró en el desarrollo de la aplicación móvil.",
   },
   {
     name: "José Ignacio Tómala Flores",
     initials: "JT",
-    role: "Desarrollador",
+    role: "Desarrollador del Portal Web",
+    description: "Construye el portal web administrativo de UPS GO.",
   },
 ];
