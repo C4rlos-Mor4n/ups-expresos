@@ -69,7 +69,10 @@ iOS requiere cuenta de Apple Developer y no se ha validado en dispositivo.
   cada build de `preview` y `production` lo incrementa solo (`"autoIncrement": true`). No se escriben en `app.json`.
   Esto evita que Android rechace un APK nuevo por traer el mismo número que el instalado.
 - Consultar / corregir el valor remoto: `eas build:version:get -p android` y `eas build:version:set -p android`.
-  Se inicializó en `1` (el de los APK ya distribuidos); el siguiente build sale con `2`.
+  Se inicializó en `1` (el de los APK ya distribuidos); el primer build con autoIncrement salió con `2`.
+- Activarlo cambió `eas.json` y por tanto el `runtimeVersion` (de `757ef44…` a `ac10e04…`). Mientras queden testers
+  con el APK anterior, una OTA solo les llega si se publica también con el `eas.json` previo; lo práctico es que
+  instalen el APK nuevo (se instala encima sin desinstalar, porque su `versionCode` es mayor).
 - **`expo.version`** (la versión visible, p. ej. `1.0.1`) sigue siendo manual y se sube solo en releases con cambios
   nativos. Cambiarla altera el `runtimeVersion` (fingerprint), así que obliga a distribuir un APK nuevo: los APK
   anteriores dejan de recibir actualizaciones OTA.
@@ -110,7 +113,8 @@ Los testers lo reciben al abrir la app (o al volver a ella) y confirman el reini
 
 ### Cuándo SÍ hace falta un APK nuevo
 `runtimeVersion` (fingerprint) cambia cuando cambia algo nativo: dependencias nativas nuevas o actualizadas,
-plugins/permisos o ajustes nativos de `app.json`, iconos, splash, versión de Expo SDK. Una actualización OTA
+plugins/permisos o ajustes nativos de `app.json`, iconos, splash, versión de Expo SDK **y cualquier cambio en
+`eas.json`** (el archivo entra completo en el fingerprint). Una actualización OTA
 solo la reciben los APK con el mismo `runtimeVersion`; los demás la ignoran sin romperse. En ese caso:
 
 ```sh
