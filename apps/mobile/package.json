@@ -15,6 +15,7 @@
     "expo-secure-store": "~57.0.0",
     "expo-splash-screen": "~57.0.2",
     "expo-status-bar": "~57.0.0",
+    "expo-updates": "~57.0.24",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
@@ -44,7 +45,8 @@
     "lint": "expo lint",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run lint && npm run typecheck && npm test -- --runInBand"
+    "verify": "npm run lint && npm run typecheck && npm test -- --runInBand",
+    "update:preview": "eas update --channel preview --environment preview --message"
   },
   "private": true,
   "jest": {

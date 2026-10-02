@@ -16,6 +16,7 @@ import {
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { UpdatePrompt } from "@/components/update-prompt";
 import { Colors } from "@/constants/Colors";
 import {
   canAccessRoleRoute,
@@ -58,6 +59,7 @@ function AppContent() {
 
   return (
     <>
+      <UpdatePrompt />
       <StatusBar style="light" />
       <NativeStatusBar barStyle="light-content" backgroundColor={Colors.navy} />
       <Stack screenOptions={{ headerShown: false }}>

@@ -76,13 +76,42 @@ iOS requiere cuenta de Apple Developer y no se ha validado en dispositivo.
 Alinear Expo SDK y React Native con los parches recomendados por `npx expo-doctor` y revisar la advertencia de Hermes V1;
 no mezclarlo con una funcionalidad. QA nativo en iOS pendiente.
 
-## Build de pruebas contra el entorno ngrok
+## Build de pruebas y actualizaciones OTA (sin tiendas)
 
-El perfil `preview` de `eas.json` fija `EXPO_PUBLIC_API_URL=https://robust-strong-cattle.ngrok-free.app`
-(URL pública, no secreta; cámbiala al pasar a un dominio propio). Desde `apps/mobile`:
+Mientras la app no esté en Play Store / App Store, los testers reciben las mejoras por **EAS Update (OTA)**:
+se publica solo el JavaScript y los assets, y la app instalada los descarga sola. No hay que reenviar el APK.
+
+Piezas (todas en `apps/mobile`):
+- `expo-updates` + `updates.url` y `runtimeVersion` (política `fingerprint`) en `app.json`.
+- Canal `preview` en el perfil `preview` de `eas.json` (y `production` para el futuro).
+- `src/components/update-prompt.tsx`: busca actualización al abrir la app y al volver a primer plano, la
+  descarga y pregunta "Reiniciar ahora / Más tarde".
+- La URL de la API (`EXPO_PUBLIC_API_URL`) vive como **variable de entorno de EAS** (entorno `preview`), no en
+  el repositorio. Para cambiarla: `eas env:update` / `eas env:create --environment preview` y volver a publicar.
+
+### Flujo diario
 
 ```sh
-npx eas-cli login          # cuenta Expo que será dueña del proyecto
-npx eas-cli init           # crea/enlaza el proyecto y actualiza extra.eas.projectId en app.json
-npx eas-cli build -p android --profile preview   # APK interno; al terminar da el enlace de instalación
+cd apps/mobile
+npm run update:preview -- "descripción del cambio"     # = eas update --channel preview --environment preview
 ```
+Los testers lo reciben al abrir la app (o al volver a ella) y confirman el reinicio.
+
+### Cuándo SÍ hace falta un APK nuevo
+`runtimeVersion` (fingerprint) cambia cuando cambia algo nativo: dependencias nativas nuevas o actualizadas,
+plugins/permisos o ajustes nativos de `app.json`, iconos, splash, versión de Expo SDK. Una actualización OTA
+solo la reciben los APK con el mismo `runtimeVersion`; los demás la ignoran sin romperse. En ese caso:
+
+```sh
+npx eas-cli build -p android --profile preview      # enlace nuevo de instalación para los testers
+```
+
+### Primer build / proyecto nuevo
+```sh
+npx eas-cli login          # cuenta Expo dueña del proyecto (o EXPO_TOKEN en CI)
+npx eas-cli build -p android --profile preview
+```
+El proyecto actual es `@c4rlosmor4n/ups-go` (ID en `app.json → extra.eas.projectId`).
+
+### Rollback
+`eas update:rollback` o republicar el commit bueno con `npm run update:preview`.

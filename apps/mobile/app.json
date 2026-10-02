@@ -46,6 +46,12 @@
         "projectId": "68e49a1f-43c6-4043-bdfc-1d08cdccd04d"
       }
     },
-    "owner": "c4rlosmor4n"
+    "owner": "c4rlosmor4n",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/68e49a1f-43c6-4043-bdfc-1d08cdccd04d"
+    }
   }
 }
