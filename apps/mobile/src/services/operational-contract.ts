@@ -1,6 +1,7 @@
 import type {
   AssignedVehiclePreview,
   Campus,
+  DepartureStopTime,
   DepartureSummary,
   Direction,
   DriverAssignment,
@@ -125,6 +126,16 @@ function assignedVehiclePreview(value: unknown): AssignedVehiclePreview {
   };
 }
 
+function departureStopTime(value: unknown): DepartureStopTime {
+  const parsed = record(value);
+  return {
+    stopId: string(parsed.stopId),
+    name: string(parsed.name),
+    order: number(parsed.order),
+    time: string(parsed.time),
+  };
+}
+
 function departureSummary(value: unknown): DepartureSummary {
   const parsed = record(value);
   return {
@@ -144,6 +155,10 @@ function departureSummary(value: unknown): DepartureSummary {
         : string(parsed.destinationStop),
     stopsCount:
       typeof parsed.stopsCount === "number" ? number(parsed.stopsCount) : 0,
+    // Campo aditivo: las API anteriores no lo envían.
+    stopTimes: Array.isArray(parsed.stopTimes)
+      ? parsed.stopTimes.map(departureStopTime)
+      : [],
     assignedVehicles: Array.isArray(parsed.assignedVehicles)
       ? parsed.assignedVehicles.map(assignedVehiclePreview)
       : [],

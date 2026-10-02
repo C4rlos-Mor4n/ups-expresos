@@ -51,6 +51,32 @@ describe("operationalContract.departures", () => {
     expect(result[0]?.assignedVehicles).toHaveLength(1);
     expect(result[0]?.assignedVehicles?.[0]?.plate).toBe("GAA-1004");
     expect(result[0]?.assignedVehicles?.[0]?.driverName).toBe("Andrés Mendoza");
+    // API anterior sin stopTimes: se normaliza a lista vacía.
+    expect(result[0]?.stopTimes).toEqual([]);
+  });
+
+  it("parses per-stop pass times and rejects malformed ones", () => {
+    const base = {
+      id: "dep-2",
+      serviceDate: "2026-10-02",
+      scheduledTime: "06:20:00",
+      direction: "IDA",
+      state: "SCHEDULED",
+      assignmentCount: 0,
+    };
+    const [parsed] = operationalContract.departures([
+      {
+        ...base,
+        stopTimes: [
+          { stopId: "s1", name: "Centenario", order: 1, time: "06:20" },
+          { stopId: "s2", name: "KFC", order: 2, time: "06:50" },
+        ],
+      },
+    ]);
+    expect(parsed?.stopTimes?.map((item) => item.time)).toEqual(["06:20", "06:50"]);
+    expect(() =>
+      operationalContract.departures([{ ...base, stopTimes: [{ stopId: "s1", name: "X" }] }]),
+    ).toThrow(OperationalContractError);
   });
 });
 

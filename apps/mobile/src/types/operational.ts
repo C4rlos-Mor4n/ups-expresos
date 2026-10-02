@@ -33,6 +33,14 @@ export interface AssignedVehiclePreview {
   driverName: string | null;
 }
 
+export interface DepartureStopTime {
+  stopId: string;
+  name: string;
+  order: number;
+  /** Hora programada de paso "HH:MM" (America/Guayaquil). */
+  time: string;
+}
+
 export interface DepartureSummary {
   id: string;
   serviceDate: string;
@@ -43,6 +51,7 @@ export interface DepartureSummary {
   originStop?: string | null;
   destinationStop?: string | null;
   stopsCount?: number;
+  stopTimes?: DepartureStopTime[];
   assignedVehicles?: AssignedVehiclePreview[];
 }
 

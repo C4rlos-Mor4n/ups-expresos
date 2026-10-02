@@ -12,7 +12,7 @@ apps/mobile/
       _layout.tsx       proveedor de sesión + guard de navegación por rol
       index.tsx         pantalla de bienvenida
       (auth)/           login y verificación OTP
-      (student)/        pestañas Inicio / Campus / Perfil; campus, línea y detalle de salida
+      (student)/        pestañas Inicio / Servicios / Perfil; selección de campus, línea y detalle de salida
       (driver)/         pestañas Inicio / Servicios / Perfil; detalle de asignación y recorrido
       unsupported-role.tsx
     api/
@@ -20,9 +20,10 @@ apps/mobile/
       session-keys.ts   claves de SecureStore
       generated/openapi.ts   tipos generados desde la API (no editar)
     context/AuthContext.tsx  estado de sesión
-    services/         auth, operación (Student/Driver), preferencia de campus, validación de contrato
-    components/       UI compartida (tarjetas, encabezados, perfil)
-    constants/Colors.ts, types/, utils/
+    services/         auth, operación (Student/Driver), preferencias de campus y de estudiante, validación de contrato
+    components/       UI compartida (operational-ui), UI del estudiante (student-ui), logo, perfil, aviso de actualización
+    hooks/            use-guayaquil-clock (reloj que refresca los "en X min")
+    constants/Colors.ts, types/, utils/ (operational, schedule)
 ```
 
 Alias de importación: `@/*` → `src/*`.
@@ -60,6 +61,21 @@ DTOs NestJS → OpenAPI → openapi-typescript → src/api/generated/openapi.ts
 - Las horas de parada son programadas (`salida + offsetMinutes`), nunca ETA.
 - La preferencia de campus es **UX, no autorización**; se guarda en SecureStore con clave por usuario
   (`ups_go.preferred_campus_id.<userId>`).
+- Preferencias del estudiante (`student-preferences.service.ts`, clave `ups_go.student_prefs.<userId>`): líneas
+  favoritas, parada elegida por línea y sentido, y si descartó el aviso de nombre. Solo locales, nunca autorización.
+
+## Experiencia del estudiante (Fase 1–2 de UX)
+
+- **Inicio = "Tu próximo bus"**: tarjeta principal con cuánto falta ("en 12 min"), hora, línea, origen → destino
+  y, si eligió parada, a qué hora pasa por ella. Debajo, "Más tarde hoy" (solo salidas futuras) y "Tus líneas".
+  El sentido (Ida/Retorno) se elige solo según el próximo bus y se puede cambiar.
+- Si hoy ya no quedan salidas en ese sentido, el inicio busca la siguiente en los próximos 7 días.
+- Con líneas favoritas (★), el inicio considera solo esas; sin favoritas, todas las del campus.
+- **"¿Dónde lo tomas?"** (pantalla de línea): el estudiante elige su parada y todas las horas pasan a ser la hora
+  de paso por esa parada (`stopTimes` del listado de salidas). Las salidas pasadas se pliegan.
+- El estado se muestra solo si no es `Programado` (es el estado por defecto y no aporta).
+- El saludo usa el nombre guardado (`PATCH /auth/me`); nunca la parte del correo.
+- Tiempos relativos y "pasadas/próximas" se calculan con la hora de Guayaquil (`utils/schedule.ts`).
 
 ## Red
 

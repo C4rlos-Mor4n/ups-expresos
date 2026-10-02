@@ -5,7 +5,6 @@ export default function StudentLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="campus-preference" />
-      <Stack.Screen name="campus/[campusId]" />
       <Stack.Screen name="service-line/[serviceLineId]" />
       <Stack.Screen name="scheduled-departure/[departureId]" />
     </Stack>

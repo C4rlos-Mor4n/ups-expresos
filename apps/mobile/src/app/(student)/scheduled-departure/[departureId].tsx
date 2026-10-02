@@ -16,6 +16,12 @@ import {
   SectionTitle,
   StatusBadge,
 } from "@/components/operational-ui";
+import { StateChip } from "@/components/student-ui";
+import { useAuth } from "@/context/AuthContext";
+import {
+  stopKey,
+  studentPreferencesService,
+} from "@/services/student-preferences.service";
 import { Colors } from "@/constants/Colors";
 import { operationalService } from "@/services/operational.service";
 import type {
@@ -27,6 +33,7 @@ import {
   addMinutesToOperationalTime,
   formatDuration,
   formatGuayaquilDate,
+  formatGuayaquilDateTime,
   formatOperationalTime,
   getDirectionLabel,
 } from "@/utils/operational";
@@ -79,26 +86,35 @@ export default function DepartureDetailScreen() {
   const [selectedAssignmentIndex, setSelectedAssignmentIndex] =
     useState<number>(0);
 
+  const { user } = useAuth();
+  const userId = user?.id;
+  const [myStopId, setMyStopId] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     if (!departureId) return;
     try {
       setLoading(true);
       setError(null);
       const data = await operationalService.getStudentDeparture(departureId);
+      const prefs = userId ? await studentPreferencesService.get(userId) : null;
+      const savedStop =
+        prefs?.stops[stopKey(data.serviceLine.id, data.direction)] ?? null;
       setDeparture(data);
       setSelectedAssignmentIndex(0);
       const primaryJourney =
         data.assignments[0]?.journey || data.journey;
       const stops = primaryJourney?.stops ?? [];
+      const mine = stops.find((stop) => stop.id === savedStop)?.id ?? null;
+      setMyStopId(mine);
       if (stops.length > 0) {
-        setSelectedStopId(stops[0]?.id || null);
+        setSelectedStopId(mine ?? stops[0]?.id ?? null);
       }
     } catch (requestError) {
       setError(getOperationalErrorMessage(requestError));
     } finally {
       setLoading(false);
     }
-  }, [departureId]);
+  }, [departureId, userId]);
 
   useEffect(() => {
     const initialLoad = setTimeout(() => {
@@ -181,42 +197,24 @@ export default function DepartureDetailScreen() {
                 {getDirectionLabel(departure.direction)}
               </Text>
             </View>
-            <StatusBadge state={departure.state} />
+            <StateChip state={departure.state} />
           </View>
 
-          {/* Context Badges */}
-          <View style={styles.contextBadgesRow}>
-            <View style={styles.contextBadge}>
-              <Ionicons name="business" size={14} color={Colors.white} />
-              <Text style={styles.contextText}>
-                {departure.serviceLine.campus.name}
-              </Text>
-            </View>
-            <View style={styles.contextBadge}>
-              <Ionicons name="git-branch" size={14} color={Colors.white} />
-              <Text style={styles.contextText}>
-                {departure.serviceLine.code}
-              </Text>
-            </View>
-          </View>
-
-          {/* Route Overview Preview */}
+          {/* Origen → destino completo (sin truncar) */}
           {originStop && destinationStop ? (
             <View style={styles.routeOverviewBox}>
               <View style={styles.routeOverviewRow}>
-                <Ionicons name="navigate-circle" size={16} color="#60A5FA" />
-                <Text
-                  style={styles.routeOverviewText}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {originStop} ➔ {destinationStop}
-                </Text>
+                <Ionicons name="radio-button-on" size={14} color="#60A5FA" />
+                <Text style={styles.routeOverviewText}>{originStop}</Text>
+              </View>
+              <View style={styles.routeOverviewRow}>
+                <Ionicons name="location" size={14} color={Colors.secondary} />
+                <Text style={styles.routeOverviewText}>{destinationStop}</Text>
               </View>
               {stops.length > 0 ? (
                 <Text style={styles.routeStopsCountText}>
-                  {stops.length} paradas
-                  {durationText ? ` · Duración programada: ${durationText}` : ""}
+                  {departure.serviceLine.name} · {stops.length} paradas
+                  {durationText ? ` · ${durationText} aprox.` : ""}
                 </Text>
               ) : null}
             </View>
@@ -230,7 +228,7 @@ export default function DepartureDetailScreen() {
               ? "1 Bus asignado"
               : departure.assignments.length > 1
                 ? `${departure.assignments.length} Buses asignados`
-                : "Asignación de buses"}
+                : "Tu bus"}
           </SectionTitle>
 
           {/* Multi-bus selector tabs if multiple buses */}
@@ -282,8 +280,7 @@ export default function DepartureDetailScreen() {
               />
               <Text style={styles.emptyAssignmentTitle}>Bus por asignar</Text>
               <Text style={styles.emptyAssignmentMessage}>
-                La salida está programada. Las unidades y conductores se confirman
-                antes de la hora de partida.
+                La unidad y el conductor se confirman antes de la salida.
               </Text>
             </View>
           ) : (
@@ -433,22 +430,12 @@ export default function DepartureDetailScreen() {
                         </View>
                       ) : null}
 
-                      {/* Programmed Schedule Label */}
-                      <View style={styles.stopSubMetaRow}>
-                        {isFirst ? (
-                          <Text style={styles.stopSubMetaStart}>
-                            Salida programada · {scheduledStopTime}
-                          </Text>
-                        ) : isLast ? (
-                          <Text style={styles.stopSubMetaDest}>
-                            Llegada programada · {scheduledStopTime}
-                          </Text>
-                        ) : (
-                          <Text style={styles.stopSubMetaInter}>
-                            Paso programado · {scheduledStopTime}
-                          </Text>
-                        )}
-                      </View>
+                      {stop.id === myStopId ? (
+                        <View style={styles.myStopTag}>
+                          <Ionicons name="location" size={12} color={Colors.navy} />
+                          <Text style={styles.myStopText}>Tu parada</Text>
+                        </View>
+                      ) : null}
                     </View>
                   </Pressable>
                 );
@@ -567,10 +554,7 @@ function StudentAssignmentCard({
               <>
                 <Ionicons name="navigate-circle" size={13} color="#059669" />
                 <Text style={styles.runActiveText}>
-                  En recorrido · Inicio marcado a las{" "}
-                  {formatOperationalTime(
-                    assignment.run.startedAt?.split("T")[1] || departureTime,
-                  )}
+                  En recorrido · Inició {formatGuayaquilDateTime(assignment.run.startedAt)}
                 </Text>
               </>
             ) : assignment.run?.status === "COMPLETED" ? (
@@ -595,6 +579,18 @@ function StudentAssignmentCard({
 }
 
 const styles = StyleSheet.create({
+  myStopTag: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.secondary,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginTop: 4,
+  },
+  myStopText: { color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 12 },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   retryButton: { marginTop: 12 },
   retryText: {
@@ -640,25 +636,6 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.85)",
     fontFamily: "Inter-Medium",
     fontSize: 13,
-  },
-  contextBadgesRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  contextBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  contextText: {
-    color: Colors.white,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 12.5,
   },
   routeOverviewBox: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -1009,23 +986,5 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-Medium",
     fontSize: 11.5,
     flex: 1,
-  },
-  stopSubMetaRow: {
-    marginTop: 2,
-  },
-  stopSubMetaStart: {
-    color: "#0284C7",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 10.5,
-  },
-  stopSubMetaDest: {
-    color: "#DC2626",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 10.5,
-  },
-  stopSubMetaInter: {
-    color: "#64748B",
-    fontFamily: "Inter-Regular",
-    fontSize: 10.5,
   },
 });

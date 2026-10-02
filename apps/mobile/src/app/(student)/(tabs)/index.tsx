@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,109 +14,118 @@ import {
   InlineState,
   ListSkeleton,
   ScreenHeader,
-  StatusBadge,
 } from "@/components/operational-ui";
+import {
+  DepartureRow,
+  DirectionToggle,
+  FavoriteButton,
+  LinkButton,
+  NamePromptCard,
+  NextBusCard,
+  SectionHeader,
+  studentStyles,
+} from "@/components/student-ui";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
+import { useGuayaquilClock } from "@/hooks/use-guayaquil-clock";
 import { campusPreferenceService } from "@/services/campus-preference.service";
 import { operationalService } from "@/services/operational.service";
-import type { Campus, DepartureSummary } from "@/types/operational";
-import { getOperationalErrorMessage } from "@/utils/error-message";
 import {
-  formatOperationalTime,
-  getDirectionLabel,
-  getDisplayName,
-  getGuayaquilCurrentTime,
-  getGuayaquilToday,
-} from "@/utils/operational";
+  stopKey,
+  studentPreferencesService,
+} from "@/services/student-preferences.service";
+import type {
+  Campus,
+  DepartureSummary,
+  Direction,
+  ServiceLine,
+} from "@/types/operational";
+import { getOperationalErrorMessage } from "@/utils/error-message";
+import { getDirectionLabel } from "@/utils/operational";
+import {
+  departureTimeAt,
+  formatRelativeDay,
+  greetingName,
+  nextServiceDates,
+  splitByClock,
+} from "@/utils/schedule";
 
-const busIsolatedImage = require("../../../../assets/images/images_upsgo/bus-isolated.png");
-
-interface StudentDepartureSummary extends DepartureSummary {
-  serviceLineName: string;
+interface LineDeparture extends DepartureSummary {
+  lineId: string;
+  lineName: string;
 }
+
+type FutureLookup =
+  | { status: "idle" | "none" }
+  | { status: "found"; departure: LineDeparture };
+
+// Días hacia adelante que se consultan cuando hoy ya no quedan salidas.
+const LOOKAHEAD_DAYS = 7;
 
 export default function StudentHomeScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, updateName } = useAuth();
   const userId = user?.id;
+  const clock = useGuayaquilClock();
 
-  const [preferredCampus, setPreferredCampus] = useState<Campus | null>(null);
-  const [nextDeparture, setNextDeparture] =
-    useState<StudentDepartureSummary | null>(null);
-  const [remainingDepartures, setRemainingDepartures] = useState<
-    StudentDepartureSummary[]
-  >([]);
+  const [campus, setCampus] = useState<Campus | null>(null);
+  const [lines, setLines] = useState<ServiceLine[]>([]);
+  const [departures, setDepartures] = useState<LineDeparture[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [stops, setStops] = useState<Record<string, string>>({});
+  const [namePromptDismissed, setNamePromptDismissed] = useState(true);
+  const [direction, setDirection] = useState<Direction | null>(null);
+  const [future, setFuture] = useState<Record<Direction, FutureLookup>>({
+    IDA: { status: "idle" },
+    RETORNO: { status: "idle" },
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lookupsInFlight = useRef(new Set<string>());
 
-  const loadData = useCallback(
+  const load = useCallback(
     async (isPullToRefresh = false) => {
       if (!userId) return;
       try {
         if (isPullToRefresh) setRefreshing(true);
-        else setLoading(true);
         setError(null);
 
-        const [backendCampuses, savedPrefId] = await Promise.all([
+        const [campuses, savedCampusId, prefs] = await Promise.all([
           operationalService.getCampuses(),
           campusPreferenceService.getPreferredCampusId(userId),
+          studentPreferencesService.get(userId),
         ]);
+        setFavorites(prefs.favoriteLineIds);
+        setStops(prefs.stops);
+        setNamePromptDismissed(prefs.namePromptDismissed);
 
-        let activeCampus: Campus | null = null;
-        if (savedPrefId) {
-          activeCampus =
-            backendCampuses.find((c) => c.id === savedPrefId) || null;
-          if (!activeCampus) {
-            await campusPreferenceService.clearPreferredCampusId(userId);
-          }
-        }
-
+        const activeCampus = campuses.find((item) => item.id === savedCampusId);
         if (!activeCampus) {
+          if (savedCampusId) await campusPreferenceService.clearPreferredCampusId(userId);
           router.replace("/(student)/campus-preference");
           return;
         }
-        setPreferredCampus(activeCampus);
+        setCampus(activeCampus);
 
-        if (activeCampus) {
-          const today = getGuayaquilToday();
-          const lines = await operationalService.getServiceLines(
-            activeCampus.id,
-          );
-
-          const departuresByLine = await Promise.all(
-            lines.map(async (line) => {
-              const [ida, retorno] = await Promise.all([
-                operationalService.getDepartures(line.id, today, "IDA"),
-                operationalService.getDepartures(line.id, today, "RETORNO"),
-              ]);
-              return [...ida, ...retorno].map((dep) => ({
-                ...dep,
-                serviceLineName: line.name,
-              }));
-            }),
-          );
-
-          const allTodayDepartures = departuresByLine
-            .flat()
-            .sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
-
-          const currentGuayaquilTime = getGuayaquilCurrentTime();
-          const upcoming = allTodayDepartures.filter(
-            (d) =>
-              formatOperationalTime(d.scheduledTime) >= currentGuayaquilTime,
-          );
-
-          const next = upcoming.length > 0 ? (upcoming[0] ?? null) : null;
-          const remaining = allTodayDepartures.filter((d) => d.id !== next?.id);
-
-          setNextDeparture(next);
-          setRemainingDepartures(remaining);
-        } else {
-          setNextDeparture(null);
-          setRemainingDepartures([]);
-        }
+        const today = clock.date;
+        const campusLines = await operationalService.getServiceLines(activeCampus.id);
+        const perLine = await Promise.all(
+          campusLines.map(async (line) => {
+            const [ida, retorno] = await Promise.all([
+              operationalService.getDepartures(line.id, today, "IDA"),
+              operationalService.getDepartures(line.id, today, "RETORNO"),
+            ]);
+            return [...ida, ...retorno].map((item) => ({
+              ...item,
+              lineId: line.id,
+              lineName: line.name,
+            }));
+          }),
+        );
+        setLines(campusLines);
+        setDepartures(perLine.flat());
+        setFuture({ IDA: { status: "idle" }, RETORNO: { status: "idle" } });
       } catch (loadError) {
         setError(getOperationalErrorMessage(loadError));
       } finally {
@@ -125,392 +133,308 @@ export default function StudentHomeScreen() {
         setRefreshing(false);
       }
     },
-    [router, userId],
+    // clock.date: si cambia el día con la app abierta, se recargan las salidas.
+    [clock.date, router, userId],
   );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadData();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [loadData]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadData();
-    }, [loadData]),
+      void load();
+    }, [load]),
   );
 
-  const rawName = getDisplayName(user?.name, user?.email);
-  const firstName = rawName.split(" ")[0] || rawName;
+  // Líneas que manda el estudiante: sus favoritas del campus, o todas si no marcó ninguna.
+  const relevantLineIds = useMemo(() => {
+    const favoriteIds = lines
+      .filter((line) => favorites.includes(line.id))
+      .map((line) => line.id);
+    return new Set(favoriteIds.length > 0 ? favoriteIds : lines.map((line) => line.id));
+  }, [favorites, lines]);
+
+  const stopFor = useCallback(
+    (item: LineDeparture) => stops[stopKey(item.lineId, item.direction)] ?? null,
+    [stops],
+  );
+
+  const relevant = useMemo(
+    () => departures.filter((item) => relevantLineIds.has(item.lineId)),
+    [departures, relevantLineIds],
+  );
+
+  // Sentido por defecto: el del próximo bus de cualquier sentido (ida en la mañana, retorno en la tarde).
+  const autoDirection = useMemo<Direction>(() => {
+    const { upcoming } = splitByClock(relevant, clock, stopFor);
+    return upcoming[0]?.direction ?? "IDA";
+  }, [clock, relevant, stopFor]);
+  const activeDirection = direction ?? autoDirection;
+
+  const { upcoming } = useMemo(
+    () =>
+      splitByClock(
+        relevant.filter((item) => item.direction === activeDirection),
+        clock,
+        stopFor,
+      ),
+    [activeDirection, clock, relevant, stopFor],
+  );
+  const hero = upcoming[0] ?? null;
+  const later = upcoming.slice(1, 5);
+
+  // Si hoy ya no hay salidas en este sentido, busca la siguiente en los próximos días.
+  const futureLookup = future[activeDirection];
+  useEffect(() => {
+    if (loading || hero || futureLookup.status !== "idle" || relevantLineIds.size === 0) {
+      return;
+    }
+    // Evita consultas duplicadas mientras la búsqueda sigue en curso.
+    const lookupKey = `${clock.date}:${activeDirection}:${[...relevantLineIds].join(",")}`;
+    if (lookupsInFlight.current.has(lookupKey)) return;
+    lookupsInFlight.current.add(lookupKey);
+    let cancelled = false;
+    void (async () => {
+      try {
+        for (const date of nextServiceDates(clock.date, LOOKAHEAD_DAYS)) {
+          const found = await Promise.all(
+            lines
+              .filter((line) => relevantLineIds.has(line.id))
+              .map(async (line) =>
+                (await operationalService.getDepartures(line.id, date, activeDirection)).map(
+                  (item) => ({ ...item, lineId: line.id, lineName: line.name }),
+                ),
+              ),
+          );
+          const sorted = found
+            .flat()
+            .sort((a, b) =>
+              departureTimeAt(a, stopFor(a)).time.localeCompare(
+                departureTimeAt(b, stopFor(b)).time,
+              ),
+            );
+          if (sorted[0]) {
+            if (!cancelled) {
+              setFuture((current) => ({
+                ...current,
+                [activeDirection]: { status: "found", departure: sorted[0]! },
+              }));
+            }
+            return;
+          }
+        }
+        if (!cancelled) {
+          setFuture((current) => ({ ...current, [activeDirection]: { status: "none" } }));
+        }
+      } catch {
+        if (!cancelled) {
+          setFuture((current) => ({ ...current, [activeDirection]: { status: "none" } }));
+        }
+      } finally {
+        lookupsInFlight.current.delete(lookupKey);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDirection, clock.date, futureLookup.status, hero, lines, loading, relevantLineIds, stopFor]);
+
+  const openDeparture = (id: string) =>
+    router.push({
+      pathname: "/(student)/scheduled-departure/[departureId]",
+      params: { departureId: id },
+    });
+  const openLine = (line: { id: string; name: string }) =>
+    router.push({
+      pathname: "/(student)/service-line/[serviceLineId]",
+      params: { serviceLineId: line.id, name: line.name },
+    });
+
+  const toggleFavorite = async (lineId: string) => {
+    if (!userId) return;
+    setFavorites(await studentPreferencesService.toggleFavoriteLine(userId, lineId));
+    setFuture({ IDA: { status: "idle" }, RETORNO: { status: "idle" } });
+  };
+
+  const firstName = greetingName(user?.name);
+  const showNamePrompt = !user?.name?.trim() && !namePromptDismissed;
+  const directionLabel = getDirectionLabel(activeDirection).toLowerCase();
+  const sortedLines = [...lines].sort(
+    (a, b) => Number(favorites.includes(b.id)) - Number(favorites.includes(a.id)),
+  );
 
   return (
     <AppScreen>
-      <ScreenHeader
-        title="UPS GO"
-        subtitle="Transporte universitario"
-        right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Configuración"
-            onPress={() => router.push("/(student)/(tabs)/profile")}
-            style={styles.settingsButton}
-          >
-            <Ionicons name="settings-sharp" size={20} color={Colors.white} />
-          </Pressable>
-        }
-      />
+      <ScreenHeader title="UPS GO" subtitle="Transporte universitario" />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => void loadData(true)}
+            onRefresh={() => void load(true)}
             tintColor={Colors.primary}
           />
         }
       >
-        {/* 1. Greeting Card */}
-        <View style={styles.greetingCard}>
-          <View style={styles.greetingContent}>
-            <Text style={styles.greetingTitle}>Hola, {firstName} 👋</Text>
-            <Text style={styles.greetingSubtitle}>
-              Organiza tu día y llega a tiempo.
-            </Text>
-          </View>
-          <View style={styles.greetingBusWrap}>
-            <Image
-              source={busIsolatedImage}
-              style={styles.greetingBusImage}
-              resizeMode="contain"
-            />
-          </View>
+        <View style={styles.greeting}>
+          <Text style={styles.greetingTitle}>
+            {firstName ? `Hola, ${firstName} 👋` : "¡Hola! 👋"}
+          </Text>
+          {campus ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Campus principal: ${campus.name}. Cambiar`}
+              onPress={() => router.push("/(student)/campus-preference")}
+              hitSlop={6}
+              style={styles.campusPill}
+            >
+              <Ionicons name="location" size={14} color={Colors.primary} />
+              <Text style={styles.campusText} numberOfLines={1}>
+                {campus.name}
+              </Text>
+              <Text style={styles.campusChange}>Cambiar</Text>
+            </Pressable>
+          ) : null}
         </View>
+
+        {showNamePrompt && userId ? (
+          <NamePromptCard
+            onSave={updateName}
+            onDismiss={() => {
+              setNamePromptDismissed(true);
+              void studentPreferencesService.dismissNamePrompt(userId);
+            }}
+          />
+        ) : null}
 
         {loading ? (
           <ListSkeleton rows={3} />
         ) : error ? (
           <InlineState
             icon="cloud-offline-outline"
-            title="No pudimos cargar los servicios"
+            title="No pudimos cargar tus salidas"
             message={error}
-            action={
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => void loadData()}
-                style={styles.retryButton}
-              >
-                <Text style={styles.retryText}>Reintentar</Text>
-              </Pressable>
-            }
+            action={<LinkButton label="Reintentar" onPress={() => void load()} />}
+          />
+        ) : lines.length === 0 ? (
+          <InlineState
+            icon="bus-outline"
+            title="Tu campus aún no tiene rutas"
+            message="Cuando la universidad publique rutas para este campus, aparecerán aquí."
           />
         ) : (
           <>
-            {/* 2. Preferred Campus Card */}
-            {preferredCampus ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Cambiar campus principal"
-                onPress={() => router.push("/(student)/campus-preference")}
-                style={({ pressed }) => [
-                  styles.campusCard,
-                  pressed && styles.cardPressed,
-                ]}
-              >
-                <View style={styles.campusIconContainer}>
-                  <Ionicons name="business" size={22} color={Colors.primary} />
+            <DirectionToggle value={activeDirection} onChange={setDirection} />
+
+            {hero ? (
+              <NextBusCard
+                departure={hero}
+                lineName={hero.lineName}
+                clock={clock}
+                stopId={stopFor(hero)}
+                onPress={() => openDeparture(hero.id)}
+                onChooseStop={() => openLine({ id: hero.lineId, name: hero.lineName })}
+              />
+            ) : futureLookup.status === "found" ? (
+              <View style={styles.section}>
+                <Text style={styles.caption}>
+                  Hoy ya no hay más salidas de {directionLabel}.
+                </Text>
+                <NextBusCard
+                  departure={futureLookup.departure}
+                  lineName={futureLookup.departure.lineName}
+                  clock={clock}
+                  stopId={stopFor(futureLookup.departure)}
+                  dayLabel={formatRelativeDay(futureLookup.departure.serviceDate, clock.date)}
+                  onPress={() => openDeparture(futureLookup.departure.id)}
+                />
+              </View>
+            ) : (
+              <View style={styles.noMore}>
+                <View style={styles.noMoreIcon}>
+                  <Ionicons name="moon-outline" size={22} color={Colors.primary} />
                 </View>
-
-                <View style={styles.campusInfo}>
-                  <Text style={styles.campusLabel}>TU CAMPUS PRINCIPAL</Text>
-                  <View style={styles.campusNameRow}>
-                    <Ionicons name="location-sharp" size={15} color="#F59E0B" />
-                    <Text
-                      style={styles.campusName}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {preferredCampus.name}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.changeContainer}>
-                  <Text style={styles.changeText}>Cambiar</Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={Colors.primary}
-                  />
-                </View>
-              </Pressable>
-            ) : null}
-
-            {/* 3. Next Departure Card ("Próxima salida hoy") */}
-            <View style={styles.sectionBlock}>
-              <Text style={styles.sectionHeading}>Próxima salida hoy</Text>
-              {nextDeparture ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Próxima salida ${formatOperationalTime(nextDeparture.scheduledTime)}`}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(student)/scheduled-departure/[departureId]",
-                      params: { departureId: nextDeparture.id },
-                    })
-                  }
-                  style={({ pressed }) => [
-                    styles.nextDepartureCard,
-                    pressed && styles.cardPressed,
-                  ]}
-                >
-                  {/* Vertical Blue Left Accent Bar */}
-                  <View style={styles.leftAccentStrip} />
-
-                  <View style={styles.nextCardInner}>
-                    <View style={styles.nextCardTopRow}>
-                      <View style={styles.busCircle}>
-                        <Ionicons name="bus" size={22} color={Colors.white} />
-                      </View>
-                      <Text
-                        style={styles.departureTime}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                      >
-                        {formatOperationalTime(nextDeparture.scheduledTime)}
-                      </Text>
-                      <StatusBadge state={nextDeparture.state} />
-                    </View>
-
-                    <View style={styles.nextRouteDetails}>
-                      <Text style={styles.nextRouteName} numberOfLines={2}>
-                        {nextDeparture.serviceLineName}
-                      </Text>
-                      <View style={styles.nextDirectionRow}>
-                        <Text style={styles.nextDirectionArrow}>→</Text>
-                        <Text style={styles.nextDirectionLabel}>
-                          {getDirectionLabel(nextDeparture.direction)}
-                        </Text>
-                      </View>
-                      {nextDeparture.originStop &&
-                      nextDeparture.destinationStop ? (
-                        <View style={styles.nextRoutePreviewRow}>
-                          <Ionicons
-                            name="navigate-circle"
-                            size={14}
-                            color="#0284C7"
-                          />
-                          <Text
-                            style={styles.nextRoutePreviewText}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {nextDeparture.originStop} ➔{" "}
-                            {nextDeparture.destinationStop}
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      {nextDeparture.assignedVehicles &&
-                      nextDeparture.assignedVehicles.length > 0 ? (
-                        <View style={styles.nextAssignedBlock}>
-                          <View style={styles.nextUnitPill}>
-                            <Ionicons name="bus" size={12} color="#07508E" />
-                            <Text style={styles.nextUnitPillCode}>
-                              {nextDeparture.assignedVehicles[0]?.code}
-                            </Text>
-                            <View style={styles.plateDivider} />
-                            <Ionicons
-                              name="card-outline"
-                              size={11}
-                              color="#07508E"
-                            />
-                            <Text style={styles.nextUnitPillPlate}>
-                              {nextDeparture.assignedVehicles[0]?.plate}
-                            </Text>
-                          </View>
-                          {nextDeparture.assignedVehicles[0]?.driverName ? (
-                            <View style={styles.nextDriverPill}>
-                              <Ionicons
-                                name="person"
-                                size={11}
-                                color="#0F766E"
-                              />
-                              <Text
-                                style={styles.nextDriverPillText}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
-                              >
-                                {nextDeparture.assignedVehicles[0]?.driverName}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      ) : (
-                        <Text style={styles.nextBusAssignmentText}>
-                          Bus por asignar · Unidad y conductor en confirmación
-                        </Text>
-                      )}
-                    </View>
-
-                    <View style={styles.nextCardDivider} />
-
-                    <View style={styles.nextCardFooter}>
-                      <Text style={styles.nextFooterActionText}>
-                        Ver paradas e itinerario
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={16}
-                        color={Colors.primary}
-                      />
-                    </View>
-                  </View>
-                </Pressable>
-              ) : (
-                <View style={styles.emptyNextCard}>
-                  <View style={styles.emptyIconCircle}>
-                    <Ionicons
-                      name="time-outline"
-                      size={24}
-                      color={Colors.primary}
-                    />
-                  </View>
-                  <View style={styles.emptyNextCopy}>
-                    <Text style={styles.emptyNextTitle}>
-                      No quedan salidas programadas para hoy
-                    </Text>
-                    <Text style={styles.emptyNextMessage}>
-                      Puedes consultar los horarios de otros días o líneas del
-                      campus.
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-
-            {/* 4. Scheduled Departures Timeline Card */}
-            {remainingDepartures.length > 0 ? (
-              <View style={styles.sectionBlock}>
-                <View style={styles.sectionHeadingRow}>
-                  <Text style={styles.sectionHeading}>
-                    Salidas programadas para hoy
+                <View style={styles.noMoreCopy}>
+                  <Text style={styles.noMoreTitle}>
+                    Hoy ya no hay más salidas de {directionLabel}
                   </Text>
-                  {preferredCampus ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(student)/campus/[campusId]",
-                          params: {
-                            campusId: preferredCampus.id,
-                            name: preferredCampus.name,
-                          },
-                        })
-                      }
-                      style={styles.seeAllButton}
-                    >
-                      <Text style={styles.seeAllText}>Ver todas</Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color={Colors.primary}
-                      />
-                    </Pressable>
-                  ) : null}
+                  <Text style={styles.noMoreText}>
+                    {futureLookup.status === "none"
+                      ? "No hay salidas programadas en los próximos días."
+                      : "Buscando la próxima salida…"}
+                  </Text>
                 </View>
+              </View>
+            )}
 
-                <View style={styles.timelineCard}>
-                  {remainingDepartures.map((dep, index) => {
-                    const isLast = index === remainingDepartures.length - 1;
-                    const isFirst = index === 0;
-                    return (
-                      <Pressable
-                        key={dep.id}
-                        accessibilityRole="button"
-                        onPress={() =>
-                          router.push({
-                            pathname:
-                              "/(student)/scheduled-departure/[departureId]",
-                            params: { departureId: dep.id },
-                          })
-                        }
-                        style={({ pressed }) => [
-                          styles.timelineRow,
-                          !isLast && styles.timelineRowDivider,
-                          pressed && styles.cardPressed,
-                        ]}
-                      >
-                        {/* Vertical timeline node */}
-                        <View style={styles.timelineNode}>
-                          <View
-                            style={[
-                              styles.timelineDot,
-                              isFirst
-                                ? styles.timelineDotActive
-                                : styles.timelineDotInactive,
-                            ]}
-                          />
-                          {!isLast ? (
-                            <View style={styles.timelineVerticalLine} />
-                          ) : null}
-                        </View>
-
-                        {/* Departure Time */}
-                        <Text style={styles.timelineTime}>
-                          {formatOperationalTime(dep.scheduledTime)}
-                        </Text>
-
-                        {/* Route info */}
-                        <View style={styles.timelineInfo}>
-                          <Text
-                            style={styles.timelineLineName}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {dep.serviceLineName}
-                          </Text>
-                          <View style={styles.timelineMetaRow}>
-                            <Text
-                              style={styles.timelineMeta}
-                              numberOfLines={1}
-                              ellipsizeMode="tail"
-                            >
-                              {getDirectionLabel(dep.direction)}
-                            </Text>
-                            {dep.assignedVehicles && dep.assignedVehicles[0] ? (
-                              <View style={styles.timelinePlateTag}>
-                                <Ionicons
-                                  name="card-outline"
-                                  size={10}
-                                  color="#07508E"
-                                />
-                                <Text style={styles.timelinePlateText}>
-                                  {dep.assignedVehicles[0].plate}
-                                </Text>
-                              </View>
-                            ) : null}
-                          </View>
-                        </View>
-
-                        {/* Status badge & Chevron */}
-                        <View style={styles.timelineAction}>
-                          <StatusBadge state={dep.state} />
-                          <Ionicons
-                            name="chevron-forward"
-                            size={16}
-                            color="#94A3B8"
-                          />
-                        </View>
-                      </Pressable>
-                    );
-                  })}
+            {later.length > 0 ? (
+              <View style={styles.section}>
+                <SectionHeader title="Más tarde hoy" />
+                <View style={studentStyles.list}>
+                  {later.map((item, index) => (
+                    <View key={item.id}>
+                      {index > 0 ? <View style={studentStyles.divider} /> : null}
+                      <DepartureRow
+                        departure={item}
+                        clock={clock}
+                        stopId={stopFor(item)}
+                        title={lines.length > 1 ? item.lineName : undefined}
+                        onPress={() => openDeparture(item.id)}
+                      />
+                    </View>
+                  ))}
                 </View>
               </View>
             ) : null}
+
+            <View style={styles.section}>
+              <SectionHeader
+                title={favorites.length > 0 ? "Tus líneas" : "Líneas de tu campus"}
+              />
+              <View style={studentStyles.list}>
+                {sortedLines.map((line, index) => {
+                  const next = splitByClock(
+                    departures.filter((item) => item.lineId === line.id),
+                    clock,
+                    stopFor,
+                  ).upcoming[0];
+                  return (
+                    <View key={line.id}>
+                      {index > 0 ? <View style={studentStyles.divider} /> : null}
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Ver horarios de ${line.name}`}
+                        onPress={() => openLine(line)}
+                        style={({ pressed }) => [styles.lineRow, pressed && styles.pressed]}
+                      >
+                        <View style={styles.lineIcon}>
+                          <Ionicons name="bus" size={18} color={Colors.primary} />
+                        </View>
+                        <View style={styles.lineCopy}>
+                          <Text style={styles.lineName} numberOfLines={1}>
+                            {line.name}
+                          </Text>
+                          <Text style={styles.lineMeta} numberOfLines={1}>
+                            {next
+                              ? `Próxima: ${departureTimeAt(next, stopFor(next)).time} · ${getDirectionLabel(next.direction).toLowerCase()}`
+                              : "Sin más salidas hoy"}
+                          </Text>
+                        </View>
+                        <FavoriteButton
+                          active={favorites.includes(line.id)}
+                          onPress={() => void toggleFavorite(line.id)}
+                        />
+                      </Pressable>
+                    </View>
+                  );
+                })}
+              </View>
+              {favorites.length === 0 && lines.length > 1 ? (
+                <Text style={styles.hint}>
+                  Marca con ★ las líneas que usas y el inicio mostrará solo esas.
+                </Text>
+              ) : null}
+            </View>
           </>
         )}
       </ScrollView>
@@ -519,455 +443,70 @@ export default function StudentHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 110,
-  },
-  settingsButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  greetingCard: {
-    backgroundColor: "#052E67",
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    shadowColor: Colors.navy,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
-    position: "relative",
-    overflow: "hidden",
-  },
-  greetingContent: {
-    flex: 1,
-    gap: 4,
-    zIndex: 2,
-  },
-  greetingTitle: {
-    color: Colors.white,
-    fontFamily: "Inter-Bold",
-    fontSize: 22,
-    lineHeight: 27,
-  },
-  greetingSubtitle: {
-    color: "rgba(255, 255, 255, 0.82)",
-    fontFamily: "Inter-Regular",
-    fontSize: 13,
-  },
-  greetingBusWrap: {
-    width: 105,
-    height: 65,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  greetingBusImage: {
-    width: "100%",
-    height: "100%",
-  },
-  campusCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderWidth: 1,
-    borderColor: "#E5EDF7",
-    shadowColor: Colors.navy,
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  campusIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "#EBF3FB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  campusInfo: {
-    flex: 1,
-    minWidth: 0,
-    gap: 3,
-  },
-  campusLabel: {
-    color: "#64748B",
-    fontFamily: "Inter-Bold",
-    fontSize: 11,
-    letterSpacing: 0.5,
-  },
-  campusNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-    minWidth: 0,
-  },
-  campusName: {
-    flex: 1,
-    flexShrink: 1,
-    color: "#0F172A",
-    fontFamily: "Inter-Bold",
-    fontSize: 15,
-  },
-  changeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    flexShrink: 0,
-  },
-  changeText: {
-    color: Colors.primary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13,
-  },
-  sectionBlock: {
-    gap: 10,
-  },
-  sectionHeadingRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 2,
-  },
-  sectionHeading: {
-    color: "#0F172A",
-    fontFamily: "Inter-Bold",
-    fontSize: 16,
-  },
-  seeAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    paddingVertical: 4,
-  },
-  seeAllText: {
-    color: Colors.primary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13,
-  },
-  nextDepartureCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#E5EDF7",
-    shadowColor: Colors.navy,
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-    position: "relative",
-    overflow: "hidden",
-  },
-  leftAccentStrip: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4.5,
-    backgroundColor: "#0868D9",
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
-  },
-  nextCardInner: {
-    padding: 16,
-    paddingLeft: 20,
-    gap: 12,
-  },
-  nextCardTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  busCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  departureTime: {
-    flex: 1,
-    minWidth: 80,
-    color: "#0F172A",
-    fontFamily: "Inter-Bold",
-    fontSize: 26,
-    letterSpacing: -0.5,
-  },
-  nextRouteDetails: {
-    gap: 4,
-  },
-  nextRouteName: {
-    color: "#0F172A",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 14.5,
-    lineHeight: 20,
-  },
-  nextDirectionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  nextDirectionArrow: {
-    color: "#64748B",
-    fontSize: 13,
-  },
-  nextDirectionLabel: {
-    color: "#64748B",
-    fontFamily: "Inter-Medium",
-    fontSize: 13,
-  },
-  nextRoutePreviewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 2,
-  },
-  nextRoutePreviewText: {
-    color: "#334155",
-    fontFamily: "Inter-Medium",
-    fontSize: 12,
-    flex: 1,
-  },
-  nextAssignedBlock: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 4,
-  },
-  nextUnitPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F0F7FF",
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    gap: 4,
-  },
-  nextUnitPillCode: {
-    color: "#052E67",
-    fontFamily: "Inter-Bold",
-    fontSize: 11.5,
-  },
-  plateDivider: {
-    width: 1,
-    height: 10,
-    backgroundColor: "#CBD5E1",
-  },
-  nextUnitPillPlate: {
-    color: "#07508E",
-    fontFamily: "Inter-Bold",
-    fontSize: 11.5,
-    letterSpacing: 0.2,
-  },
-  nextDriverPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#CCFBF1",
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: "#99F6E4",
-    gap: 4,
-    flexShrink: 1,
-  },
-  nextDriverPillText: {
-    color: "#0F766E",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 11.5,
-  },
-  nextBusAssignmentText: {
-    color: "#64748B",
-    fontFamily: "Inter-Medium",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  nextCardDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "#E2E8F0",
-  },
-  nextCardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 4,
-  },
-  nextFooterActionText: {
-    color: Colors.primary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13.5,
-  },
-  timelineCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "#E5EDF7",
-    shadowColor: Colors.navy,
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  timelineRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    gap: 10,
-  },
-  timelineRowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F1F5F9",
-  },
-  timelineNode: {
-    width: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    zIndex: 2,
-  },
-  timelineDotActive: {
-    backgroundColor: Colors.primary,
-    borderWidth: 2,
-    borderColor: Colors.white,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  timelineDotInactive: {
-    backgroundColor: "#94A3B8",
-  },
-  timelineVerticalLine: {
-    position: "absolute",
-    top: 12,
-    bottom: -28,
-    width: 1.5,
-    backgroundColor: "#CBD5E1",
-    zIndex: 1,
-  },
-  timelineTime: {
-    color: "#0F172A",
-    fontFamily: "Inter-Bold",
-    fontSize: 15,
-    flexShrink: 0,
-  },
-  timelineInfo: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  timelineLineName: {
-    color: "#0F172A",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13,
-    lineHeight: 18,
-    flexShrink: 1,
-  },
-  timelineMetaRow: {
+  content: { padding: 16, gap: 16, paddingBottom: 120 },
+  pressed: { opacity: 0.85 },
+  greeting: { gap: 8 },
+  greetingTitle: { color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 24 },
+  campusPill: {
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    flexWrap: "wrap",
-  },
-  timelineMeta: {
-    color: "#64748B",
-    fontFamily: "Inter-Regular",
-    fontSize: 11.5,
-  },
-  timelinePlateTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    gap: 3,
-  },
-  timelinePlateText: {
-    color: "#07508E",
-    fontFamily: "Inter-Bold",
-    fontSize: 10.5,
-  },
-  timelineAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flexShrink: 0,
-  },
-  emptyNextCard: {
-    backgroundColor: "#F7FAFE",
+    maxWidth: "100%",
+    backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
     borderWidth: 1,
-    borderColor: "#E1ECF7",
+    borderColor: "#E1EAF5",
+    paddingHorizontal: 12,
+    minHeight: 34,
   },
-  emptyIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyNextCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  emptyNextTitle: {
+  campusText: {
+    flexShrink: 1,
     color: Colors.text.dark,
     fontFamily: "Inter-SemiBold",
     fontSize: 14,
   },
-  emptyNextMessage: {
+  campusChange: { color: Colors.primary, fontFamily: "Inter-SemiBold", fontSize: 13 },
+  section: { gap: 10 },
+  caption: { color: Colors.text.light, fontFamily: "Inter-Medium", fontSize: 14, paddingHorizontal: 2 },
+  noMore: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E5EDF7",
+    padding: 16,
+  },
+  noMoreIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#EEF4FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noMoreCopy: { flex: 1, gap: 3 },
+  noMoreTitle: { color: Colors.text.dark, fontFamily: "Inter-SemiBold", fontSize: 15 },
+  noMoreText: { color: Colors.text.light, fontFamily: "Inter-Regular", fontSize: 14, lineHeight: 20 },
+  lineRow: { minHeight: 64, flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },
+  lineIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#EEF4FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lineCopy: { flex: 1, minWidth: 0, gap: 2 },
+  lineName: { color: Colors.text.dark, fontFamily: "Inter-SemiBold", fontSize: 16 },
+  lineMeta: { color: Colors.text.light, fontFamily: "Inter-Regular", fontSize: 13 },
+  hint: {
     color: Colors.text.light,
     fontFamily: "Inter-Regular",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  retryButton: {
-    marginTop: 10,
-  },
-  retryText: {
-    color: Colors.primary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-  },
-  cardPressed: {
-    opacity: 0.85,
+    fontSize: 13,
+    lineHeight: 18,
+    paddingHorizontal: 4,
   },
 });

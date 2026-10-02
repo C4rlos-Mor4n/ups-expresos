@@ -56,7 +56,7 @@ export function ScreenHeader({
               <Ionicons name="arrow-back" size={22} color={Colors.white} />
             </Pressable>
           ) : (
-            <BrandLogo height={44} />
+            <BrandLogo height={40} />
           )}
           <View style={styles.headerCopy}>
             {title === BRAND_TITLE ? null : (
@@ -86,7 +86,7 @@ export function ScreenHeader({
       <Svg
         pointerEvents="none"
         width="100%"
-        height={32}
+        height={back ? 14 : 22}
         viewBox="0 0 390 32"
         preserveAspectRatio="none"
         style={styles.headerWave}
@@ -285,8 +285,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: Colors.navy,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   headerRow: {
     minHeight: 44,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     gap: 2,
   },
-  headerTitle: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 21 },
+  headerTitle: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 19 },
   headerSubtitle: {
     color: "rgba(255, 255, 255, 0.88)",
     fontFamily: "Inter-Regular",

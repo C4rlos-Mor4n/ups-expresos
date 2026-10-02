@@ -20,6 +20,9 @@ interface AuthContextType {
   ) => Promise<void>;
 
   logout: () => Promise<void>;
+
+  /** Guarda el nombre visible en el backend y actualiza la sesión local. */
+  updateName: (name: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -151,6 +154,12 @@ export function AuthProvider({ children }: Props) {
     setRefreshToken(null);
   }, []);
 
+  const updateName = useCallback(async (name: string) => {
+    const updated = await authService.updateMe(name);
+    setUser(updated);
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(updated));
+  }, []);
+
   const value = React.useMemo(
     () => ({
       user,
@@ -160,8 +169,9 @@ export function AuthProvider({ children }: Props) {
       isAuthenticated: !!accessToken,
       login,
       logout,
+      updateName,
     }),
-    [user, accessToken, refreshToken, loading, login, logout]
+    [user, accessToken, refreshToken, loading, login, logout, updateName]
   );
 
   return (
