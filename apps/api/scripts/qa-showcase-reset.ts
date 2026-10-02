@@ -628,7 +628,7 @@ const main = async (): Promise<void> => {
           safety,
           deleted: previous,
           source: {
-            path: 'docs/ups_go_routes_reference_guayaquil.json',
+            path: 'apps/api/prisma/data/ups_go_routes_reference_guayaquil.json',
             kind: 'REFERENCE_DATASET_NOT_PRODUCTION',
           },
           range: { from: FROM_DATE, to: TO_DATE, timezone: TIMEZONE },

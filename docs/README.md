@@ -10,7 +10,7 @@ La documentación está separada por superficie del producto:
 | [`web/`](./web/README.md) | Panel administrativo web: **aún no existe**. Decisiones tomadas, alcance, roadmap y reglas para cuando se construya. |
 | [`history/`](./history/README.md) | Informes y revisiones de fases anteriores. Solo referencia histórica. |
 
-Archivo de datos compartido: [`ups_go_routes_reference_guayaquil.json`](./ups_go_routes_reference_guayaquil.json)
+Archivo de datos compartido: [`ups_go_routes_reference_guayaquil.json`](../apps/api/prisma/data/ups_go_routes_reference_guayaquil.json)
 es el dataset de referencia (campus, líneas, paradas, horarios) que consumen los seeds y las pruebas.
 
 ## Qué es UPS GO

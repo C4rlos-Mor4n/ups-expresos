@@ -43,13 +43,22 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build  
 
 ## Datos de prueba (solo entornos descartables)
 
-Los seeds necesitan el dataset `docs/ups_go_routes_reference_guayaquil.json` y el código fuente, por lo que se ejecutan
-desde un checkout del repositorio apuntando `DATABASE_URL` a la base destino:
+El dataset de referencia (`apps/api/prisma/data/ups_go_routes_reference_guayaquil.json`) viaja dentro de la imagen
+(carpeta `prisma/`), igual que los scripts compilados (`dist/scripts/`). En el contenedor `api` (Dokploy → servicio →
+Advanced → Terminal, shell `sh`):
 
-```bash
-cd apps/api
-pnpm prisma:seed:reference     # campus, líneas, paradas, horarios y salidas materializadas
+```sh
+# Super admins (SUPER_ADMIN_EMAILS). Idempotente.
+node_modules/.bin/tsx prisma/seed.ts
+
+# Campus, líneas, paradas, horarios y salidas materializadas. Idempotente.
+# Por defecto: hoy (hora Guayaquil) + 14 días; ajusta con --from / --to.
+node dist/scripts/seed-from-reference.js
+node dist/scripts/seed-from-reference.js --from=2026-10-02 --to=2026-11-30
 ```
+
+Repite el comando de referencia cuando la ventana de salidas se agote (las salidas se materializan por fecha).
+Desde un checkout local: `cd apps/api && pnpm prisma:seed:reference`.
 
 `pnpm qa:showcase:reset` es **destructivo**: borra y recrea datos. Solo con `CONFIRM_LOCAL_QA_RESET=YES`, en una base
 local descartable, nunca en producción.

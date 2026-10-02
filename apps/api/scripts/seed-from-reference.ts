@@ -17,11 +17,18 @@ import { ScheduledDepartureRepository } from '../src/modules/calendar/scheduled-
 
 const DATABASE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
-const DEFAULT_FROM_DATE = '2026-09-05';
-const DEFAULT_TO_DATE = '2026-09-12';
+// Ventana por defecto: hoy (hora de Guayaquil) + 14 días. Sobrescribible con --from=YYYY-MM-DD --to=YYYY-MM-DD.
+const DEFAULT_WINDOW_DAYS = 14;
+const guayaquilDate = (offsetDays: number): string =>
+  new Date(Date.now() + offsetDays * 86_400_000).toLocaleDateString('en-CA', {
+    timeZone: 'America/Guayaquil',
+  });
+const DEFAULT_FROM_DATE = guayaquilDate(0);
+const DEFAULT_TO_DATE = guayaquilDate(DEFAULT_WINDOW_DAYS);
+// Relativo al directorio de trabajo (apps/api en desarrollo, /app en la imagen Docker).
 const REFERENCE_PATH = resolve(
-  __dirname,
-  '../../../docs/ups_go_routes_reference_guayaquil.json',
+  process.cwd(),
+  'prisma/data/ups_go_routes_reference_guayaquil.json',
 );
 
 interface ReferenceCampus {

@@ -60,7 +60,7 @@ describe("Reference Dataset (2026-08-30 → 2026-09-06)", () => {
   beforeAll(() => {
     const jsonPath = path.resolve(
       __dirname,
-      "../../../../../docs/ups_go_routes_reference_guayaquil.json",
+      "../../../prisma/data/ups_go_routes_reference_guayaquil.json",
     );
     const rawData = fs.readFileSync(jsonPath, "utf8");
     dataset = JSON.parse(rawData);

@@ -66,7 +66,7 @@ pnpm exec jest --config ./test/jest-e2e.json
 ## Datos de referencia y showcase
 
 `pnpm prisma:seed:reference` carga el dataset aprobado de
-`docs/ups_go_routes_reference_guayaquil.json` en una base local aislada.
+`apps/api/prisma/data/ups_go_routes_reference_guayaquil.json` en una base local aislada.
 
 `pnpm prisma:seed:demo` y `pnpm prisma:reset:demo` solo operan sobre datos
 marcados `UPS-GO-DEMO`; el reset exige confirmación y se bloquea en producción.
