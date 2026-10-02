@@ -14,6 +14,14 @@ const parseBoolean = z
 // Variables opcionales que docker-compose inyecta como cadena vacía cuando no se definen.
 const emptyToUndefined = (v: unknown) => (v === '' ? undefined : v);
 
+// Lista separada por comas → valores en minúsculas, sin espacios ni vacíos.
+// Los correos y dominios se comparan en minúsculas (el DTO normaliza la entrada).
+export const parseList = (value: string): string[] =>
+  value
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),

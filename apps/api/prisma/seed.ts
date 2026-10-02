@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function seedSuperAdmins(): Promise<void> {
   const superAdminEmails = (process.env['SUPER_ADMIN_EMAILS'] ?? '')
     .split(',')
-    .map((email) => email.trim())
+    .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
 
   for (const email of superAdminEmails) {

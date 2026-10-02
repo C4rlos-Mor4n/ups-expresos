@@ -1,5 +1,5 @@
 import { registerAs } from '@nestjs/config';
-import { envSchema } from './env.schema';
+import { envSchema, parseList } from './env.schema';
 
 export interface AppConfig {
   nodeEnv: 'development' | 'production' | 'test';
@@ -67,10 +67,8 @@ export const appConfig = registerAs<AppConfig>('app', () => {
     },
     auth: {
       devExposeOtp: parsed.AUTH_DEV_EXPOSE_OTP,
-      allowedDomains: parsed.ALLOWED_EMAIL_DOMAINS.split(',').map((d) => d.trim()),
-      superAdminEmails: parsed.SUPER_ADMIN_EMAILS
-        ? parsed.SUPER_ADMIN_EMAILS.split(',').map((e) => e.trim())
-        : [],
+      allowedDomains: parseList(parsed.ALLOWED_EMAIL_DOMAINS),
+      superAdminEmails: parseList(parsed.SUPER_ADMIN_EMAILS),
     },
     cors: {
       origins: parsed.CORS_ORIGINS.split(',').map((o) => o.trim()),

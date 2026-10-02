@@ -1,4 +1,4 @@
-import { envSchema } from './env.schema';
+import { envSchema, parseList } from './env.schema';
 
 const base = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/db?schema=public',
@@ -72,5 +72,12 @@ describe('envSchema', () => {
     ['missing SMTP sender', { SMTP_FROM: undefined }],
   ])('rejects production with %s', (_label, override) => {
     expect(() => envSchema.parse({ ...production, ...override })).toThrow();
+  });
+});
+
+describe('parseList', () => {
+  it('lowercases, trims and drops empty items', () => {
+    expect(parseList(' Ignacio@Gmail.com, ,a@ups.edu.ec,')).toEqual(['ignacio@gmail.com', 'a@ups.edu.ec']);
+    expect(parseList('')).toEqual([]);
   });
 });
