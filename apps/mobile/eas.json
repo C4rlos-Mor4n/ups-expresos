@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 21.4.0"
+    "version": ">= 21.4.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "preview": {
@@ -9,14 +10,16 @@
         "buildType": "apk"
       },
       "environment": "preview",
-      "channel": "preview"
+      "channel": "preview",
+      "autoIncrement": true
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
       },
       "environment": "production",
-      "channel": "production"
+      "channel": "production",
+      "autoIncrement": true
     }
   }
 }

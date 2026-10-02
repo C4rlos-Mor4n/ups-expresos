@@ -63,11 +63,22 @@ EAS entrega un enlace de descarga del APK (y un QR). Instálalo en el teléfono 
 Requisitos previos: API desplegada con HTTPS y SMTP funcional (los inicios de sesión usan OTP por correo).
 iOS requiere cuenta de Apple Developer y no se ha validado en dispositivo.
 
+## Versionado de builds
+
+- **`versionCode` (Android) / `buildNumber` (iOS)**: los gestiona EAS (`"appVersionSource": "remote"` en `eas.json`) y
+  cada build de `preview` y `production` lo incrementa solo (`"autoIncrement": true`). No se escriben en `app.json`.
+  Esto evita que Android rechace un APK nuevo por traer el mismo número que el instalado.
+- Consultar / corregir el valor remoto: `eas build:version:get -p android` y `eas build:version:set -p android`.
+  Se inicializó en `1` (el de los APK ya distribuidos); el siguiente build sale con `2`.
+- **`expo.version`** (la versión visible, p. ej. `1.0.1`) sigue siendo manual y se sube solo en releases con cambios
+  nativos. Cambiarla altera el `runtimeVersion` (fingerprint), así que obliga a distribuir un APK nuevo: los APK
+  anteriores dejan de recibir actualizaciones OTA.
+
 ## Antes de publicar una versión
 
 - [ ] `npm run verify` y `npx expo export -p android --no-bytecode` en verde.
 - [ ] Contrato sincronizado (`pnpm verify:mobile-contracts` en `apps/api`).
-- [ ] Versión actualizada en `app.json` (`expo.version`) y `package.json`.
+- [ ] Si hay cambios nativos: `expo.version` actualizado en `app.json` y `package.json` (el `versionCode` es automático).
 - [ ] QA manual en dispositivo (Student y Driver), con la API de destino.
 - [ ] `EXPO_PUBLIC_API_URL` del perfil apunta al entorno correcto.
 
