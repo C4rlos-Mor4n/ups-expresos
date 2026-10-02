@@ -72,6 +72,17 @@ export function formatRelativeDay(serviceDate: string, today: string): string {
   });
 }
 
+/** Fecha larga para encabezados: "viernes, 2 de octubre". */
+export function formatLongDate(serviceDate: string): string {
+  const date = new Date(`${serviceDate}T12:00:00.000Z`);
+  return date.toLocaleDateString("es-EC", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+}
+
 /**
  * Hora relevante para el estudiante: la de paso por su parada si la eligió y la
  * salida pasa por ella; si no, la hora de salida.

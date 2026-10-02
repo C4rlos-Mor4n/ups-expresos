@@ -17,7 +17,7 @@ Sin esas variables el comando falla sin mensaje claro.
 ## Base de referencia
 
 Tras la Fase 1–2 de UX: API con 19 suites unitarias y 9 de integración sobre PostgreSQL (195 pruebas en total con
-todas las variables `RUN_*` activas), E2E con 2 suites (15 pruebas); app móvil con 13 suites (76 pruebas).
+todas las variables `RUN_*` activas), E2E con 2 suites (15 pruebas); app móvil con 13 suites (77 pruebas).
 
 ## API
 

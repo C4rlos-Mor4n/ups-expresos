@@ -9,14 +9,16 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   AppScreen,
   InlineState,
   ListSkeleton,
   ScreenHeader,
-  uiStyles,
 } from "@/components/operational-ui";
+import { LinkButton } from "@/components/student-ui";
+import { BrandGradient, PressableScale } from "@/components/visual";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
 import { campusPreferenceService } from "@/services/campus-preference.service";
@@ -24,13 +26,28 @@ import { operationalService } from "@/services/operational.service";
 import type { Campus } from "@/types/operational";
 import { getOperationalErrorMessage } from "@/utils/error-message";
 
-const heroIllustration = require("../../../assets/images/images_upsgo/bus-campus-hero.jpg");
+const heroImage = require("../../../assets/images/images_upsgo/bus-campus-hero.jpg");
+
+interface CampusOption extends Campus {
+  routeCount: number | null;
+}
+
+/** Iniciales para el monograma: "Campus María Auxiliadora" → "MA". */
+function campusInitials(name: string): string {
+  const words = name
+    .replace(/^campus\s+/i, "")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 || /^[A-ZÁÉÍÓÚ]/.test(word));
+  if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase();
+  return (words.slice(0, 2).map((word) => word[0]).join("") || name[0] || "U").toUpperCase();
+}
 
 export default function CampusPreferenceScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const userId = user?.id;
-  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [campuses, setCampuses] = useState<CampusOption[]>([]);
   const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,9 +63,20 @@ export default function CampusPreferenceScreen() {
         operationalService.getCampuses(),
         campusPreferenceService.getPreferredCampusId(userId),
       ]);
-      setCampuses(backendCampuses);
+      // El número de rutas ayuda a decidir; si falla, la tarjeta simplemente no lo muestra.
+      const withCounts = await Promise.all(
+        backendCampuses.map(async (campus) => {
+          try {
+            const lines = await operationalService.getServiceLines(campus.id);
+            return { ...campus, routeCount: lines.length };
+          } catch {
+            return { ...campus, routeCount: null };
+          }
+        }),
+      );
+      setCampuses(withCounts);
 
-      if (savedId && backendCampuses.some((c) => c.id === savedId)) {
+      if (savedId && backendCampuses.some((campus) => campus.id === savedId)) {
         setSelectedCampusId(savedId);
         setHasSavedPreference(true);
       } else if (backendCampuses.length === 1 && backendCampuses[0]) {
@@ -62,9 +90,7 @@ export default function CampusPreferenceScreen() {
   }, [userId]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadCampuses();
-    }, 0);
+    const timer = setTimeout(() => void loadCampuses(), 0);
     return () => clearTimeout(timer);
   }, [loadCampuses]);
 
@@ -72,437 +98,240 @@ export default function CampusPreferenceScreen() {
     if (!userId || !selectedCampusId) return;
     try {
       setSaving(true);
-      await campusPreferenceService.setPreferredCampusId(
-        userId,
-        selectedCampusId,
-      );
-      router.replace("/(student)/(tabs)");
-    } catch {
-      router.replace("/(student)/(tabs)");
+      await campusPreferenceService.setPreferredCampusId(userId, selectedCampusId);
     } finally {
       setSaving(false);
+      router.replace("/(student)/(tabs)");
     }
   };
 
-  const handleExploreAll = () => {
-    router.replace("/(student)/(tabs)/campuses");
-  };
+  const selected = campuses.find((campus) => campus.id === selectedCampusId);
+  const showFooter = !loading && !error && campuses.length > 0;
 
   return (
     <AppScreen>
       <ScreenHeader
-        title="UPS GO"
-        subtitle="Transporte universitario"
+        title={hasSavedPreference ? "Tu campus" : "UPS GO"}
+        subtitle={hasSavedPreference ? "Cámbialo cuando quieras" : "Transporte universitario"}
         back={hasSavedPreference}
         onBack={() => router.replace("/(student)/(tabs)")}
       />
 
       <ScrollView
-        contentContainerStyle={uiStyles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.content, showFooter && styles.contentWithFooter]}
         showsVerticalScrollIndicator={false}
       >
-        {/* 2. Layered Hero Banner */}
-        <View style={styles.heroBanner}>
-          {/* Illustration placed absolutely in the background right */}
-          <Image
-            source={heroIllustration}
-            style={styles.heroBackgroundIllustration}
-            resizeMode="cover"
-          />
-
-          {/* Left Column Content - strictly bounded to left side */}
-          <View style={styles.heroContent}>
-            <View style={styles.welcomePill}>
-              <Text style={styles.welcomeEmoji}>👋</Text>
-              <Text style={styles.welcomeText}>Bienvenido</Text>
-            </View>
-
-            <Text style={styles.heroTitle}>¿Qué campus te interesa más?</Text>
-
-            <Text style={styles.heroSubtitle}>
-              Elige tu campus principal para personalizar tu inicio y salidas.
+        <View style={styles.hero}>
+          <Image source={heroImage} style={styles.heroImage} resizeMode="cover" />
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroEyebrow}>👋 {hasSavedPreference ? "Hola de nuevo" : "¡Bienvenido!"}</Text>
+            <Text style={styles.heroTitle}>¿A qué campus vas?</Text>
+            <Text style={styles.heroText}>
+              Lo usamos para mostrarte primero tus buses y horarios.
             </Text>
           </View>
         </View>
 
         {loading ? (
-          <ListSkeleton rows={3} />
+          <ListSkeleton rows={2} />
         ) : error ? (
           <InlineState
             icon="cloud-offline-outline"
+            illustration="empty"
             title="No pudimos cargar los campus"
             message={error}
-            action={
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => void loadCampuses()}
-                style={styles.retryButton}
-              >
-                <Text style={styles.retryText}>Reintentar</Text>
-              </Pressable>
-            }
+            action={<LinkButton label="Reintentar" onPress={() => void loadCampuses()} />}
           />
         ) : campuses.length === 0 ? (
           <InlineState
             icon="business-outline"
-            title="No hay campus disponibles"
-            message="No encontramos campus activos en el sistema en este momento."
+            illustration="empty"
+            title="Aún no hay campus disponibles"
+            message="Cuando la universidad active el servicio en un campus, aparecerá aquí."
           />
         ) : (
-          <View style={styles.selectionSection}>
-            <Text style={styles.sectionLabel}>
-              Selecciona tu campus principal
-            </Text>
-
-            <View style={styles.campusList}>
-              {campuses.map((campus) => {
-                const isSelected = selectedCampusId === campus.id;
-                return (
-                  <Pressable
-                    key={campus.id}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={campus.name}
-                    onPress={() => setSelectedCampusId(campus.id)}
-                    style={({ pressed }) => [
-                      styles.campusCard,
-                      isSelected && styles.campusCardSelected,
-                      pressed && styles.campusCardPressed,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.campusIconContainer,
-                        isSelected && styles.campusIconContainerSelected,
-                      ]}
-                    >
-                      <Ionicons
-                        name="business"
-                        size={22}
-                        color={isSelected ? Colors.primary : "#64748B"}
-                      />
-                    </View>
-
-                    <View style={styles.campusInfo}>
-                      <Text
-                        style={[
-                          styles.campusName,
-                          isSelected && styles.campusNameSelected,
-                        ]}
-                        numberOfLines={2}
-                        ellipsizeMode="tail"
-                      >
-                        {campus.name}
-                      </Text>
-                      <View style={styles.locationRow}>
-                        <Ionicons
-                          name="location-sharp"
-                          size={14}
-                          color="#F59E0B"
-                          style={styles.locationIcon}
-                        />
-                        <Text
-                          style={styles.campusAddress}
-                          numberOfLines={2}
-                          ellipsizeMode="tail"
-                        >
-                          {campus.address || campus.code || "Guayaquil"}
+          <View style={styles.list}>
+            {campuses.map((campus) => {
+              const isSelected = selectedCampusId === campus.id;
+              return (
+                <PressableScale
+                  key={campus.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={campus.name}
+                  onPress={() => setSelectedCampusId(campus.id)}
+                  style={[styles.card, isSelected && styles.cardSelected]}
+                >
+                  <View style={styles.monogram}>
+                    <BrandGradient
+                      from={isSelected ? Colors.navy : "#2E5C91"}
+                      to={isSelected ? "#0A5BA8" : "#6E93BF"}
+                    />
+                    <Text style={styles.monogramText}>{campusInitials(campus.name)}</Text>
+                  </View>
+                  <View style={styles.cardCopy}>
+                    <Text style={styles.cardTitle} numberOfLines={2}>
+                      {campus.name}
+                    </Text>
+                    {campus.address ? (
+                      <View style={styles.cardRow}>
+                        <Ionicons name="location" size={14} color={Colors.secondary} />
+                        <Text style={styles.cardText} numberOfLines={1}>
+                          {campus.address}
                         </Text>
                       </View>
-                    </View>
-
-                    <View
-                      style={[
-                        styles.radioCircle,
-                        isSelected && styles.radioCircleSelected,
-                      ]}
-                    >
-                      {isSelected ? <View style={styles.radioDot} /> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* 4. Action Button */}
-            <View style={styles.actionContainer}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Continuar"
-                disabled={!selectedCampusId || saving}
-                onPress={() => void handleSave()}
-                style={({ pressed }) => [
-                  styles.continueButton,
-                  (!selectedCampusId || saving) && styles.disabledButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                {saving ? (
-                  <ActivityIndicator color={Colors.white} size="small" />
-                ) : (
-                  <View style={styles.buttonContent}>
-                    <Text style={styles.buttonText}>Continuar</Text>
-                    <Ionicons
-                      name="arrow-forward"
-                      size={18}
-                      color={Colors.white}
-                    />
+                    ) : null}
+                    {campus.routeCount !== null ? (
+                      <View style={styles.cardRow}>
+                        <Ionicons name="bus" size={14} color={Colors.primary} />
+                        <Text style={styles.cardText}>
+                          {campus.routeCount === 0
+                            ? "Sin rutas aún"
+                            : `${campus.routeCount} ${campus.routeCount === 1 ? "ruta" : "rutas"}`}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
-                )}
-              </Pressable>
+                  <View style={[styles.check, isSelected && styles.checkSelected]}>
+                    {isSelected ? <Ionicons name="checkmark" size={16} color={Colors.navy} /> : null}
+                  </View>
+                </PressableScale>
+              );
+            })}
 
-              <Pressable
-                accessibilityRole="button"
-                onPress={handleExploreAll}
-                style={styles.exploreButton}
-              >
-                <Text style={styles.exploreText}>
-                  Explorar todos los campus
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* 5. Footer Info Note */}
-            <View style={styles.footerNote}>
-              <Ionicons
-                name="information-circle-outline"
-                size={18}
-                color={Colors.primary}
-              />
-              <Text style={styles.footerText}>
-                Podrás cambiar tu campus principal en cualquier momento desde el
-                inicio o tu perfil.
-              </Text>
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.replace("/(student)/(tabs)/campuses")}
+              style={styles.explore}
+              hitSlop={6}
+            >
+              <Ionicons name="map-outline" size={16} color={Colors.primary} />
+              <Text style={styles.exploreText}>Ver las rutas de todos los campus</Text>
+            </Pressable>
           </View>
         )}
       </ScrollView>
+
+      {showFooter ? (
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !selected || saving }}
+            disabled={!selected || saving}
+            onPress={() => void handleSave()}
+            style={({ pressed }) => [
+              styles.cta,
+              (!selected || saving) && styles.ctaDisabled,
+              pressed && styles.ctaPressed,
+            ]}
+          >
+            {saving ? (
+              <ActivityIndicator color={Colors.navy} />
+            ) : (
+              <>
+                <Text style={styles.ctaText} numberOfLines={1}>
+                  {selected ? `Continuar con ${selected.name}` : "Elige un campus"}
+                </Text>
+                {selected ? <Ionicons name="arrow-forward" size={18} color={Colors.navy} /> : null}
+              </>
+            )}
+          </Pressable>
+        </View>
+      ) : null}
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  heroBanner: {
-    backgroundColor: "#F4F8FE",
+  content: { padding: 16, gap: 18, paddingBottom: 40 },
+  contentWithFooter: { paddingBottom: 120 },
+  hero: {
+    backgroundColor: Colors.white,
     borderRadius: 24,
     overflow: "hidden",
-    position: "relative",
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E1EEFA",
-    minHeight: 180,
     shadowColor: Colors.navy,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
-  heroBackgroundIllustration: {
-    position: "absolute",
-    bottom: 0,
-    right: -15,
-    width: "54%",
-    height: "100%",
-    opacity: 0.96,
-  },
-  heroContent: {
-    width: "52%",
-    paddingLeft: 18,
-    paddingVertical: 18,
-    paddingRight: 4,
-    gap: 6,
-    zIndex: 10,
-  },
-  welcomePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  welcomeEmoji: {
-    fontSize: 20,
-  },
-  welcomeText: {
-    color: Colors.primary,
-    fontFamily: "Inter-Bold",
-    fontSize: 15,
-  },
-  heroTitle: {
-    color: Colors.navy,
-    fontFamily: "Inter-Bold",
-    fontSize: 20,
-    lineHeight: 25,
-  },
-  heroSubtitle: {
-    color: "#5B738E",
-    fontFamily: "Inter-Regular",
-    fontSize: 12.5,
-    lineHeight: 17,
-  },
-  selectionSection: {
-    gap: 16,
-  },
-  sectionLabel: {
-    color: Colors.text.dark,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-    marginTop: 2,
-  },
-  campusList: {
-    gap: 12,
-  },
-  campusCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    padding: 15,
+  // La ilustración trae un margen blanco arriba: se desplaza para que el borde quede limpio.
+  heroImage: { width: "100%", height: 206, marginTop: -16 },
+  heroCopy: { padding: 20, gap: 6 },
+  heroEyebrow: { color: Colors.primary, fontFamily: "Inter-Bold", fontSize: 14 },
+  heroTitle: { color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 26, letterSpacing: -0.4 },
+  heroText: { color: Colors.text.light, fontFamily: "Inter-Regular", fontSize: 15, lineHeight: 22 },
+  list: { gap: 12 },
+  card: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    shadowColor: Colors.navy,
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-  campusCardSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: "#F7FAFE",
-  },
-  campusCardPressed: {
-    opacity: 0.85,
-  },
-  campusIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  campusIconContainerSelected: {
-    backgroundColor: "#EBF4FE",
-  },
-  campusInfo: {
-    flex: 1,
-    minWidth: 0,
-    gap: 3,
-  },
-  campusName: {
-    color: Colors.text.dark,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15.5,
-    flexShrink: 1,
-  },
-  campusNameSelected: {
-    color: Colors.primary,
-    fontFamily: "Inter-Bold",
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 4,
-    minWidth: 0,
-  },
-  locationIcon: {
-    marginTop: 2,
-  },
-  campusAddress: {
-    flex: 1,
-    flexShrink: 1,
-    color: "#64748B",
-    fontFamily: "Inter-Regular",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  radioCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 14,
     borderWidth: 2,
-    borderColor: "#CBD5E1",
+    borderColor: "transparent",
+    shadowColor: Colors.navy,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  cardSelected: { borderColor: Colors.primary, backgroundColor: "#F7FAFF" },
+  monogram: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
-  radioCircleSelected: {
-    borderColor: Colors.primary,
+  monogramText: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 20, letterSpacing: 0.5 },
+  cardCopy: { flex: 1, minWidth: 0, gap: 4 },
+  cardTitle: { color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 17 },
+  cardRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  cardText: { flexShrink: 1, color: Colors.text.light, fontFamily: "Inter-Regular", fontSize: 14 },
+  check: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "#C6D2E1",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  radioDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.primary,
-  },
-  actionContainer: {
-    gap: 10,
+  checkSelected: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+  explore: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 44,
     marginTop: 4,
   },
-  continueButton: {
-    height: 52,
+  exploreText: { color: Colors.primary, fontFamily: "Inter-SemiBold", fontSize: 15 },
+  footer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: "rgba(244,247,251,0.96)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#DCE5F0",
+  },
+  cta: {
+    minHeight: 54,
     borderRadius: 16,
-    backgroundColor: "#07508E",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    shadowColor: "#07508E",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  disabledButton: {
-    backgroundColor: "#94A3B8",
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  buttonContent: {
+    backgroundColor: Colors.secondary,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
-  buttonText: {
-    color: Colors.white,
-    fontFamily: "Inter-Bold",
-    fontSize: 16,
-  },
-  exploreButton: {
-    minHeight: 40,
-    alignItems: "center",
     justifyContent: "center",
-  },
-  exploreText: {
-    color: Colors.primary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
-  footerNote: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 8,
-    backgroundColor: Colors.white,
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    paddingHorizontal: 18,
   },
-  footerText: {
-    flex: 1,
-    color: "#64748B",
-    fontFamily: "Inter-Regular",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  retryButton: {
-    marginTop: 10,
-  },
-  retryText: {
-    color: Colors.primary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 15,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
+  ctaDisabled: { backgroundColor: "#E3E9F1" },
+  ctaPressed: { opacity: 0.9 },
+  ctaText: { flexShrink: 1, color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 16 },
 });

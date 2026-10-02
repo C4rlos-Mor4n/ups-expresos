@@ -2,6 +2,7 @@ import type { DepartureSummary } from "@/types/operational";
 import {
   clockToMinutes,
   departureTimeAt,
+  formatLongDate,
   formatRelativeDay,
   formatTimeUntil,
   getGuayaquilClock,
@@ -50,6 +51,10 @@ describe("schedule utils", () => {
     expect(formatTimeUntil(12)).toBe("en 12 min");
     expect(formatTimeUntil(65)).toBe("en 1 h 05 min");
     expect(formatTimeUntil(120)).toBe("en 2 h");
+  });
+
+  it("formats long dates for headers", () => {
+    expect(formatLongDate("2026-10-02")).toMatch(/viernes.*2.*octubre/);
   });
 
   it("labels relative days", () => {

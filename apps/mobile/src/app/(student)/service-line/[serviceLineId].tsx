@@ -24,6 +24,7 @@ import {
   StopChips,
   studentStyles,
 } from "@/components/student-ui";
+import { Illustration } from "@/components/visual";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
 import { useGuayaquilClock } from "@/hooks/use-guayaquil-clock";
@@ -228,6 +229,7 @@ export default function ServiceLineScreen() {
 
         {route.origin && route.destination ? (
           <View style={styles.routeCard}>
+            <Illustration name="route" width={260} style={styles.routeIllustration} />
             <View style={styles.routeLine}>
               <View style={styles.routeDot} />
               <Text style={styles.routeStop} numberOfLines={2}>
@@ -250,12 +252,17 @@ export default function ServiceLineScreen() {
 
         {route.stops.length > 1 ? (
           <View style={styles.section}>
-            <SectionHeader title="¿Dónde lo tomas?" />
-            <Text style={styles.helper}>
-              {selectedStopId
-                ? "Te mostramos la hora a la que el bus pasa por tu parada."
-                : "Elige tu parada y verás a qué hora pasa el bus por ahí."}
-            </Text>
+            <View style={styles.stopIntro}>
+              <Illustration name="myStop" height={64} />
+              <View style={styles.stopIntroCopy}>
+                <Text style={styles.stopIntroTitle}>¿Dónde lo tomas?</Text>
+                <Text style={styles.helper}>
+                  {selectedStopId
+                    ? "Te mostramos la hora a la que el bus pasa por tu parada."
+                    : "Elige tu parada y verás a qué hora pasa el bus por ahí."}
+                </Text>
+              </View>
+            </View>
             <StopChips
               stops={route.stops}
               selectedId={selectedStopId}
@@ -269,6 +276,7 @@ export default function ServiceLineScreen() {
         ) : error ? (
           <InlineState
             icon="cloud-offline-outline"
+            illustration="empty"
             title="No pudimos consultar los horarios"
             message={error}
             action={<LinkButton label="Reintentar" onPress={() => void load()} />}
@@ -276,6 +284,7 @@ export default function ServiceLineScreen() {
         ) : departures.length === 0 ? (
           <InlineState
             icon="calendar-clear-outline"
+            illustration="noMore"
             title="Sin salidas este día"
             message={`No hay salidas de ${getDirectionLabel(direction).toLowerCase()} para ${formatGuayaquilDate(date)}.`}
             action={
@@ -390,9 +399,11 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-Regular",
     fontSize: 14,
     lineHeight: 20,
-    marginTop: -4,
-    paddingHorizontal: 2,
   },
+  stopIntro: { flexDirection: "row", alignItems: "center", gap: 12 },
+  stopIntroCopy: { flex: 1, minWidth: 0, gap: 2 },
+  stopIntroTitle: { color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 17 },
+  routeIllustration: { alignSelf: "center", marginBottom: 10 },
   pastToggle: {
     flexDirection: "row",
     alignItems: "center",

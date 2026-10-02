@@ -17,6 +17,7 @@ import {
   StatusBadge,
 } from "@/components/operational-ui";
 import { StateChip } from "@/components/student-ui";
+import { Illustration } from "@/components/visual";
 import { useAuth } from "@/context/AuthContext";
 import {
   stopKey,
@@ -148,6 +149,7 @@ export default function DepartureDetailScreen() {
         <ScreenHeader title="Detalle de salida" back onBack={handleBack} />
         <InlineState
           icon="cloud-offline-outline"
+          illustration="empty"
           title="No pudimos cargar la salida"
           message={error || "La salida no está disponible."}
           action={
@@ -273,11 +275,7 @@ export default function DepartureDetailScreen() {
 
           {departure.assignments.length === 0 ? (
             <View style={styles.emptyAssignmentCard}>
-              <Ionicons
-                name="bus-outline"
-                size={32}
-                color={Colors.text.light}
-              />
+              <Illustration name="busStop" width={240} style={styles.emptyIllustration} />
               <Text style={styles.emptyAssignmentTitle}>Bus por asignar</Text>
               <Text style={styles.emptyAssignmentMessage}>
                 La unidad y el conductor se confirman antes de la salida.
@@ -579,6 +577,7 @@ function StudentAssignmentCard({
 }
 
 const styles = StyleSheet.create({
+  emptyIllustration: { marginBottom: 8 },
   myStopTag: {
     alignSelf: "flex-start",
     flexDirection: "row",

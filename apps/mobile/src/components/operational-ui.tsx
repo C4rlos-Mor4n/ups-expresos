@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { BrandLogo } from "@/components/brand-logo";
+import { Illustration, type IllustrationName } from "@/components/visual";
 import { Colors } from "@/constants/Colors";
 import type { OperationalState } from "@/types/operational";
 import { getOperationalStateMeta } from "@/utils/operational";
@@ -59,7 +60,9 @@ export function ScreenHeader({
             <BrandLogo height={40} />
           )}
           <View style={styles.headerCopy}>
-            {title === BRAND_TITLE ? null : (
+            {title === BRAND_TITLE ? (
+              back ? <BrandLogo height={36} /> : null
+            ) : (
               <Text
                 style={styles.headerTitle}
                 numberOfLines={1}
@@ -201,20 +204,27 @@ export function SectionTitle({
 
 export function InlineState({
   icon,
+  illustration,
   title,
   message,
   action,
 }: {
   icon: IconName;
+  /** Ilustración opcional; si existe reemplaza al ícono. */
+  illustration?: IllustrationName;
   title: string;
   message: string;
   action?: ReactNode;
 }) {
   return (
     <View style={styles.state}>
-      <View style={styles.stateIcon}>
-        <Ionicons name={icon} size={26} color={Colors.primary} />
-      </View>
+      {illustration ? (
+        <Illustration name={illustration} height={140} style={styles.stateIllustration} />
+      ) : (
+        <View style={styles.stateIcon}>
+          <Ionicons name={icon} size={26} color={Colors.primary} />
+        </View>
+      )}
       <Text style={styles.stateTitle}>{title}</Text>
       <Text style={styles.stateMessage}>{message}</Text>
       {action ? <View style={styles.stateAction}>{action}</View> : null}
@@ -383,7 +393,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
   },
-  stateAction: { marginTop: 20, alignSelf: "stretch" },
+  stateAction: { marginTop: 18, alignItems: "center" },
+  stateIllustration: { marginBottom: 20 },
   skeletonList: { gap: 12, padding: 20 },
   skeletonCard: {
     minHeight: 102,

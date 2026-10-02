@@ -25,6 +25,7 @@ import {
   SectionHeader,
   studentStyles,
 } from "@/components/student-ui";
+import { Illustration } from "@/components/visual";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
 import { useGuayaquilClock } from "@/hooks/use-guayaquil-clock";
@@ -44,6 +45,7 @@ import { getOperationalErrorMessage } from "@/utils/error-message";
 import { getDirectionLabel } from "@/utils/operational";
 import {
   departureTimeAt,
+  formatLongDate,
   formatRelativeDay,
   greetingName,
   nextServiceDates,
@@ -58,6 +60,8 @@ interface LineDeparture extends DepartureSummary {
 type FutureLookup =
   | { status: "idle" | "none" }
   | { status: "found"; departure: LineDeparture };
+
+const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
 // Días hacia adelante que se consultan cuando hoy ya no quedan salidas.
 const LOOKAHEAD_DAYS = 7;
@@ -178,6 +182,8 @@ export default function StudentHomeScreen() {
     [activeDirection, clock, relevant, stopFor],
   );
   const hero = upcoming[0] ?? null;
+  // Distingue "hoy no hay" (p. ej. domingo) de "hoy ya no quedan".
+  const hadDeparturesToday = relevant.some((item) => item.direction === activeDirection);
   const later = upcoming.slice(1, 5);
 
   // Si hoy ya no hay salidas en este sentido, busca la siguiente en los próximos días.
@@ -277,6 +283,7 @@ export default function StudentHomeScreen() {
         }
       >
         <View style={styles.greeting}>
+          <Text style={styles.greetingDate}>{capitalize(formatLongDate(clock.date))}</Text>
           <Text style={styles.greetingTitle}>
             {firstName ? `Hola, ${firstName} 👋` : "¡Hola! 👋"}
           </Text>
@@ -312,6 +319,7 @@ export default function StudentHomeScreen() {
         ) : error ? (
           <InlineState
             icon="cloud-offline-outline"
+            illustration="empty"
             title="No pudimos cargar tus salidas"
             message={error}
             action={<LinkButton label="Reintentar" onPress={() => void load()} />}
@@ -319,6 +327,7 @@ export default function StudentHomeScreen() {
         ) : lines.length === 0 ? (
           <InlineState
             icon="bus-outline"
+            illustration="busStop"
             title="Tu campus aún no tiene rutas"
             message="Cuando la universidad publique rutas para este campus, aparecerán aquí."
           />
@@ -338,7 +347,9 @@ export default function StudentHomeScreen() {
             ) : futureLookup.status === "found" ? (
               <View style={styles.section}>
                 <Text style={styles.caption}>
-                  Hoy ya no hay más salidas de {directionLabel}.
+                  {hadDeparturesToday
+                    ? `Hoy ya no hay más salidas de ${directionLabel}.`
+                    : `Hoy no hay salidas de ${directionLabel}.`}
                 </Text>
                 <NextBusCard
                   departure={futureLookup.departure}
@@ -351,12 +362,12 @@ export default function StudentHomeScreen() {
               </View>
             ) : (
               <View style={styles.noMore}>
-                <View style={styles.noMoreIcon}>
-                  <Ionicons name="moon-outline" size={22} color={Colors.primary} />
-                </View>
+                <Illustration name="noMore" width={220} />
                 <View style={styles.noMoreCopy}>
                   <Text style={styles.noMoreTitle}>
-                    Hoy ya no hay más salidas de {directionLabel}
+                    {hadDeparturesToday
+                      ? `Hoy ya no hay más salidas de ${directionLabel}`
+                      : `Hoy no hay salidas de ${directionLabel}`}
                   </Text>
                   <Text style={styles.noMoreText}>
                     {futureLookup.status === "none"
@@ -445,7 +456,13 @@ export default function StudentHomeScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 16, paddingBottom: 120 },
   pressed: { opacity: 0.85 },
-  greeting: { gap: 8 },
+  greeting: { gap: 6 },
+  greetingDate: {
+    color: Colors.text.light,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0.3,
+  },
   greetingTitle: { color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 24 },
   campusPill: {
     alignSelf: "flex-start",
@@ -470,7 +487,6 @@ const styles = StyleSheet.create({
   section: { gap: 10 },
   caption: { color: Colors.text.light, fontFamily: "Inter-Medium", fontSize: 14, paddingHorizontal: 2 },
   noMore: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 14,
     backgroundColor: Colors.white,
@@ -479,17 +495,15 @@ const styles = StyleSheet.create({
     borderColor: "#E5EDF7",
     padding: 16,
   },
-  noMoreIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#EEF4FB",
-    alignItems: "center",
-    justifyContent: "center",
+  noMoreCopy: { gap: 4, alignItems: "center" },
+  noMoreTitle: { color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 16, textAlign: "center" },
+  noMoreText: {
+    color: Colors.text.light,
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
   },
-  noMoreCopy: { flex: 1, gap: 3 },
-  noMoreTitle: { color: Colors.text.dark, fontFamily: "Inter-SemiBold", fontSize: 15 },
-  noMoreText: { color: Colors.text.light, fontFamily: "Inter-Regular", fontSize: 14, lineHeight: 20 },
   lineRow: { minHeight: 64, flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },
   lineIcon: {
     width: 40,

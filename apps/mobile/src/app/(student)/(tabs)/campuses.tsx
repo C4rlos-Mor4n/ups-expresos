@@ -21,6 +21,7 @@ import {
   LinkButton,
   studentStyles,
 } from "@/components/student-ui";
+import { Illustration } from "@/components/visual";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
 import { campusPreferenceService } from "@/services/campus-preference.service";
@@ -135,6 +136,16 @@ export default function ServicesScreen() {
           />
         }
       >
+        <View style={styles.banner}>
+          <View style={styles.bannerCopy}>
+            <Text style={styles.bannerTitle}>Encuentra tu ruta</Text>
+            <Text style={styles.bannerText}>
+              Toca una línea para ver sus horarios. Guarda con ★ las que usas.
+            </Text>
+          </View>
+          <Illustration name="services" height={96} />
+        </View>
+
         <View style={styles.search}>
           <Ionicons name="search-outline" size={19} color={Colors.text.light} />
           <TextInput
@@ -163,6 +174,7 @@ export default function ServicesScreen() {
         ) : error ? (
           <InlineState
             icon="cloud-offline-outline"
+            illustration="empty"
             title="No pudimos cargar los servicios"
             message={error}
             action={<LinkButton label="Reintentar" onPress={() => void load()} />}
@@ -170,6 +182,7 @@ export default function ServicesScreen() {
         ) : visible.length === 0 ? (
           <InlineState
             icon={q ? "search-outline" : "business-outline"}
+            illustration={q ? "search" : "empty"}
             title={q ? "Sin resultados" : "No hay campus disponibles"}
             message={
               q
@@ -249,6 +262,20 @@ export default function ServicesScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 20, paddingBottom: 120 },
   pressed: { opacity: 0.85 },
+  banner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#EAF2FC",
+    borderRadius: 22,
+    paddingLeft: 18,
+    paddingRight: 12,
+    paddingVertical: 12,
+    overflow: "hidden",
+  },
+  bannerCopy: { flex: 1, minWidth: 0, gap: 4 },
+  bannerTitle: { color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 19 },
+  bannerText: { color: "#3C5577", fontFamily: "Inter-Regular", fontSize: 14, lineHeight: 20 },
   search: {
     flexDirection: "row",
     alignItems: "center",

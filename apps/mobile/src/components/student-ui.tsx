@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { StatusBadge } from "@/components/operational-ui";
+import { Illustration, PressableScale } from "@/components/visual";
 import { Colors } from "@/constants/Colors";
 import type {
   DepartureStopTime,
@@ -192,7 +193,7 @@ export function StopChips({
   );
 }
 
-/** Tarjeta protagonista del inicio: el próximo bus del estudiante. */
+/** Tarjeta protagonista del inicio con forma de boleto: el próximo bus del estudiante. */
 export function NextBusCard({
   departure,
   lineName,
@@ -219,66 +220,94 @@ export function NextBusCard({
   const vehicle = departure.assignedVehicles?.[0];
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`Tu próximo bus: ${lineName}, ${time}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.hero, pressed && styles.pressed]}
+      style={styles.ticket}
     >
-      <View style={styles.heroTop}>
-        <Text style={styles.heroEyebrow}>
-          {isToday ? "Tu próximo bus" : `Próximo bus · ${dayLabel ?? ""}`}
-        </Text>
-        <StateChip state={departure.state} />
-      </View>
-
-      <View style={styles.heroMain}>
-        <Text style={styles.heroUntil}>
-          {isToday ? formatTimeUntil(until) : time}
-        </Text>
-        {isToday ? <Text style={styles.heroTime}>{time}</Text> : null}
-      </View>
-
-      <Text style={styles.heroLine}>
-        {lineName} · {getDirectionLabel(departure.direction)}
-      </Text>
-      {departure.originStop && departure.destinationStop ? (
-        <Text style={styles.heroRoute} numberOfLines={2}>
-          {departure.originStop} → {departure.destinationStop}
-        </Text>
-      ) : null}
-
-      {stopName ? (
-        <View style={styles.heroStop}>
-          <Ionicons name="location" size={15} color={Colors.secondary} />
-          <Text style={styles.heroStopText} numberOfLines={2}>
-            Pasa por <Text style={styles.heroStopStrong}>{stopName}</Text> a las {time}
+      <View style={styles.ticketTop}>
+        <View style={styles.ticketHeader}>
+          <Text style={styles.ticketEyebrow}>
+            {isToday ? "Tu próximo bus" : `Próximo bus · ${dayLabel ?? ""}`}
           </Text>
+          <StateChip state={departure.state} />
         </View>
-      ) : onChooseStop ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onChooseStop}
-          hitSlop={8}
-          style={styles.heroStop}
-        >
-          <Ionicons name="location-outline" size={15} color={Colors.secondary} />
-          <Text style={styles.heroStopLink}>¿Dónde lo tomas? Elige tu parada</Text>
-        </Pressable>
-      ) : null}
 
-      <View style={styles.heroFooter}>
-        <Text style={styles.heroFooterText}>
-          {vehicle
-            ? `Bus ${vehicle.code} · ${vehicle.plate}`
-            : "Bus por confirmar"}
-        </Text>
-        <View style={styles.heroCta}>
-          <Text style={styles.heroCtaText}>Ver recorrido</Text>
+        <View style={styles.ticketMain}>
+          <View style={styles.ticketMainCopy}>
+            <Text style={styles.ticketUntil} numberOfLines={1} adjustsFontSizeToFit>
+              {isToday ? formatTimeUntil(until) : time}
+            </Text>
+            <View style={styles.ticketTimeRow}>
+              {isToday ? (
+                <View style={styles.ticketTimePill}>
+                  <Ionicons name="time" size={13} color={Colors.navy} />
+                  <Text style={styles.ticketTimeText}>{time}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.ticketLine} numberOfLines={1}>
+                {lineName} · {getDirectionLabel(departure.direction)}
+              </Text>
+            </View>
+          </View>
+          <Illustration name="bus" width={112} />
+        </View>
+
+        {departure.originStop && departure.destinationStop ? (
+          <View style={styles.ticketRoute}>
+            <View style={styles.ticketRouteRow}>
+              <View style={styles.ticketDot} />
+              <Text style={styles.ticketRouteText} numberOfLines={1}>
+                {departure.originStop}
+              </Text>
+            </View>
+            <View style={styles.ticketRouteLine} />
+            <View style={styles.ticketRouteRow}>
+              <Ionicons name="location" size={14} color={Colors.secondary} />
+              <Text style={styles.ticketRouteText} numberOfLines={1}>
+                {departure.destinationStop}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.perforation}>
+        <View style={[styles.notch, styles.notchLeft]} />
+        <View style={styles.dash} />
+        <View style={[styles.notch, styles.notchRight]} />
+      </View>
+
+      <View style={styles.ticketStub}>
+        <View style={styles.ticketStubCopy}>
+          {stopName ? (
+            <>
+              <Text style={styles.stubLabel}>Tu parada · {time}</Text>
+              <Text style={styles.stubValue} numberOfLines={1}>
+                {stopName}
+              </Text>
+            </>
+          ) : onChooseStop ? (
+            <Pressable accessibilityRole="button" onPress={onChooseStop} hitSlop={8}>
+              <Text style={styles.stubLabel}>¿Dónde lo tomas?</Text>
+              <Text style={styles.stubLink}>Elige tu parada</Text>
+            </Pressable>
+          ) : (
+            <>
+              <Text style={styles.stubLabel}>Bus</Text>
+              <Text style={styles.stubValue} numberOfLines={1}>
+                {vehicle ? `${vehicle.code} · ${vehicle.plate}` : "Por confirmar"}
+              </Text>
+            </>
+          )}
+        </View>
+        <View style={styles.ticketCta}>
+          <Text style={styles.ticketCtaText}>Ver recorrido</Text>
           <Ionicons name="arrow-forward" size={16} color={Colors.navy} />
         </View>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -310,7 +339,11 @@ export function NamePromptCard({
   return (
     <View style={styles.prompt}>
       <View style={styles.promptHeader}>
-        <Text style={styles.promptTitle}>¿Cómo te llamamos?</Text>
+        <Illustration name="welcome" height={64} />
+        <View style={styles.promptCopy}>
+          <Text style={styles.promptTitle}>¿Cómo te llamamos?</Text>
+          <Text style={styles.promptText}>Así te saludamos cada día.</Text>
+        </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Ahora no" onPress={onDismiss} hitSlop={10}>
           <Ionicons name="close" size={20} color={Colors.text.light} />
         </Pressable>
@@ -388,6 +421,90 @@ export const studentStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
+  ticket: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    shadowColor: Colors.navy,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
+  },
+  ticketTop: { padding: 20, paddingBottom: 14, gap: 10 },
+  ticketHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  ticketEyebrow: {
+    color: Colors.primary,
+    fontFamily: "Inter-Bold",
+    fontSize: 12,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  ticketMain: { flexDirection: "row", alignItems: "center", gap: 8 },
+  ticketMainCopy: { flex: 1, minWidth: 0, gap: 8 },
+  ticketUntil: { color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 34, letterSpacing: -0.8 },
+  ticketTimeRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  ticketTimePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FFF1CC",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  ticketTimeText: { color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 14, fontVariant: ["tabular-nums"] },
+  ticketLine: { flexShrink: 1, color: Colors.text.dark, fontFamily: "Inter-SemiBold", fontSize: 15 },
+  ticketRoute: {
+    backgroundColor: "#F3F7FC",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  ticketRouteRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  ticketDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 3,
+    borderColor: Colors.primary,
+    marginHorizontal: 1,
+  },
+  ticketRouteLine: { width: 2, height: 10, backgroundColor: "#C6D2E1", marginLeft: 6, marginVertical: 2 },
+  ticketRouteText: { flex: 1, color: Colors.text.dark, fontFamily: "Inter-Medium", fontSize: 14 },
+  perforation: { height: 20, flexDirection: "row", alignItems: "center" },
+  notch: { width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.background.main },
+  notchLeft: { marginLeft: -10 },
+  notchRight: { marginRight: -10 },
+  dash: {
+    flex: 1,
+    marginHorizontal: 6,
+    borderTopWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#D6E1EE",
+  },
+  ticketStub: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 18,
+  },
+  ticketStubCopy: { flex: 1, minWidth: 0, gap: 2 },
+  stubLabel: { color: Colors.text.light, fontFamily: "Inter-Medium", fontSize: 12 },
+  stubValue: { color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 15 },
+  stubLink: { color: Colors.primary, fontFamily: "Inter-Bold", fontSize: 15, textDecorationLine: "underline" },
+  ticketCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.secondary,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    minHeight: 44,
+  },
+  ticketCtaText: { color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 14 },
   toggle: {
     flexDirection: "row",
     backgroundColor: "#E7EEF7",
@@ -467,75 +584,6 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
   chipText: { color: Colors.text.dark, fontFamily: "Inter-Medium", fontSize: 14 },
   chipTextSelected: { color: Colors.navy, fontFamily: "Inter-Bold" },
-  hero: {
-    backgroundColor: Colors.navy,
-    borderRadius: 22,
-    padding: 20,
-    gap: 6,
-    shadowColor: Colors.navy,
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  heroTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  heroEyebrow: {
-    color: "#C7D7EC",
-    fontFamily: "Inter-SemiBold",
-    fontSize: 13,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-  },
-  heroMain: { flexDirection: "row", alignItems: "baseline", gap: 12, marginTop: 2 },
-  heroUntil: {
-    color: Colors.secondary,
-    fontFamily: "Inter-Bold",
-    fontSize: 36,
-    letterSpacing: -0.5,
-  },
-  heroTime: {
-    color: Colors.white,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 20,
-    fontVariant: ["tabular-nums"],
-  },
-  heroLine: { color: Colors.white, fontFamily: "Inter-SemiBold", fontSize: 16 },
-  heroRoute: { color: "#C7D7EC", fontFamily: "Inter-Regular", fontSize: 14, lineHeight: 20 },
-  heroStop: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 4 },
-  heroStopStrong: { fontFamily: "Inter-Bold", color: Colors.white },
-  heroStopText: { flex: 1, color: Colors.white, fontFamily: "Inter-Medium", fontSize: 14 },
-  heroStopLink: {
-    color: Colors.secondary,
-    fontFamily: "Inter-SemiBold",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
-  heroFooter: {
-    marginTop: 10,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.18)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  heroFooterText: { color: "#C7D7EC", fontFamily: "Inter-Medium", fontSize: 13, flexShrink: 1 },
-  heroCta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: Colors.secondary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    minHeight: 40,
-  },
-  heroCtaText: { color: Colors.navy, fontFamily: "Inter-Bold", fontSize: 14 },
   prompt: {
     backgroundColor: Colors.white,
     borderRadius: 18,
@@ -544,7 +592,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5EDF7",
   },
-  promptHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  promptHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  promptCopy: { flex: 1, minWidth: 0, gap: 2 },
+  promptText: { color: Colors.text.light, fontFamily: "Inter-Regular", fontSize: 14 },
   promptTitle: { color: Colors.text.dark, fontFamily: "Inter-Bold", fontSize: 16 },
   promptRow: { flexDirection: "row", gap: 8 },
   promptInput: {
