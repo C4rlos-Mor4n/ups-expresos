@@ -1,4 +1,18 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Colors } from "@/constants/Colors";
-export default function DriverTabsLayout() { return <Tabs screenOptions={({ route }) => ({ headerShown: false, tabBarActiveTintColor: Colors.primary, tabBarInactiveTintColor: Colors.text.light, tabBarStyle: { borderTopColor: Colors.border, backgroundColor: Colors.white }, tabBarLabelStyle: { fontFamily: "Inter-SemiBold", fontSize: 12 }, tabBarIcon: ({ color, size }) => { const icons: Record<string, keyof typeof Ionicons.glyphMap> = { index: "speedometer-outline", assignments: "list-outline", profile: "person-outline" }; return <Ionicons name={icons[route.name] ?? "ellipse-outline"} color={color} size={size} />; } })}><Tabs.Screen name="index" options={{ title: "Inicio" }} /><Tabs.Screen name="assignments" options={{ title: "Mis servicios" }} /><Tabs.Screen name="profile" options={{ title: "Perfil" }} /></Tabs>; }
+import { DockTabBar, type DockTabIcons } from "@/components/dock-tab-bar";
+
+const ICONS: DockTabIcons = {
+  index: ["speedometer", "speedometer-outline"],
+  assignments: ["list", "list-outline"],
+  profile: ["person", "person-outline"],
+};
+
+export default function DriverTabsLayout() {
+  return (
+    <Tabs tabBar={(props) => <DockTabBar {...props} icons={ICONS} />} screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="index" options={{ title: "Inicio" }} />
+      <Tabs.Screen name="assignments" options={{ title: "Mis servicios" }} />
+      <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
+    </Tabs>
+  );
+}

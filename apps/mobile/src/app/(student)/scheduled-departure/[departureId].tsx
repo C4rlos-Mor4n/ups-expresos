@@ -445,8 +445,8 @@ function StudentAssignmentCard({
   const capacityText =
     typeof assignment.vehicle.capacity === "number" &&
     assignment.vehicle.capacity > 0
-      ? `· Capacidad: ${assignment.vehicle.capacity} pasajeros`
-      : "· Capacidad no registrada";
+      ? `${assignment.vehicle.capacity} pasajeros`
+      : "Capacidad no registrada";
 
   return (
     <Pressable
@@ -711,6 +711,7 @@ const styles = StyleSheet.create({
   },
   vehicleInfo: {
     flex: 1,
+    minWidth: 0,
     gap: 3,
   },
   vehicleTitleRow: {
@@ -743,8 +744,10 @@ const styles = StyleSheet.create({
   },
   vehicleMetaRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    gap: 6,
+    columnGap: 8,
+    rowGap: 4,
   },
   plateTag: {
     flexDirection: "row",
