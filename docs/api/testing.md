@@ -16,8 +16,9 @@ Sin esas variables el comando falla sin mensaje claro.
 
 ## Base de referencia
 
-Tras la Fase 1–2 de UX: API con 19 suites unitarias y 9 de integración sobre PostgreSQL (195 pruebas en total con
-todas las variables `RUN_*` activas), E2E con 2 suites (15 pruebas); app móvil con 13 suites (77 pruebas).
+Tras el flujo de conductor y los textos legales: API con 29 suites unitarias y de integración sobre PostgreSQL (205
+pruebas con todas las variables `RUN_*` activas), E2E con 3 suites (20 pruebas, incluye `driver-flow`: vincular cuenta,
+asignar, iniciar y finalizar recorrido); app móvil con 13 suites (79 pruebas).
 
 ## API
 

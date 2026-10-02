@@ -62,3 +62,15 @@ Formato uniforme (filtro global): `{ statusCode, message, errors? }`. Códigos h
 
 No renombrar rutas ni campos que la app consume sin advertencia explícita. Los cambios deben ser aditivos;
 si no lo son, se versiona o se prevé transición y rollback. El contrato generado se verifica en CI.
+
+## Acceso de conductores a la app
+
+El conductor (ficha en `/admin/drivers`) no tiene acceso a la app hasta que un admin le vincula un correo:
+
+| Ruta | Descripción |
+| --- | --- |
+| `POST /admin/drivers/:id/account` `{ email }` | Vincula (o crea) la cuenta de ese correo con rol `DRIVER`. Sirve cualquier dominio: las cuentas existentes inician sesión aunque el dominio no esté en `ALLOWED_EMAIL_DOMAINS`. Si la cuenta no tiene nombre, toma el de la ficha. 409 si el correo es de un admin, de otro conductor, de una cuenta desactivada, o si la ficha ya tiene cuenta. |
+| `DELETE /admin/drivers/:id/account` | Quita el acceso: la cuenta vuelve a `STUDENT` y se revocan sus sesiones. |
+
+Las respuestas de `/admin/drivers` incluyen `accountEmail` (correo vinculado o `null`).
+Flujo probado de punta a punta en `test/e2e/driver-flow.e2e-spec.ts`.

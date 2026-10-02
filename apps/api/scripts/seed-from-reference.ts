@@ -42,6 +42,9 @@ interface ReferenceCampus {
 interface ReferenceStop {
   id: string;
   name: string;
+  /** Referencia corta para el usuario (dirección o punto de referencia). */
+  reference?: string;
+  /** Nota interna de cómo se obtuvo la coordenada: nunca se muestra en la app. */
   coordinateBasis?: string;
   latitude: number;
   longitude: number;
@@ -90,6 +93,11 @@ interface ReferenceDataset {
 export interface ReferenceSeedOptions {
   fromDate: string;
   toDate: string;
+  /**
+   * El seed reconstruye los horarios de las líneas de referencia y BORRA sus salidas,
+   * asignaciones y recorridos. Sin `allowReset` se niega a hacerlo si ya hay asignaciones.
+   */
+  allowReset?: boolean;
 }
 
 export interface ReferenceSeedResult {
@@ -243,7 +251,7 @@ export const seedReferenceDataset = async (
       ? await prisma.stop.update({
           where: { id: existing.id },
           data: {
-            reference: stop.coordinateBasis ?? null,
+            reference: stop.reference ?? null,
             latitude: stop.latitude,
             longitude: stop.longitude,
             isActive: true,
@@ -253,7 +261,7 @@ export const seedReferenceDataset = async (
       : await prisma.stop.create({
           data: {
             name: stop.name,
-            reference: stop.coordinateBasis ?? null,
+            reference: stop.reference ?? null,
             latitude: stop.latitude,
             longitude: stop.longitude,
             isActive: true,
@@ -289,6 +297,16 @@ export const seedReferenceDataset = async (
     lineIds.set(line.code, row.id);
   }
 
+  const existingAssignments = await prisma.serviceAssignment.count({
+    where: { scheduledDeparture: { serviceLineId: { in: [...lineIds.values()] } } },
+  });
+  if (existingAssignments > 0 && !options.allowReset) {
+    throw new Error(
+      `Hay ${existingAssignments} asignaciones de buses en estas líneas y el seed las borraría. ` +
+        'Para extender las salidas usa scripts/materialize-departures (no destructivo). ' +
+        'Si de verdad quieres reiniciar los horarios, vuelve a ejecutar con --reset.',
+    );
+  }
   await clearCalendarHierarchy(prisma, [...lineIds.values()]);
 
   await prisma.serviceLineCampus.deleteMany({
@@ -513,6 +531,7 @@ const main = async (): Promise<void> => {
     const result = await seedReferenceDataset(prisma, {
       fromDate: argumentValue('from') ?? DEFAULT_FROM_DATE,
       toDate: argumentValue('to') ?? DEFAULT_TO_DATE,
+      allowReset: process.argv.includes('--reset'),
     });
     console.log(JSON.stringify({ source: REFERENCE_PATH, ...result }, null, 2));
   } finally {

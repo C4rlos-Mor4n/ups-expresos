@@ -235,6 +235,24 @@ export interface paths {
         patch: operations["DriversController_update"];
         trace?: never;
     };
+    "/admin/drivers/{id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give the driver app access: link (or create) the account for an email with role DRIVER */
+        post: operations["DriversController_linkAccount"];
+        /** Remove the driver app access (account back to STUDENT, sessions revoked) */
+        delete: operations["DriversController_unlinkAccount"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/schedules/calendars": {
         parameters: {
             query?: never;
@@ -1100,6 +1118,11 @@ export interface components {
              */
             licenseNumber?: string | null;
             /**
+             * @description Correo de la cuenta con la que el conductor inicia sesión; null si no tiene acceso a la app
+             * @example conductor@gmail.com
+             */
+            accountEmail?: string | null;
+            /**
              * @example ACTIVE
              * @enum {string}
              */
@@ -1135,6 +1158,13 @@ export interface components {
              * @enum {string}
              */
             status: "ACTIVE" | "INACTIVE";
+        };
+        LinkDriverAccountDto: {
+            /**
+             * @description Correo con el que el conductor iniciará sesión en la app (cualquier dominio). Si no existe, se crea la cuenta con rol DRIVER.
+             * @example conductor@gmail.com
+             */
+            email: string;
         };
         AdminCalendarServiceLineDto: {
             /** Format: uuid */
@@ -2736,6 +2766,119 @@ export interface operations {
             };
             /** @description Driver not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DriversController_linkAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Driver ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkDriverAccountDto"];
+            };
+        };
+        responses: {
+            /** @description Account linked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverResponseDto"];
+                };
+            };
+            /** @description Invalid email */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Driver not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Email belongs to an admin, another driver, a deactivated account, or the driver is already linked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DriversController_unlinkAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Driver ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account unlinked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverResponseDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Driver not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Driver has no linked account */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -54,3 +54,18 @@ describe("operational presentation helpers", () => {
     expect(getDirectionLabel("RETORNO")).toBe("Retorno");
   });
 });
+
+describe("getRouteEndpoints", () => {
+  it("orders by stop and joins origin and destination", () => {
+    const { getRouteEndpoints } = jest.requireActual("@/utils/operational");
+    expect(
+      getRouteEndpoints([
+        { stopOrder: 2, stop: { name: "B" } },
+        { stopOrder: 1, stop: { name: "A" } },
+        { stopOrder: 3, stop: { name: "C" } },
+      ]),
+    ).toBe("A → C");
+    expect(getRouteEndpoints([{ stopOrder: 1, stop: { name: "A" } }])).toBeNull();
+  });
+});
+

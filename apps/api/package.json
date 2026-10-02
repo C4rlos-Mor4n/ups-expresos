@@ -23,6 +23,7 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:demo": "tsx scripts/seed-demo.ts",
     "prisma:seed:reference": "tsx scripts/seed-from-reference.ts",
+    "departures:materialize": "tsx scripts/materialize-departures.ts",
     "qa:showcase:reset": "tsx scripts/qa-showcase-reset.ts",
     "prisma:reset:demo": "UPS_GO_DEMO_MODE=cleanup UPS_GO_DEMO_CONFIRM=DELETE tsx scripts/seed-demo.ts && tsx scripts/seed-demo.ts",
     "prisma:studio": "prisma studio",

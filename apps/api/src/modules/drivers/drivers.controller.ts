@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiParam, ApiBody, ApiBearerAuth, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, HttpCode, ParseUUIDPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiCreatedResponse, ApiOkResponse, ApiParam, ApiBody, ApiBearerAuth, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiBadRequestResponse, ApiConflictResponse } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -10,6 +10,7 @@ import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { DriverResponseDto } from './dto/driver-response.dto';
 import { DriverPaginatedResponseDto } from './dto/driver-paginated-response.dto';
+import { LinkDriverAccountDto } from './dto/link-driver-account.dto';
 
 @ApiBearerAuth()
 @ApiTags('Admin Drivers')
@@ -84,5 +85,39 @@ export class DriversController {
     @CurrentUser('sub') actorId: string,
   ): Promise<DriverResponseDto> {
     return this.driversService.remove(id, actorId);
+  }
+
+  @Post(':id/account')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Give the driver app access: link (or create) the account for an email with role DRIVER' })
+  @ApiParam({ name: 'id', description: 'Driver ID', format: 'uuid' })
+  @ApiBody({ type: LinkDriverAccountDto })
+  @ApiOkResponse({ type: DriverResponseDto, description: 'Account linked' })
+  @ApiBadRequestResponse({ description: 'Invalid email' })
+  @ApiNotFoundResponse({ description: 'Driver not found' })
+  @ApiConflictResponse({ description: 'Email belongs to an admin, another driver, a deactivated account, or the driver is already linked' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  linkAccount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: LinkDriverAccountDto,
+    @CurrentUser('sub') actorId: string,
+  ): Promise<DriverResponseDto> {
+    return this.driversService.linkAccount(id, dto, actorId);
+  }
+
+  @Delete(':id/account')
+  @ApiOperation({ summary: 'Remove the driver app access (account back to STUDENT, sessions revoked)' })
+  @ApiParam({ name: 'id', description: 'Driver ID', format: 'uuid' })
+  @ApiOkResponse({ type: DriverResponseDto, description: 'Account unlinked' })
+  @ApiNotFoundResponse({ description: 'Driver not found' })
+  @ApiConflictResponse({ description: 'Driver has no linked account' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  unlinkAccount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('sub') actorId: string,
+  ): Promise<DriverResponseDto> {
+    return this.driversService.unlinkAccount(id, actorId);
   }
 }

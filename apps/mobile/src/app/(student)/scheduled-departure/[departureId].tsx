@@ -39,42 +39,6 @@ import {
   getDirectionLabel,
 } from "@/utils/operational";
 
-function cleanStopReference(ref: string | null | undefined): string | null {
-  if (!ref) return null;
-  const lower = ref.toLowerCase();
-
-  if (lower.includes("robles 107")) return "Robles 107 y Chambers";
-  if (lower.includes("kfc") || lower.includes("17 y portete"))
-    return "17 y Portete, junto al KFC";
-  if (lower.includes("quito y portete"))
-    return "Intersección Av. Quito y Portete";
-  if (lower.includes("puerto azul"))
-    return "Paso peatonal frente a Puerto Azul";
-  if (
-    lower.includes("comisariato") ||
-    lower.includes("km. 6.9") ||
-    lower.includes("km 6.9")
-  )
-    return "Km 6.9 Vía a la Costa";
-  if (lower.includes("km 19") || lower.includes("km. 19"))
-    return "Km 19 Vía a la Costa";
-  if (lower.includes("avícola") || lower.includes("américas"))
-    return "Av. de las Américas";
-  if (lower.includes("joya")) return "Urbanización La Joya";
-
-  if (
-    lower.includes("google maps") ||
-    lower.includes("investigación") ||
-    lower.includes("plus code") ||
-    lower.includes("coordenada") ||
-    lower.includes("openstreetmap")
-  ) {
-    return null;
-  }
-
-  return ref.trim() || null;
-}
-
 export default function DepartureDetailScreen() {
   const { departureId } = useLocalSearchParams<{ departureId: string }>();
   const router = useRouter();
@@ -319,7 +283,7 @@ export default function DepartureDetailScreen() {
                   departure.scheduledTime,
                   stop.offsetMinutes ?? 0,
                 );
-                const cleanRef = cleanStopReference(stop.reference);
+                const cleanRef = stop.reference?.trim() || null;
 
                 return (
                   <Pressable

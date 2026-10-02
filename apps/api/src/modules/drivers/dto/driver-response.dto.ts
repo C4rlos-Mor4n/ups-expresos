@@ -14,6 +14,14 @@ export class DriverResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'License number', example: 'LIC-123456' })
   licenseNumber?: string | null;
 
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Correo de la cuenta con la que el conductor inicia sesión; null si no tiene acceso a la app',
+    example: 'conductor@gmail.com',
+  })
+  accountEmail?: string | null;
+
   @ApiProperty({ enum: DriverStatus, example: DriverStatus.ACTIVE })
   status!: DriverStatus;
 

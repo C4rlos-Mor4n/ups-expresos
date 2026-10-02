@@ -45,6 +45,7 @@ export async function cleanDatabase(prisma: PrismaService): Promise<void> {
   await prisma.serviceCalendar.deleteMany();
   await prisma.routePathStop.deleteMany();
   await prisma.routePath.deleteMany();
+  await prisma.serviceLineCampus.deleteMany();
   await prisma.serviceLine.deleteMany();
   await prisma.campus.deleteMany();
   await prisma.session.deleteMany();

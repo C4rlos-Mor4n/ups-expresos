@@ -51,13 +51,18 @@ Advanced → Terminal, shell `sh`):
 # Super admins (SUPER_ADMIN_EMAILS). Idempotente.
 node_modules/.bin/tsx prisma/seed.ts
 
-# Campus, líneas, paradas, horarios y salidas materializadas. Idempotente.
-# Por defecto: hoy (hora Guayaquil) + 14 días; ajusta con --from / --to.
+# Carga inicial: campus, líneas, paradas, horarios y salidas (hoy + 14 días).
+# ⚠️ Reconstruye los horarios de esas líneas y BORRA sus salidas, asignaciones y recorridos.
+#    Si ya hay asignaciones se niega a correr; para forzarlo: --reset.
 node dist/scripts/seed-from-reference.js
-node dist/scripts/seed-from-reference.js --from=2026-10-02 --to=2026-11-30
+
+# Extender salidas (NO destructivo): crea solo las que faltan, conserva asignaciones.
+# Por defecto hoy + 30 días; ajusta con --from / --to.
+node dist/scripts/materialize-departures.js
+node dist/scripts/materialize-departures.js --from=2026-11-01 --to=2026-12-15
 ```
 
-Repite el comando de referencia cuando la ventana de salidas se agote (las salidas se materializan por fecha).
+Para extender la ventana de salidas usa **siempre** `materialize-departures`, nunca el seed de referencia.
 Desde un checkout local: `cd apps/api && pnpm prisma:seed:reference`.
 
 `pnpm qa:showcase:reset` es **destructivo**: borra y recrea datos. Solo con `CONFIRM_LOCAL_QA_RESET=YES`, en una base

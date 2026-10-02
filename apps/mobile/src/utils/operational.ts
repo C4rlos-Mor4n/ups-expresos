@@ -120,3 +120,13 @@ export function addMinutesToOperationalTime(
   const mStr = resultMins.toString().padStart(2, "0");
   return `${hStr}:${mStr}`;
 }
+
+/** "Origen → Destino" del recorrido de un conductor (por orden de parada). */
+export function getRouteEndpoints(
+  stops: { stopOrder: number; stop: { name: string } }[],
+): string | null {
+  const ordered = [...stops].sort((a, b) => a.stopOrder - b.stopOrder);
+  const first = ordered[0]?.stop.name;
+  const last = ordered[ordered.length - 1]?.stop.name;
+  return first && last && ordered.length > 1 ? `${first} → ${last}` : null;
+}

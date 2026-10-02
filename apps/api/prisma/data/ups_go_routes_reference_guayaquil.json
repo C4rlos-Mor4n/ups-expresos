@@ -80,6 +80,7 @@
     {
       "id": "STOP_AVICOLA_FERNANDEZ_AMERICAS",
       "name": "Avícola Fernández - Av. de las Américas",
+      "reference": "Av. de las Américas, frente a Avícola Fernández",
       "aliases": [
         "Avícola Fernández Garzota",
         "Avícola Fernández - Av de las Americas"
@@ -97,6 +98,7 @@
     {
       "id": "STOP_DON_LUCHO_GARZOCENTRO",
       "name": "Confecciones Don Lucho - Diagonal Garzocentro 2000",
+      "reference": "Diagonal al C.C. Garzocentro 2000",
       "aliases": [
         "Confecciones Don Lucho",
         "Diagonal Garzocentro 2000"
@@ -114,6 +116,7 @@
     {
       "id": "STOP_COLEGIO_AMERICANO",
       "name": "Colegio Americano - Av. Juan Tanca Marengo",
+      "reference": "Av. Juan Tanca Marengo km 6.5",
       "aliases": [
         "Colegio Americano de Guayaquil",
         "Av. Juan Tanca Marengo Km 6.5"
@@ -131,6 +134,7 @@
     {
       "id": "STOP_PASO_PEATONAL_PUERTO_AZUL",
       "name": "Paso Peatonal Puerto Azul",
+      "reference": "Paso peatonal frente a Puerto Azul",
       "aliases": [
         "Vía a la Costa - Paso Peatonal Puerto Azul"
       ],
@@ -147,6 +151,7 @@
     {
       "id": "STOP_MI_COMISARIATO_VIA_COSTA",
       "name": "Mi Comisariato Vía a la Costa",
+      "reference": "Km 6.9 Vía a la Costa",
       "aliases": [
         "Mi Comisariato Vía a la Costa km 6.9"
       ],
@@ -163,6 +168,7 @@
     {
       "id": "STOP_UPS_MARIA_AUXILIADORA",
       "name": "UPS - Campus María Auxiliadora",
+      "reference": "Km 19 Vía a la Costa",
       "aliases": [
         "Universidad Politécnica Salesiana Campus María Auxiliadora",
         "UPS María Auxiliadora Km 19 Vía a la Costa"
@@ -180,6 +186,7 @@
     {
       "id": "STOP_UPS_CENTENARIO_LA_JOYA",
       "name": "Campus Centenario - Edificio La Joya",
+      "reference": "Robles 107 y Chambers",
       "aliases": [
         "Campus Centenario Edificio La Joya",
         "Campus Centenario Edificio Administrativo La Joya",
@@ -198,6 +205,7 @@
     {
       "id": "STOP_QUITO_PORTETE",
       "name": "Quito y Portete",
+      "reference": "Intersección Av. Quito y Portete",
       "aliases": [
         "Av. Quito / Portete de Tarqui",
         "Avenida Quito y Portete"
@@ -215,6 +223,7 @@
     {
       "id": "STOP_KFC_17_PORTETE",
       "name": "Parada KFC - 17 y Portete",
+      "reference": "17 y Portete, junto al KFC",
       "aliases": [
         "KFC 17 y Portete",
         "La 17 y Portete"
@@ -232,6 +241,7 @@
     {
       "id": "STOP_REDONDEL_LA_JOYA",
       "name": "Redondel Urb. La Joya",
+      "reference": "Redondel de la Urbanización La Joya",
       "aliases": [
         "Redondel Urb. La Joya (Comisariato del Portal)",
         "Redondel Urb. La Joya (Administrativos - Estudiantes)",
@@ -250,6 +260,7 @@
     {
       "id": "STOP_CENTRO_COMERCIAL_OASIS",
       "name": "Centro Comercial Oasis",
+      "reference": "Centro Comercial Oasis",
       "aliases": [
         "C.C. Oasis"
       ],
@@ -266,6 +277,7 @@
     {
       "id": "STOP_AVICOLA_FERNANDEZ_MUCHO_LOTE",
       "name": "Avícola Fernández Mucho Lote I",
+      "reference": "Mucho Lote 1, Avícola Fernández",
       "aliases": [
         "Avícola Fernández M. Lote",
         "Avícola Fernández Mucho Lote 1"
@@ -283,6 +295,7 @@
     {
       "id": "STOP_PRIMAX_PARQUE_CALIFORNIA",
       "name": "Vía a Daule Primax (Parque California)",
+      "reference": "Vía a Daule, gasolinera Primax (Parque California)",
       "aliases": [
         "Primax California",
         "Primax Parque California",
@@ -301,6 +314,7 @@
     {
       "id": "STOP_FLORIDA_METROVIA",
       "name": "Vía a Daule Florida (frente a parada de Metrovía)",
+      "reference": "Vía a Daule, frente a la parada Florida de la Metrovía",
       "aliases": [
         "Florida Metrovía",
         "Parada Florida"
