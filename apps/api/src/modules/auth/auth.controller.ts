@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, HttpCode } from "@nestjs/common";
+import { Controller, Post, Get, Patch, Body, HttpCode } from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
@@ -17,6 +17,7 @@ import { RequestCodeDto } from "./dto/request-code.dto";
 import { VerifyCodeDto } from "./dto/verify-code.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { LogoutDto } from "./dto/logout.dto";
+import { UpdateMeDto } from "./dto/update-me.dto";
 import { AuthTokensDto, AuthUserDto } from "./dto/auth-response.dto";
 import {
   LogoutResponseDto,
@@ -96,5 +97,18 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: "Invalid or missing token" })
   getMe(@CurrentUser("sub") userId: string): Promise<AuthUserDto> {
     return this.authService.getMe(userId);
+  }
+
+  @Patch("me")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update the current user's display name" })
+  @ApiOkResponse({ type: AuthUserDto, description: "Updated user" })
+  @ApiUnauthorizedResponse({ description: "Invalid or missing token" })
+  @ApiBadRequestResponse({ description: "Invalid request body" })
+  updateMe(
+    @CurrentUser("sub") userId: string,
+    @Body() dto: UpdateMeDto,
+  ): Promise<AuthUserDto> {
+    return this.authService.updateMe(userId, dto);
   }
 }

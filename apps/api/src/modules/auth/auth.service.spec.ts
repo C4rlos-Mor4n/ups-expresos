@@ -576,4 +576,48 @@ describe("AuthService", () => {
       ).rejects.toThrow("User is deactivated");
     });
   });
+
+  // ─── updateMe ──────────────────────────────────────────────────
+
+  describe("updateMe", () => {
+    const baseUser = {
+      id: "user-1",
+      email: "student@est.ups.edu.ec",
+      name: null,
+      role: UserRole.STUDENT,
+      emailVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it("updates the display name and returns the mapped user", async () => {
+      mockUserFindUnique.mockResolvedValue(baseUser);
+      mockUserUpdate.mockResolvedValue({ ...baseUser, name: "Carlos Morán" });
+
+      const result = await service.updateMe("user-1", { name: "Carlos Morán" });
+
+      expect(mockUserUpdate).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        data: { name: "Carlos Morán" },
+      });
+      expect(result).toEqual({
+        id: "user-1",
+        email: "student@est.ups.edu.ec",
+        name: "Carlos Morán",
+        role: UserRole.STUDENT,
+        emailVerified: true,
+        isActive: true,
+      });
+    });
+
+    it("throws when the user does not exist", async () => {
+      mockUserFindUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateMe("missing", { name: "Ana" }),
+      ).rejects.toThrow("User not found");
+      expect(mockUserUpdate).not.toHaveBeenCalled();
+    });
+  });
 });

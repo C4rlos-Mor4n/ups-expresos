@@ -144,6 +144,56 @@ describe('Auth (e2e)', () => {
     });
   });
 
+  describe('PATCH /auth/me', () => {
+    let accessToken: string;
+
+    beforeAll(async () => {
+      const codeResponse = await requestCode('nametest@est.ups.edu.ec');
+      // IP propia: verify-code tiene un límite de 5/min por IP compartido con el resto de la suite.
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/verify-code')
+        .set('X-Forwarded-For', '203.0.113.77')
+        .send({ email: 'nametest@est.ups.edu.ec', code: codeResponse.body.devCode });
+      accessToken = loginResponse.body.accessToken;
+    });
+
+    it('should update the display name (trimmed)', async () => {
+      const response = await request(app.getHttpServer())
+        .patch('/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: '  Ana   Pérez ' })
+        .expect(200);
+
+      expect(response.body.name).toBe('Ana Pérez');
+
+      const me = await request(app.getHttpServer())
+        .get('/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+      expect(me.body.name).toBe('Ana Pérez');
+    });
+
+    it('should reject invalid names and unknown fields', async () => {
+      await request(app.getHttpServer())
+        .patch('/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: 'A' })
+        .expect(400);
+      await request(app.getHttpServer())
+        .patch('/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: 'Ana', role: 'SUPER_ADMIN' })
+        .expect(400);
+    });
+
+    it('should reject without token', async () => {
+      return request(app.getHttpServer())
+        .patch('/auth/me')
+        .send({ name: 'Ana' })
+        .expect(401);
+    });
+  });
+
   describe('POST /auth/logout', () => {
     let accessToken: string;
     let refreshToken: string;

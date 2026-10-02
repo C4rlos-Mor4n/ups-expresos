@@ -120,7 +120,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update the current user's display name */
+        patch: operations["AuthController_updateMe"];
         trace?: never;
     };
     "/admin/stops": {
@@ -896,6 +897,13 @@ export interface components {
             /** @example Logged out */
             message: string;
         };
+        UpdateMeDto: {
+            /**
+             * @description Nombre visible del usuario (se muestra en el saludo y el perfil)
+             * @example Carlos Morán
+             */
+            name: string;
+        };
         CreateStopDto: {
             /**
              * @description Stop name
@@ -1378,6 +1386,19 @@ export interface components {
             name: string;
             description?: string | null;
         };
+        OperationalDepartureStopTimeDto: {
+            /** Format: uuid */
+            stopId: string;
+            /** @example Quito y Portete */
+            name: string;
+            /** @example 2 */
+            order: number;
+            /**
+             * @description Hora programada de paso (HH:MM, America/Guayaquil)
+             * @example 06:35
+             */
+            time: string;
+        };
         AssignedVehiclePreviewDto: {
             /** Format: uuid */
             id: string;
@@ -1400,6 +1421,8 @@ export interface components {
             originStop?: string | null;
             destinationStop?: string | null;
             stopsCount?: number;
+            /** @description Paradas con su hora programada de paso. Vacío si la salida no tiene un único recorrido. */
+            stopTimes?: components["schemas"]["OperationalDepartureStopTimeDto"][];
             assignedVehicles?: components["schemas"]["AssignedVehiclePreviewDto"][];
         };
         OperationalCampusSummaryDto: {
@@ -1490,6 +1513,8 @@ export interface components {
             originStop?: string | null;
             destinationStop?: string | null;
             stopsCount?: number;
+            /** @description Paradas con su hora programada de paso. Vacío si la salida no tiene un único recorrido. */
+            stopTimes?: components["schemas"]["OperationalDepartureStopTimeDto"][];
             assignedVehicles?: components["schemas"]["AssignedVehiclePreviewDto"][];
             serviceLine: components["schemas"]["OperationalServiceLineWithCampusDto"];
             journey?: components["schemas"]["StudentJourneyDto"] | null;
@@ -1982,6 +2007,44 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AuthUserDto"];
                 };
+            };
+            /** @description Invalid or missing token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_updateMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMeDto"];
+            };
+        };
+        responses: {
+            /** @description Updated user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthUserDto"];
+                };
+            };
+            /** @description Invalid request body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Invalid or missing token */
             401: {

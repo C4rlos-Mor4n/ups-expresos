@@ -15,6 +15,7 @@ import { RequestCodeDto } from "./dto/request-code.dto";
 import { VerifyCodeDto } from "./dto/verify-code.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { LogoutDto } from "./dto/logout.dto";
+import { UpdateMeDto } from "./dto/update-me.dto";
 import { AuthTokensDto, AuthUserDto } from "./dto/auth-response.dto";
 import { JwtPayload } from "../../common/types/jwt-payload.type";
 import { MailService } from "./mail/mail.service";
@@ -264,6 +265,20 @@ export class AuthService {
     }
 
     return this.mapToAuthUser(user);
+  }
+
+  async updateMe(userId: string, dto: UpdateMeDto): Promise<AuthUserDto> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { name: dto.name },
+    });
+    return this.mapToAuthUser(updated);
   }
 
   private async createSessionAndTokens(user: User): Promise<AuthTokensDto> {

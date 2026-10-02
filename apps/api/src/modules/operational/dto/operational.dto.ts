@@ -333,6 +333,14 @@ export class AssignedVehiclePreviewDto {
     | null;
 }
 
+export class OperationalDepartureStopTimeDto {
+  @ApiProperty({ format: "uuid" }) stopId!: string;
+  @ApiProperty({ example: "Quito y Portete" }) name!: string;
+  @ApiProperty({ example: 2 }) order!: number;
+  @ApiProperty({ example: "06:35", description: "Hora programada de paso (HH:MM, America/Guayaquil)" })
+  time!: string;
+}
+
 export class OperationalDepartureSummaryDto {
   @ApiProperty({ format: "uuid" }) id!: string;
   @ApiProperty({ format: "date" }) serviceDate!: string;
@@ -348,6 +356,12 @@ export class OperationalDepartureSummaryDto {
     | string
     | null;
   @ApiPropertyOptional({ type: Number }) stopsCount?: number;
+  @ApiPropertyOptional({
+    type: () => OperationalDepartureStopTimeDto,
+    isArray: true,
+    description: "Paradas con su hora programada de paso. Vacío si la salida no tiene un único recorrido.",
+  })
+  stopTimes?: OperationalDepartureStopTimeDto[];
   @ApiPropertyOptional({ type: () => AssignedVehiclePreviewDto, isArray: true })
   assignedVehicles?: AssignedVehiclePreviewDto[];
 }

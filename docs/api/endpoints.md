@@ -17,7 +17,7 @@ Autenticación: `Authorization: Bearer <accessToken>` salvo en rutas públicas. 
 
 ## Autenticado (cualquier rol)
 
-`POST /auth/logout`, `GET /auth/me`.
+`POST /auth/logout`, `GET /auth/me`, `PATCH /auth/me` (solo `name`, 2–60 caracteres; lo usa la app para el saludo).
 
 ## Student (`STUDENT`) — consumido por la app
 
@@ -25,7 +25,7 @@ Autenticación: `Authorization: Bearer <accessToken>` salvo en rutas públicas. 
 |---|---|
 | `GET /student/campuses` | Campus activos. |
 | `GET /student/campuses/:campusId/service-lines` | Líneas que **atienden** ese campus. |
-| `GET /student/service-lines/:serviceLineId/departures?date=&direction=` | Salidas de una fecha con su estado operativo. |
+| `GET /student/service-lines/:serviceLineId/departures?date=&direction=` | Salidas de una fecha con su estado operativo. Incluye `stopTimes` (parada, orden y hora programada de paso) cuando la salida tiene un único recorrido; campo opcional y aditivo. |
 | `GET /student/scheduled-departures/:id` | Detalle: asignaciones por bus, recorrido, paradas y horas programadas. |
 
 ## Driver (`DRIVER`) — consumido por la app

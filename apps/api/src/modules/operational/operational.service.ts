@@ -113,6 +113,14 @@ type AssignmentRecord = Prisma.ServiceAssignmentGetPayload<{
 }>;
 
 const formatTime = (value: Date): string => value.toISOString().slice(11, 19);
+// Hora "HH:MM" de una hora del día (Date en UTC) desplazada N minutos, con vuelta a las 24 h.
+const addMinutesToClock = (value: Date, minutes: number): string => {
+  const total =
+    (((value.getUTCHours() * 60 + value.getUTCMinutes() + minutes) % 1440) +
+      1440) %
+    1440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
 
 const operationalState = (assignment: {
   serviceRun?: { status: "IN_PROGRESS" | "COMPLETED" } | null;
@@ -486,6 +494,12 @@ export class OperationalService {
       originStop: string | null;
       destinationStop: string | null;
       stopsCount: number;
+      stopTimes: Array<{
+        stopId: string;
+        name: string;
+        order: number;
+        time: string;
+      }>;
       assignedVehicles: Array<{
         id: string;
         code: string;
@@ -535,6 +549,18 @@ export class OperationalService {
                     },
                   },
                 },
+                stopTimes: {
+                  orderBy: { offsetMinutes: "asc" },
+                  select: {
+                    offsetMinutes: true,
+                    routePathStop: {
+                      select: {
+                        stopOrder: true,
+                        stop: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -563,6 +589,13 @@ export class OperationalService {
       let destinationStop: string | null = null;
       let stopsCount = 0;
 
+      let stopTimes: Array<{
+        stopId: string;
+        name: string;
+        order: number;
+        time: string;
+      }> = [];
+
       if (templates.length === 1) {
         const stops = templates[0]?.routePath?.stops ?? [];
         originStop = stops[0]?.stop?.name ?? null;
@@ -571,6 +604,18 @@ export class OperationalService {
             ? (stops[stops.length - 1]?.stop?.name ?? null)
             : null;
         stopsCount = stops.length;
+        // Hora programada de paso por cada parada (salida + offset del horario).
+        stopTimes = (templates[0]?.stopTimes ?? [])
+          .map((stopTime) => ({
+            stopId: stopTime.routePathStop.stop.id,
+            name: stopTime.routePathStop.stop.name,
+            order: stopTime.routePathStop.stopOrder,
+            time: addMinutesToClock(
+              departure.scheduledTime,
+              stopTime.offsetMinutes,
+            ),
+          }))
+          .sort((a, b) => a.order - b.order);
       }
 
       return {
@@ -583,6 +628,7 @@ export class OperationalService {
         originStop,
         destinationStop,
         stopsCount,
+        stopTimes,
         assignedVehicles,
       };
     });

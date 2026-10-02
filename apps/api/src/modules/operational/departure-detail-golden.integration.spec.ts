@@ -319,6 +319,17 @@ describeGolden("OperationalService - isolated scheduled departure goldens", () =
     const departures = await service.getStudentDepartures(line.id, "2026-08-31", "IDA");
     const departure = departures.find((item) => item.scheduledTime.startsWith("06:40"));
     expect(departure).toBeDefined();
+    // El listado expone la hora de paso por parada (salida + offset).
+    expect(departure!.stopTimes.map((stopTime) => stopTime.time)).toEqual([
+      "06:40",
+      "06:55",
+      "07:10",
+      "07:25",
+      "07:30",
+      "07:45",
+    ]);
+    expect(departure!.stopTimes.map((stopTime) => stopTime.order)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(departure!.stopTimes[1]?.name).toBe("Quito y Portete");
 
     const detail = await service.getStudentDepartureDetail(departure!.id);
     expect(detail.scheduledTime).toBe("06:40:00");
