@@ -1,5 +1,4 @@
 import {
-  Image,
   ImageBackground,
   Pressable,
   StyleSheet,
@@ -10,6 +9,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -22,11 +22,7 @@ export default function WelcomeScreen() {
       <View style={styles.overlay} />
       <SafeAreaView style={styles.container}>
         <View style={styles.brand}>
-          <Image
-            source={require("../../assets/images/images_upsgo/logo-ups-go-icon.png")}
-            style={styles.mark}
-          />
-          <Text style={styles.brandText}>UPS GO</Text>
+          <BrandLogo height={88} />
         </View>
         <View style={styles.content}>
           <Text style={styles.title}>
@@ -62,13 +58,6 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1, paddingHorizontal: 24, paddingBottom: 28 },
   brand: { flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 8 },
-  mark: { width: 48, height: 48, borderRadius: 24 },
-  brandText: {
-    color: Colors.white,
-    fontFamily: "Inter-Bold",
-    fontSize: 20,
-    letterSpacing: 0.4,
-  },
   content: { flex: 1, justifyContent: "center" },
   title: {
     color: Colors.white,

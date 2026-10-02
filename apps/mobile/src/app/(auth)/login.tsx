@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -17,9 +16,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/utils/error-message";
+import { BrandLogo } from "@/components/brand-logo";
 import { PrimaryButton } from "@/components/operational-ui";
 
-const upsLogo = require("../../../assets/images/images_upsgo/logo-ups-go-icon.png");
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -87,17 +86,10 @@ export default function LoginScreen() {
             )}
 
             <View style={styles.identity}>
-              <View style={styles.logoFrame}>
-                <Image
-                  source={upsLogo}
-                  style={styles.upsLogo}
-                  resizeMode="contain"
-                />
-              </View>
+              <BrandLogo height={110} style={{ alignSelf: "center" }} />
               <Text style={styles.university}>
                 Universidad Politécnica Salesiana
               </Text>
-              <Text style={styles.product}>UPS GO</Text>
               <Text style={styles.productSubtitle}>
                 Servicios de transporte
               </Text>
@@ -213,30 +205,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 2,
   },
-  logoFrame: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(255,255,255,0.96)",
-    padding: 6,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
-  },
-  upsLogo: { width: 64, height: 64, borderRadius: 32 },
   university: {
     color: "#D9E8F8",
     fontFamily: "Inter-Medium",
     fontSize: 12,
     marginTop: 8,
     textAlign: "center",
-  },
-  product: {
-    color: Colors.white,
-    fontFamily: "Inter-Bold",
-    fontSize: 26,
-    letterSpacing: 0.6,
   },
   productSubtitle: {
     color: "#D9E8F8",

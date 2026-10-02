@@ -19,6 +19,7 @@ import { PrimaryButton } from "@/components/operational-ui";
 import { useAuth } from "@/context/AuthContext";
 import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/utils/error-message";
+import { BrandLogo } from "@/components/brand-logo";
 
 const upsLogo = require("../../../assets/images/images_upsgo/logo-ups.png");
 
@@ -83,7 +84,7 @@ export default function OtpScreen() {
               >
                 <Ionicons name="arrow-back" size={22} color={Colors.white} />
               </Pressable>
-              <Text style={styles.brandText}>UPS GO</Text>
+              <BrandLogo height={40} />
             </View>
 
             <View style={styles.card}>
@@ -217,7 +218,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: -10,
   },
-  brandText: { color: Colors.white, fontFamily: "Inter-Bold", fontSize: 18 },
   card: {
     backgroundColor: Colors.white,
     borderRadius: 24,

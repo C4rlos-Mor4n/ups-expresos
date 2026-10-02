@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps, ReactNode } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -10,11 +9,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { BrandLogo } from "@/components/brand-logo";
 import { Colors } from "@/constants/Colors";
 import type { OperationalState } from "@/types/operational";
 import { getOperationalStateMeta } from "@/utils/operational";
 
-const appLogo = require("../../assets/images/images_upsgo/logo-ups-go-icon.png");
+
+// Cuando el título es el nombre de la marca, el header muestra solo el logo.
+const BRAND_TITLE = "UPS GO";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -54,22 +56,18 @@ export function ScreenHeader({
               <Ionicons name="arrow-back" size={22} color={Colors.white} />
             </Pressable>
           ) : (
-            <View style={styles.brandMark}>
-              <Image
-                source={appLogo}
-                style={styles.brandLogo}
-                resizeMode="contain"
-              />
-            </View>
+            <BrandLogo height={44} />
           )}
           <View style={styles.headerCopy}>
-            <Text
-              style={styles.headerTitle}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {title}
-            </Text>
+            {title === BRAND_TITLE ? null : (
+              <Text
+                style={styles.headerTitle}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {title}
+              </Text>
+            )}
             {subtitle ? (
               <Text
                 style={styles.headerSubtitle}
@@ -296,20 +294,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  brandMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.white,
-    padding: 3,
-    shadowColor: Colors.navy,
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  brandLogo: { width: 38, height: 38, borderRadius: 19 },
   iconButton: {
     width: 44,
     height: 44,
