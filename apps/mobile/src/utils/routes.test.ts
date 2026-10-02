@@ -19,6 +19,7 @@ describe("isPrivateRoute (route guard)", () => {
 
   it("keeps legal pages open with or without a session", () => {
     expect(isSharedRoute(["legal"])).toBe(true);
+    expect(isSharedRoute(["credits"])).toBe(true);
     expect(isPrivateRoute(["legal"])).toBe(false);
     expect(isSharedRoute(["(auth)", "login"])).toBe(false);
     expect(isSharedRoute(["(student)", "(tabs)"])).toBe(false);

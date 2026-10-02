@@ -71,6 +71,7 @@ function AppContent() {
         <Stack.Screen name="(driver)" />
         <Stack.Screen name="unsupported-role" />
         <Stack.Screen name="legal" />
+        <Stack.Screen name="credits" />
       </Stack>
     </>
   );

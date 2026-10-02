@@ -2,8 +2,8 @@
  * Textos legales de UPS GO (Política de privacidad y Términos de uso).
  *
  * Redactados de forma general para la fase de pruebas, alineados con la Ley Orgánica de Protección de
- * Datos Personales del Ecuador (LOPDP). Antes de publicar en tiendas deben revisarlos el área legal y el
- * responsable del tratamiento, y completarse `LEGAL_CONTACT_EMAIL`.
+ * Datos Personales del Ecuador (LOPDP). El responsable del tratamiento es la Universidad Politécnica
+ * Salesiana. Antes de publicar en tiendas deben revisarlos su área legal y completarse `LEGAL_CONTACT_EMAIL`.
  */
 
 export type LegalDocumentId = "privacy" | "terms";
@@ -23,7 +23,7 @@ export interface LegalDocument {
   sections: LegalSection[];
 }
 
-export const LEGAL_VERSION = "1.0";
+export const LEGAL_VERSION = "1.1";
 export const LEGAL_UPDATED_AT = "2 de octubre de 2026";
 
 /** Correo para ejercer derechos y consultas. `null` mientras no exista un buzón oficial. */
@@ -42,7 +42,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       title: "1. Quiénes somos y alcance",
       paragraphs: [
-        "UPS GO (en adelante, «el Servicio») es la aplicación de información del transporte universitario para la comunidad de la Universidad Politécnica Salesiana (UPS). El operador del Servicio actúa como responsable del tratamiento de los datos personales descritos aquí, en coordinación con la universidad.",
+        "UPS GO (en adelante, «el Servicio») es la aplicación de información del transporte universitario para la comunidad de la Universidad Politécnica Salesiana (UPS). La Universidad Politécnica Salesiana es la responsable del tratamiento de los datos personales descritos aquí («nosotros»).",
         "Esta política aplica a la aplicación móvil, a la API que la respalda y a cualquier canal administrativo del Servicio. Se rige por la Ley Orgánica de Protección de Datos Personales del Ecuador (LOPDP), su reglamento y demás normativa aplicable.",
       ],
     },
@@ -75,13 +75,13 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       title: "4. Base legal",
       paragraphs: [
-        "Tratamos tus datos con base en: (a) la prestación del Servicio que solicitas al ingresar; (b) el interés legítimo de la universidad y del operador en organizar un transporte seguro y eficiente; (c) el cumplimiento de obligaciones legales; y (d) tu consentimiento, cuando sea necesario, el cual puedes revocar en cualquier momento sin efecto retroactivo.",
+        "Tratamos tus datos con base en: (a) la prestación del Servicio que solicitas al ingresar; (b) el interés legítimo de la universidad en organizar un transporte seguro y eficiente; (c) el cumplimiento de obligaciones legales; y (d) tu consentimiento, cuando sea necesario, el cual puedes revocar en cualquier momento sin efecto retroactivo.",
       ],
     },
     {
       title: "5. Con quién los compartimos",
       bullets: [
-        "La Universidad Politécnica Salesiana y el personal autorizado de la operación de transporte, solo en lo necesario para su gestión.",
+        "Personal autorizado de la universidad y de la operación de transporte, solo en lo necesario para su gestión.",
         "Proveedores que nos prestan servicios (alojamiento de servidores y base de datos, envío de correos, distribución de actualizaciones de la app). Actúan como encargados del tratamiento, bajo contrato y solo siguiendo nuestras instrucciones.",
         "Autoridades competentes, cuando la ley o una orden válida lo exijan.",
       ],

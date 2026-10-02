@@ -12,7 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Updates from "expo-updates";
 import Constants from "expo-constants";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import {
   AppScreen,
   ScreenHeader,
@@ -217,9 +217,19 @@ export function ProfileScreen({
         </View>
 
         <View style={uiStyles.card}>
-          <LegalLink icon="shield-checkmark-outline" title="Política de privacidad" doc="privacy" />
+          <LinkRow icon="heart-outline" title="Agradecimientos" href={{ pathname: "/credits" }} />
           <View style={styles.separator} />
-          <LegalLink icon="document-text-outline" title="Términos de uso" doc="terms" />
+          <LinkRow
+            icon="shield-checkmark-outline"
+            title="Política de privacidad"
+            href={{ pathname: "/legal", params: { doc: "privacy" } }}
+          />
+          <View style={styles.separator} />
+          <LinkRow
+            icon="document-text-outline"
+            title="Términos de uso"
+            href={{ pathname: "/legal", params: { doc: "terms" } }}
+          />
         </View>
 
         <Pressable
@@ -236,21 +246,21 @@ export function ProfileScreen({
   );
 }
 
-function LegalLink({
+function LinkRow({
   icon,
   title,
-  doc,
+  href,
 }: {
   icon: ComponentProps<typeof Ionicons>["name"];
   title: string;
-  doc: "privacy" | "terms";
+  href: Href;
 }) {
   const router = useRouter();
   return (
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={title}
-      onPress={() => router.push({ pathname: "/legal", params: { doc } })}
+      onPress={() => router.push(href)}
       style={({ pressed }) => [styles.updateRow, pressed && uiStyles.cardPressed]}
     >
       <Ionicons name={icon} size={19} color={Colors.primary} />

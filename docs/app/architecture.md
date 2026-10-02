@@ -16,6 +16,7 @@ apps/mobile/
       (driver)/         pestañas Inicio / Servicios / Perfil; detalle de asignación y recorrido
       unsupported-role.tsx
       legal.tsx         Política de privacidad y Términos de uso (abierta con o sin sesión: `isSharedRoute`)
+      credits.tsx       Agradecimientos al tutor y al equipo (datos en `constants/credits.ts`)
     api/
       client.ts         instancia Axios, interceptores, renovación de sesión
       session-keys.ts   claves de SecureStore
@@ -38,14 +39,15 @@ Alias de importación: `@/*` → `src/*`.
 - `logout` revoca la sesión en el backend (best-effort) y limpia siempre el almacenamiento local.
 - El guard de `_layout.tsx` impide abrir el espacio de otro rol mediante deep links (`canAccessRoleRoute`); es una
   comodidad visual, no seguridad: el backend autoriza cada endpoint.
-- Rutas compartidas (`legal`): el guard no redirige; se abren desde el login (antes de ingresar) y desde el perfil.
+- Rutas compartidas (`legal`, `credits`): el guard no redirige; los textos legales se abren desde el login (antes de
+  ingresar) y ambas desde el perfil.
 
 ## Textos legales
 
 `src/constants/legal.ts` contiene la Política de privacidad y los Términos de uso (versión y fecha incluidas), redactados
 de forma general para la fase de pruebas con base en la LOPDP de Ecuador. Pendiente antes de tiendas/producción:
-revisión legal, definir la entidad responsable del tratamiento y completar `LEGAL_CONTACT_EMAIL` (mientras sea `null`,
-el texto remite a los canales oficiales de soporte de la UPS). Al cambiar el contenido, subir `LEGAL_VERSION` y
+el responsable del tratamiento es la Universidad Politécnica Salesiana; falta su revisión legal y completar
+`LEGAL_CONTACT_EMAIL` (mientras sea `null`, el texto remite a los canales oficiales de soporte de la UPS). Al cambiar el contenido, subir `LEGAL_VERSION` y
 `LEGAL_UPDATED_AT`. Las tiendas exigirán además una URL pública con la política (se servirá desde el portal web).
 
 ## Contrato con la API
