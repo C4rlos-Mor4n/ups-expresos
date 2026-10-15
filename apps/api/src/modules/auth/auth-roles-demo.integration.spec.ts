@@ -34,6 +34,14 @@ const testAppConfig = registerAs<AppConfig>("app", () => ({
     ttl: 60000,
     limit: 10,
   },
+  tracking: {
+    hunterWebhookToken: undefined,
+    hunterAllowedIps: [],
+    liveSeconds: 120,
+    staleSeconds: 900,
+    historyDays: 30,
+  },
+  operations: { autoRun: "off", autoStartGraceMinutes: 20, autoFinishAfterMinutes: 30 },
   smtp: { secure: false },
 }));
 

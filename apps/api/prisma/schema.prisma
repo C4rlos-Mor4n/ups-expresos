@@ -91,6 +91,23 @@ enum ServiceRunStatus {
   COMPLETED
 }
 
+/// Quién inició o cerró un ServiceRun: el conductor desde la app o el sistema (operación automática).
+enum ServiceRunSource {
+  DRIVER
+  SYSTEM
+}
+
+/// Proveedor AVL que entrega la telemetría (desacoplado de Vehicle).
+enum TrackingProvider {
+  HUNTER
+}
+
+/// Tipo de mensaje recibido del proveedor: reporte/evento o alerta.
+enum TrackingPointKind {
+  EVENT
+  ALERT
+}
+
 // ==================== MODELS ====================
 
 model User {
@@ -168,6 +185,8 @@ model Vehicle {
 
   // Relations
   serviceAssignments ServiceAssignment[]
+  trackingDevices    TrackingDevice[]
+  trackingPoints     TrackingPoint[]
 
   @@map("vehicles")
 }
@@ -479,6 +498,8 @@ model ServiceRun {
   status              ServiceRunStatus @default(IN_PROGRESS)
   startedAt           DateTime         @db.Timestamptz(3)
   completedAt         DateTime?        @db.Timestamptz(3)
+  startSource         ServiceRunSource @default(DRIVER)
+  completionSource    ServiceRunSource?
   createdAt           DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime         @updatedAt @db.Timestamptz(3)
 
@@ -486,4 +507,70 @@ model ServiceRun {
 
   @@index([status, startedAt])
   @@map("service_runs")
+}
+
+/// Dispositivo AVL conocido por UPS GO. Se crea al recibir su primer reporte; la administración
+/// lo vincula a un Vehicle. Guarda también la última posición válida (lectura rápida para apps).
+model TrackingDevice {
+  id         String           @id @default(uuid()) @db.Uuid
+  provider   TrackingProvider
+  /// Identificador del proveedor (Hunter: `Id` del evento / `IdActivo` de la alerta).
+  externalId String
+  alias      String?
+  label      String?
+  vehicleId  String?          @unique @db.Uuid
+  isActive   Boolean          @default(true)
+
+  lastOccurredAt DateTime? @db.Timestamptz(3)
+  lastReceivedAt DateTime? @db.Timestamptz(3)
+  lastLatitude   Decimal?  @db.Decimal(10, 7)
+  lastLongitude  Decimal?  @db.Decimal(10, 7)
+  lastSpeedKph   Decimal?  @db.Decimal(6, 2)
+  lastHeading    Int?
+  lastIgnition   Boolean?
+  lastGpsQuality Int?
+  lastSatellites Int?
+  lastAddress    String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  vehicle Vehicle?        @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  points  TrackingPoint[]
+
+  @@unique([provider, externalId])
+  @@map("tracking_devices")
+}
+
+/// Historial normalizado de reportes/alertas (con retención configurable).
+model TrackingPoint {
+  id             String            @id @default(uuid()) @db.Uuid
+  deviceId       String            @db.Uuid
+  vehicleId      String?           @db.Uuid
+  kind           TrackingPointKind
+  /// Clave de idempotencia: el mismo reporte reenviado no se duplica.
+  dedupKey       String
+  occurredAt     DateTime          @db.Timestamptz(3)
+  receivedAt     DateTime          @default(now()) @db.Timestamptz(3)
+  latitude       Decimal           @db.Decimal(10, 7)
+  longitude      Decimal           @db.Decimal(10, 7)
+  speedKph       Decimal           @db.Decimal(6, 2)
+  heading        Int?
+  altitudeMeters Int?
+  satellites     Int?
+  gpsQuality     Int?
+  ignition       Boolean?
+  eventCode      Int?
+  occurrenceCode Int?
+  description    String?
+  raw            Json
+
+  device  TrackingDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  vehicle Vehicle?       @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  @@unique([deviceId, dedupKey])
+  @@index([vehicleId, occurredAt])
+  @@index([kind, occurredAt])
+  @@index([receivedAt])
+  @@map("tracking_points")
 }

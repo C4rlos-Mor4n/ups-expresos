@@ -35,6 +35,18 @@ export interface AppConfig {
     ttl: number;
     limit: number;
   };
+  tracking: {
+    hunterWebhookToken?: string;
+    hunterAllowedIps: string[];
+    liveSeconds: number;
+    staleSeconds: number;
+    historyDays: number;
+  };
+  operations: {
+    autoRun: 'off' | 'schedule' | 'schedule_with_gps';
+    autoStartGraceMinutes: number;
+    autoFinishAfterMinutes: number;
+  };
   smtp: {
     host?: string;
     port?: number;
@@ -81,6 +93,18 @@ export const appConfig = registerAs<AppConfig>('app', () => {
     throttle: {
       ttl: parsed.THROTTLE_TTL,
       limit: parsed.THROTTLE_LIMIT,
+    },
+    tracking: {
+      hunterWebhookToken: parsed.HUNTER_WEBHOOK_TOKEN,
+      hunterAllowedIps: parseList(parsed.HUNTER_ALLOWED_IPS),
+      liveSeconds: parsed.TRACKING_LIVE_SECONDS,
+      staleSeconds: parsed.TRACKING_STALE_SECONDS,
+      historyDays: parsed.TRACKING_HISTORY_DAYS,
+    },
+    operations: {
+      autoRun: parsed.OPERATIONS_AUTO_RUN,
+      autoStartGraceMinutes: parsed.OPERATIONS_AUTO_START_GRACE_MINUTES,
+      autoFinishAfterMinutes: parsed.OPERATIONS_AUTO_FINISH_AFTER_MINUTES,
     },
     smtp: {
       host: parsed.SMTP_HOST,

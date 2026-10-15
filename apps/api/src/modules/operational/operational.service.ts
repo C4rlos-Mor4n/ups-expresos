@@ -9,6 +9,7 @@ import {
   DriverStatus,
   Prisma,
   ServiceAssignmentStatus,
+  ServiceRunSource,
   ServiceRunStatus,
   VehicleStatus,
 } from "@prisma/client";
@@ -104,7 +105,14 @@ const assignmentInclude = {
     },
   },
   serviceRun: {
-    select: { id: true, status: true, startedAt: true, completedAt: true },
+    select: {
+      id: true,
+      status: true,
+      startedAt: true,
+      completedAt: true,
+      startSource: true,
+      completionSource: true,
+    },
   },
 } satisfies Prisma.ServiceAssignmentInclude;
 
@@ -765,61 +773,10 @@ export class OperationalService {
       );
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      await this.lockOperationalResources(tx, [
-        `assignment:${assignment.id}`,
-        `driver:${assignment.driverId}`,
-        `vehicle:${assignment.vehicleId}`,
-      ]);
-      const locked = await tx.serviceAssignment.findUnique({
-        where: { id: assignment.id },
-        include: assignmentInclude,
-      });
-      if (!locked) throw new NotFoundException("Service assignment not found");
-      if (locked.status !== ServiceAssignmentStatus.ASSIGNED) {
-        throw new ConflictException(
-          "Service assignment is not available to start",
-        );
-      }
-      if (locked.serviceRun) {
-        if (locked.serviceRun.status === ServiceRunStatus.IN_PROGRESS)
-          return locked;
-        throw new ConflictException(
-          "ALREADY_COMPLETED: assignment already has a completed service run",
-        );
-      }
-
-      const currentRun = await tx.serviceRun.findFirst({
-        where: {
-          status: ServiceRunStatus.IN_PROGRESS,
-          serviceAssignment: {
-            OR: [
-              { driverId: locked.driverId },
-              { vehicleId: locked.vehicleId },
-            ],
-          },
-        },
-        select: { id: true },
-      });
-      if (currentRun) {
-        throw new ConflictException(
-          "Driver or vehicle already has a service run in progress",
-        );
-      }
-
-      return tx.serviceAssignment.update({
-        where: { id: locked.id },
-        data: {
-          serviceRun: {
-            create: {
-              status: ServiceRunStatus.IN_PROGRESS,
-              startedAt: new Date(),
-            },
-          },
-        },
-        include: assignmentInclude,
-      });
-    });
+    const result = await this.startRunForAssignment(
+      assignment.id,
+      ServiceRunSource.DRIVER,
+    );
 
     await this.auditLogsService.logAction(
       userId,
@@ -869,7 +826,11 @@ export class OperationalService {
     const completedAt = new Date();
     const updated = await this.prisma.serviceRun.updateMany({
       where: { id: run.id, status: ServiceRunStatus.IN_PROGRESS },
-      data: { status: ServiceRunStatus.COMPLETED, completedAt },
+      data: {
+        status: ServiceRunStatus.COMPLETED,
+        completedAt,
+        completionSource: ServiceRunSource.DRIVER,
+      },
     });
     const assignment = await this.prisma.serviceAssignment.findUnique({
       where: { id: run.serviceAssignmentId },
@@ -896,6 +857,125 @@ export class OperationalService {
       );
     }
     return this.mapDriverAssignment(assignment);
+  }
+
+  /**
+   * Inicia el ServiceRun de una asignación (conductor o sistema). Idempotente si ya está en curso;
+   * rechaza asignaciones canceladas, ya completadas o con el conductor/vehículo ocupado.
+   */
+  private async startRunForAssignment(
+    assignmentId: string,
+    source: ServiceRunSource,
+  ): Promise<AssignmentRecord> {
+    const assignment = await this.prisma.serviceAssignment.findUnique({
+      where: { id: assignmentId },
+      select: { id: true, driverId: true, vehicleId: true },
+    });
+    if (!assignment)
+      throw new NotFoundException("Service assignment not found");
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockOperationalResources(tx, [
+        `assignment:${assignment.id}`,
+        `driver:${assignment.driverId}`,
+        `vehicle:${assignment.vehicleId}`,
+      ]);
+      const locked = await tx.serviceAssignment.findUnique({
+        where: { id: assignment.id },
+        include: assignmentInclude,
+      });
+      if (!locked) throw new NotFoundException("Service assignment not found");
+      if (locked.status !== ServiceAssignmentStatus.ASSIGNED) {
+        throw new ConflictException(
+          "Service assignment is not available to start",
+        );
+      }
+      if (locked.serviceRun) {
+        if (locked.serviceRun.status === ServiceRunStatus.IN_PROGRESS)
+          return locked;
+        throw new ConflictException(
+          "ALREADY_COMPLETED: assignment already has a completed service run",
+        );
+      }
+
+      const currentRun = await tx.serviceRun.findFirst({
+        where: {
+          status: ServiceRunStatus.IN_PROGRESS,
+          serviceAssignment: {
+            OR: [
+              { driverId: locked.driverId },
+              { vehicleId: locked.vehicleId },
+            ],
+          },
+        },
+        select: { id: true },
+      });
+      if (currentRun) {
+        throw new ConflictException(
+          "Driver or vehicle already has a service run in progress",
+        );
+      }
+
+      return tx.serviceAssignment.update({
+        where: { id: locked.id },
+        data: {
+          serviceRun: {
+            create: {
+              status: ServiceRunStatus.IN_PROGRESS,
+              startedAt: new Date(),
+              startSource: source,
+            },
+          },
+        },
+        include: assignmentInclude,
+      });
+    });
+  }
+
+  /** Inicio automático (OPERATIONS_AUTO_RUN). Devuelve null si no corresponde iniciarlo. */
+  async startRunAutomatically(
+    assignmentId: string,
+  ): Promise<{ runId: string } | null> {
+    try {
+      const result = await this.startRunForAssignment(
+        assignmentId,
+        ServiceRunSource.SYSTEM,
+      );
+      if (result.serviceRun?.startSource !== ServiceRunSource.SYSTEM) return null;
+      await this.auditLogsService.logAction(
+        undefined,
+        "SERVICE_RUN_AUTO_START",
+        "ServiceRun",
+        result.serviceRun.id,
+        { serviceAssignmentId: result.id, vehicleId: result.vehicleId },
+      );
+      return { runId: result.serviceRun.id };
+    } catch (error) {
+      if (error instanceof ConflictException || error instanceof NotFoundException)
+        return null;
+      throw error;
+    }
+  }
+
+  /** Cierre automático de un run que quedó abierto tras su ventana planificada. */
+  async finishRunAutomatically(runId: string): Promise<boolean> {
+    const updated = await this.prisma.serviceRun.updateMany({
+      where: { id: runId, status: ServiceRunStatus.IN_PROGRESS },
+      data: {
+        status: ServiceRunStatus.COMPLETED,
+        completedAt: new Date(),
+        completionSource: ServiceRunSource.SYSTEM,
+      },
+    });
+    if (updated.count === 1) {
+      await this.auditLogsService.logAction(
+        undefined,
+        "SERVICE_RUN_AUTO_FINISH",
+        "ServiceRun",
+        runId,
+        {},
+      );
+    }
+    return updated.count === 1;
   }
 
   private async resolveActiveDriver(userId: string): Promise<{ id: string }> {
@@ -1188,7 +1268,18 @@ export class OperationalService {
       vehicle: assignment.vehicle,
       journey: {
         id: assignment.journeyTemplate.id,
-        routePath: assignment.journeyTemplate.routePath,
+        routePath: {
+          ...assignment.journeyTemplate.routePath,
+          // Coordenadas como número (Prisma.Decimal se serializa como texto) para el mapa del conductor.
+          stops: assignment.journeyTemplate.routePath.stops.map((routeStop) => ({
+            stopOrder: routeStop.stopOrder,
+            stop: {
+              ...routeStop.stop,
+              latitude: Number(routeStop.stop.latitude),
+              longitude: Number(routeStop.stop.longitude),
+            },
+          })),
+        },
       },
       run: assignment.serviceRun,
     };

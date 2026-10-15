@@ -3,13 +3,14 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { setupSwagger } from './config/swagger.config';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { AppConfig } from './config/app.config';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   const appConfig = configService.get<AppConfig>('app', { infer: true });
@@ -27,6 +28,10 @@ async function bootstrap(): Promise<void> {
 
   // Security headers
   app.use(helmet());
+
+  // Hunter DataForward puede enviar el JSON sin `Content-Type: application/json`: los cuerpos
+  // text/* se aceptan como texto y el controlador del webhook los parsea.
+  app.useBodyParser('text', { type: 'text/*', limit: '1mb' });
 
   app.enableCors({
     origin: cors.origins,

@@ -12,6 +12,7 @@ import { VehiclesModule } from "./modules/vehicles/vehicles.module";
 import { DriversModule } from "./modules/drivers/drivers.module";
 import { CalendarModule } from "./modules/calendar/calendar.module";
 import { OperationalModule } from "./modules/operational/operational.module";
+import { TrackingModule } from "./modules/tracking/tracking.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 
@@ -46,6 +47,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
     DriversModule,
     CalendarModule,
     OperationalModule,
+    TrackingModule,
   ],
   providers: [
     {

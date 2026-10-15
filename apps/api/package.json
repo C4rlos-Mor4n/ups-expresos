@@ -30,7 +30,8 @@
     "export:openapi": "ts-node src/export-openapi.ts",
     "generate:mobile-contracts": "pnpm export:openapi && openapi-typescript openapi-spec.json --output ../mobile/src/api/generated/openapi.ts",
     "verify:mobile-contracts": "node scripts/verify-mobile-contracts.cjs",
-    "test:openapi": "ts-node test/swagger/openapi-contract.spec.ts"
+    "test:openapi": "ts-node test/swagger/openapi-contract.spec.ts",
+    "tracking:simulate": "tsx scripts/hunter-simulate.ts"
   },
   "jest": {
     "moduleFileExtensions": [

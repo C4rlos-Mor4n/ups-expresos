@@ -33,6 +33,8 @@ export async function createTestApp(): Promise<{
 
 export async function cleanDatabase(prisma: PrismaService): Promise<void> {
   await prisma.auditLog.deleteMany();
+  await prisma.trackingPoint.deleteMany();
+  await prisma.trackingDevice.deleteMany();
   await prisma.serviceRun.deleteMany();
   await prisma.serviceAssignment.deleteMany();
   await prisma.scheduledDeparture.deleteMany();

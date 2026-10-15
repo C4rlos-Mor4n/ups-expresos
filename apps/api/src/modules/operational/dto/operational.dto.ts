@@ -399,6 +399,13 @@ export class OperationalRunDto {
   @ApiProperty({ format: "date-time" }) startedAt!: Date;
   @ApiPropertyOptional({ type: String, format: "date-time", nullable: true })
   completedAt!: Date | null;
+  @ApiPropertyOptional({
+    enum: ["DRIVER", "SYSTEM"],
+    description: "Who started the run: the driver app or the automatic operation",
+  })
+  startSource?: string;
+  @ApiPropertyOptional({ enum: ["DRIVER", "SYSTEM"], nullable: true })
+  completionSource?: string | null;
 }
 
 export class StudentJourneyDto {
@@ -444,6 +451,8 @@ export class DriverStopDto {
   @ApiPropertyOptional({ type: String, nullable: true }) reference!:
     | string
     | null;
+  @ApiPropertyOptional({ example: -2.1528 }) latitude?: number;
+  @ApiPropertyOptional({ example: -79.8935 }) longitude?: number;
 }
 
 export class DriverRouteStopDto {

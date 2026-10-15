@@ -8,6 +8,7 @@ import { StudentOperationalController } from './student-operational.controller';
 @Module({
   imports: [AuditLogsModule],
   providers: [OperationalService],
+  exports: [OperationalService],
   controllers: [
     StudentOperationalController,
     DriverOperationalController,

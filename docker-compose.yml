@@ -90,6 +90,16 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      # Tracking Hunter DataForward (docs/api/tracking.md). Sin token el webhook responde 503.
+      HUNTER_WEBHOOK_TOKEN: ${HUNTER_WEBHOOK_TOKEN:-}
+      HUNTER_ALLOWED_IPS: ${HUNTER_ALLOWED_IPS:-}
+      TRACKING_LIVE_SECONDS: ${TRACKING_LIVE_SECONDS:-120}
+      TRACKING_STALE_SECONDS: ${TRACKING_STALE_SECONDS:-900}
+      TRACKING_HISTORY_DAYS: ${TRACKING_HISTORY_DAYS:-30}
+      # off | schedule | schedule_with_gps  (inicio/cierre automático de recorridos)
+      OPERATIONS_AUTO_RUN: ${OPERATIONS_AUTO_RUN:-off}
+      OPERATIONS_AUTO_START_GRACE_MINUTES: ${OPERATIONS_AUTO_START_GRACE_MINUTES:-20}
+      OPERATIONS_AUTO_FINISH_AFTER_MINUTES: ${OPERATIONS_AUTO_FINISH_AFTER_MINUTES:-30}
 
   # Túnel público opcional (ngrok) para pruebas sin dominio propio.
   # Actívalo con COMPOSE_PROFILES=tunnel + NGROK_AUTHTOKEN + NGROK_URL en el entorno.

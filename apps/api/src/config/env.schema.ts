@@ -49,6 +49,16 @@ export const envSchema = z.object({
   SMTP_USER: z.preprocess(emptyToUndefined, z.string().optional()),
   SMTP_PASS: z.preprocess(emptyToUndefined, z.string().optional()),
   SMTP_FROM: z.preprocess(emptyToUndefined, z.string().email().optional()),
+  // Tracking / Hunter DataForward. Sin token el webhook queda deshabilitado (responde 503).
+  HUNTER_WEBHOOK_TOKEN: z.preprocess(emptyToUndefined, z.string().min(24).optional()),
+  HUNTER_ALLOWED_IPS: z.string().default(''),
+  TRACKING_LIVE_SECONDS: z.coerce.number().int().positive().default(120),
+  TRACKING_STALE_SECONDS: z.coerce.number().int().positive().default(900),
+  TRACKING_HISTORY_DAYS: z.coerce.number().int().positive().default(30),
+  // Operación automática de recorridos: off | schedule | schedule_with_gps
+  OPERATIONS_AUTO_RUN: z.enum(['off', 'schedule', 'schedule_with_gps']).default('off'),
+  OPERATIONS_AUTO_START_GRACE_MINUTES: z.coerce.number().int().min(1).default(20),
+  OPERATIONS_AUTO_FINISH_AFTER_MINUTES: z.coerce.number().int().min(1).default(30),
 }).refine(
   (data) => {
     if (data.NODE_ENV === 'production') {
