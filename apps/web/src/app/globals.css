@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-navy: #00224e;
+  --color-brand: #0a5ba8;
+  --color-brand-soft: #eaf2fc;
+  --color-gold: #f5b323;
+  --color-gold-soft: #fff4d8;
+  --color-ink: #1a2433;
+  --color-muted: #5b6b80;
+  --color-line: #e2e9f2;
+  --color-canvas: #f4f7fb;
+  --color-ok: #0f8a6b;
+  --color-ok-soft: #e3f5ee;
+  --color-danger: #c2410c;
+  --color-danger-soft: #fdece4;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+.leaflet-container {
+  font-family: var(--font-sans);
+}

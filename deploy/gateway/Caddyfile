@@ -1,0 +1,24 @@
+# Puerta de entrada pública (ngrok / dominio) → servicios internos.
+#   /panel/*  → panel administrativo (Next.js)
+#   resto     → API NestJS (app móvil, webhook Hunter, /health)
+{
+	admin off
+	auto_https off
+	servers {
+		# ngrok y el proxy del host son redes privadas: se respeta su X-Forwarded-For/Proto.
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode gzip
+	request_body {
+		max_size 2MB
+	}
+	handle /panel* {
+		reverse_proxy web:3001
+	}
+	handle {
+		reverse_proxy api:3000
+	}
+}

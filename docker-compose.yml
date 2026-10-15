@@ -83,7 +83,8 @@ services:
       SWAGGER_PATH: ${SWAGGER_PATH:-docs}
       THROTTLE_TTL: ${THROTTLE_TTL:-60000}
       THROTTLE_LIMIT: ${THROTTLE_LIMIT:-60}
-      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      # gateway (Caddy) + ngrok delante de la API = 2 saltos de proxy confiables.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-2}
       SMTP_HOST: ${SMTP_HOST:-}  # obligatorio si APP_ENV=production (la API lo valida)
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -104,15 +105,35 @@ services:
   # Túnel público opcional (ngrok) para pruebas sin dominio propio.
   # Actívalo con COMPOSE_PROFILES=tunnel + NGROK_AUTHTOKEN + NGROK_URL en el entorno.
   # Apunta directo a la API (no pasa por Traefik), así que no necesita dominio en Dokploy.
+  # Panel administrativo (Next.js). Habla con la API por la red interna.
+  web:
+    build:
+      context: ./apps/web
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:3000
+    depends_on:
+      - api
+
+  # Entrada única: /panel → web, el resto → API (ver deploy/gateway/Caddyfile).
+  gateway:
+    build:
+      context: ./deploy/gateway
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_PORT:-8080}:80"
+    depends_on:
+      - api
+      - web
+
   ngrok:
     image: ngrok/ngrok:latest
     profiles: ["tunnel"]
     restart: unless-stopped
-    command: ["http", "api:3000", "--url", "${NGROK_URL:?Define NGROK_URL (dominio ngrok)}"]
+    command: ["http", "gateway:80", "--url", "${NGROK_URL:?Define NGROK_URL (dominio ngrok)}"]
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?Define NGROK_AUTHTOKEN}
     depends_on:
-      - api
-
+      - gateway
 volumes:
   ups_go_pgdata:
