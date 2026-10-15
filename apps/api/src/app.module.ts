@@ -13,6 +13,7 @@ import { DriversModule } from "./modules/drivers/drivers.module";
 import { CalendarModule } from "./modules/calendar/calendar.module";
 import { OperationalModule } from "./modules/operational/operational.module";
 import { TrackingModule } from "./modules/tracking/tracking.module";
+import { AdminModule } from "./modules/admin/admin.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 
@@ -48,6 +49,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
     CalendarModule,
     OperationalModule,
     TrackingModule,
+    AdminModule,
   ],
   providers: [
     {

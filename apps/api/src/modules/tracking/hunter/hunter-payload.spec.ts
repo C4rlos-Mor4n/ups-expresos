@@ -58,9 +58,11 @@ describe('parseHunterDate', () => {
   });
 });
 
+const AT = new Date('2022-10-27T18:00:00Z');
+
 describe('normalizeHunterPayload', () => {
   it('normalizes the documented event example', () => {
-    const r = normalizeHunterPayload(EVENT_EXAMPLE);
+    const r = normalizeHunterPayload(EVENT_EXAMPLE, undefined, AT);
     expect(r).toMatchObject({
       kind: 'EVENT',
       externalId: '4631511939',
@@ -82,7 +84,7 @@ describe('normalizeHunterPayload', () => {
   });
 
   it('normalizes the documented alert example', () => {
-    const r = normalizeHunterPayload(ALERT_EXAMPLE);
+    const r = normalizeHunterPayload(ALERT_EXAMPLE, undefined, new Date('2020-03-28T13:20:00Z'));
     expect(r).toMatchObject({
       kind: 'ALERT',
       externalId: '4631511939',
@@ -96,23 +98,23 @@ describe('normalizeHunterPayload', () => {
   });
 
   it('converts mph to km/h once', () => {
-    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, Velocidad: 30 }).speedKph).toBe(48.28);
+    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, Velocidad: 30 }, undefined, AT).speedKph).toBe(48.28);
   });
 
   it('maps Rumbo 360 to north (0) and 0 to unknown', () => {
-    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, Rumbo: 360 }).heading).toBe(0);
-    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, Rumbo: 0 }).heading).toBeNull();
+    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, Rumbo: 360 }, undefined, AT).heading).toBe(0);
+    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, Rumbo: 0 }, undefined, AT).heading).toBeNull();
   });
 
   it('marks reports without GPS as having no valid position', () => {
-    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, CalidadGPS: 9 }).hasValidPosition).toBe(false);
+    expect(normalizeHunterPayload({ ...EVENT_EXAMPLE, CalidadGPS: 9 }, undefined, AT).hasValidPosition).toBe(false);
     expect(
-      normalizeHunterPayload({ ...EVENT_EXAMPLE, Latitud: 0, Longitud: 0 }).hasValidPosition,
+      normalizeHunterPayload({ ...EVENT_EXAMPLE, Latitud: 0, Longitud: 0 }, undefined, AT).hasValidPosition,
     ).toBe(false);
   });
 
   it('accepts numeric fields sent as strings', () => {
-    const r = normalizeHunterPayload({ ...EVENT_EXAMPLE, Latitud: '-2.1', Velocidad: '10' });
+    const r = normalizeHunterPayload({ ...EVENT_EXAMPLE, Latitud: '-2.1', Velocidad: '10' }, undefined, AT);
     expect(r.latitude).toBe(-2.1);
     expect(r.speedKph).toBe(16.09);
   });
@@ -125,20 +127,27 @@ describe('normalizeHunterPayload', () => {
     ['bad date', { ...EVENT_EXAMPLE, FechaHora: 'ayer' }],
     ['unsafe identifier', { ...EVENT_EXAMPLE, Id: 'a b<c>' }],
   ])('rejects %s', (_label, body) => {
-    expect(() => normalizeHunterPayload(body)).toThrow(HunterPayloadError);
+    expect(() => normalizeHunterPayload(body, undefined, AT)).toThrow(HunterPayloadError);
+  });
+
+  it('rejects undocumented fields, nested values and implausible dates', () => {
+    expect(() => normalizeHunterPayload({ ...EVENT_EXAMPLE, Extra: 1 }, undefined, AT)).toThrow('Unknown fields');
+    expect(() => normalizeHunterPayload({ ...EVENT_EXAMPLE, Calle: { a: 1 } }, undefined, AT)).toThrow(HunterPayloadError);
+    expect(() => normalizeHunterPayload(EVENT_EXAMPLE, undefined, new Date('2022-10-27T17:40:00Z'))).toThrow('future');
+    expect(() => normalizeHunterPayload(EVENT_EXAMPLE, undefined, new Date('2022-11-10T00:00:00Z'))).toThrow('too old');
   });
 
   it('enforces the expected kind on dedicated endpoints', () => {
-    expect(() => normalizeHunterPayload(ALERT_EXAMPLE, 'EVENT')).toThrow(HunterPayloadError);
+    expect(() => normalizeHunterPayload(ALERT_EXAMPLE, 'EVENT', AT)).toThrow(HunterPayloadError);
   });
 });
 
 describe('trackingDedupKey / coerceHunterBody', () => {
   it('is stable for resends and different for another report', () => {
-    const a = normalizeHunterPayload(EVENT_EXAMPLE);
-    expect(trackingDedupKey(a)).toBe(trackingDedupKey(normalizeHunterPayload({ ...EVENT_EXAMPLE })));
+    const a = normalizeHunterPayload(EVENT_EXAMPLE, undefined, AT);
+    expect(trackingDedupKey(a)).toBe(trackingDedupKey(normalizeHunterPayload({ ...EVENT_EXAMPLE }, undefined, AT)));
     expect(trackingDedupKey(a)).not.toBe(
-      trackingDedupKey(normalizeHunterPayload({ ...EVENT_EXAMPLE, Suceso: 7 })),
+      trackingDedupKey(normalizeHunterPayload({ ...EVENT_EXAMPLE, Suceso: 7 }, undefined, AT)),
     );
   });
 

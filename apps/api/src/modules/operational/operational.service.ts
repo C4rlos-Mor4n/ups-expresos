@@ -444,6 +444,17 @@ export class OperationalService {
           include: assignmentInclude,
           orderBy: { plannedStartAt: "asc" },
         },
+        sourceScheduleTime: {
+          select: {
+            journeyTemplates: {
+              select: {
+                id: true,
+                routePathId: true,
+                routePath: { select: { displayName: true } },
+              },
+            },
+          },
+        },
       },
     });
     return {
@@ -453,6 +464,13 @@ export class OperationalService {
         id: departure.id,
         scheduledTime: formatTime(departure.scheduledTime),
         direction: departure.direction,
+        journeyTemplates: (departure.sourceScheduleTime?.journeyTemplates ?? []).map(
+          (template) => ({
+            id: template.id,
+            routePathId: template.routePathId,
+            routePathName: template.routePath.displayName,
+          }),
+        ),
         assignments: departure.serviceAssignments.map((assignment) =>
           this.mapAdminAssignment(assignment),
         ),
@@ -857,6 +875,39 @@ export class OperationalService {
       );
     }
     return this.mapDriverAssignment(assignment);
+  }
+
+  /**
+   * Cancela una asignación que aún no inició. Libera la ventana del bus y del conductor
+   * (las restricciones de solapamiento solo aplican a asignaciones ASSIGNED).
+   */
+  async cancelAssignment(assignmentId: string, actorId: string) {
+    const assignment = await this.prisma.serviceAssignment.findUnique({
+      where: { id: assignmentId },
+      include: assignmentInclude,
+    });
+    if (!assignment) throw new NotFoundException("Service assignment not found");
+    if (assignment.serviceRun) {
+      throw new ConflictException(
+        "ASSIGNMENT_ALREADY_STARTED: an assignment with a service run cannot be cancelled",
+      );
+    }
+    if (assignment.status === ServiceAssignmentStatus.CANCELLED) {
+      return this.mapAdminAssignment(assignment);
+    }
+    const updated = await this.prisma.serviceAssignment.update({
+      where: { id: assignmentId },
+      data: { status: ServiceAssignmentStatus.CANCELLED },
+      include: assignmentInclude,
+    });
+    await this.auditLogsService.logAction(
+      actorId,
+      "SERVICE_ASSIGNMENT_CANCEL",
+      "ServiceAssignment",
+      assignmentId,
+      { vehicleId: assignment.vehicleId, driverId: assignment.driverId },
+    );
+    return this.mapAdminAssignment(updated);
   }
 
   /**

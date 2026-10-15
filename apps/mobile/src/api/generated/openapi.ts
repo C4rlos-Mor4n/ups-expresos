@@ -753,6 +753,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/operational/service-assignments/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an assignment that has not started; frees the vehicle and driver window */
+        post: operations["AdminOperationalController_cancelAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/operational/campuses": {
         parameters: {
             query?: never;
@@ -949,6 +966,74 @@ export interface paths {
         };
         /** Historical positions of a vehicle (max 24h window) */
         get: operations["AdminTrackingController_trail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daily operation summary for the admin panel */
+        get: operations["AdminController_dashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List user accounts (search by email or name, filter by role) */
+        get: operations["AdminController_users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Activate/deactivate an account or change its role (admin roles: SUPER_ADMIN only) */
+        patch: operations["AdminController_updateUser"];
+        trace?: never;
+    };
+    "/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit trail of administrative and automatic actions */
+        get: operations["AdminController_auditLogs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1934,6 +2019,13 @@ export interface components {
             paths: components["schemas"]["AdminOperationalTimetableRoutePathDto"][];
             calendars: components["schemas"]["AdminOperationalServiceCalendarDto"][];
         };
+        AdminJourneyTemplateOptionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            routePathId: string;
+            routePathName: string;
+        };
         AdminOperationalScheduledDepartureDto: {
             /** Format: uuid */
             id: string;
@@ -1941,6 +2033,8 @@ export interface components {
             scheduledTime: string;
             /** @enum {string} */
             direction: "IDA" | "RETORNO";
+            /** @description Recorridos válidos para asignar un bus a esta salida */
+            journeyTemplates: components["schemas"]["AdminJourneyTemplateOptionDto"][];
             assignments: components["schemas"]["AdminOperationalAssignmentDto"][];
         };
         AdminOperationalServiceLineTimetableDto: {
@@ -2097,6 +2191,70 @@ export interface components {
             longitude: number;
             speedKph: number;
             heading?: number | null;
+        };
+        DashboardDto: {
+            /** Format: date */
+            date: string;
+            departures: number;
+            /** @description Salidas sin ningún bus asignado */
+            departuresWithoutBus: number;
+            assignments: number;
+            runsInProgress: number;
+            runsCompleted: number;
+            activeVehicles: number;
+            activeDrivers: number;
+            /** @description Buses con GPS reportando en vivo */
+            vehiclesLive: number;
+            /** @description Equipos GPS reportando sin bus vinculado */
+            unboundDevices: number;
+            /** @description Alertas en las últimas 24 h */
+            alerts24h: number;
+            users: number;
+        };
+        AdminUserDto: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name?: string | null;
+            /** @enum {string} */
+            role: "STUDENT" | "ADMIN" | "SUPER_ADMIN" | "DRIVER";
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastLoginAt?: string | null;
+        };
+        AdminUsersPageDto: {
+            items: components["schemas"]["AdminUserDto"][];
+            total: number;
+            page: number;
+            limit: number;
+        };
+        UpdateAdminUserDto: {
+            isActive?: boolean;
+            /**
+             * @description DRIVER se asigna vinculando la cuenta a un conductor (/admin/drivers/:id/account)
+             * @enum {string}
+             */
+            role?: "STUDENT" | "ADMIN" | "SUPER_ADMIN";
+        };
+        AuditLogDto: {
+            /** Format: uuid */
+            id: string;
+            action: string;
+            entity: string;
+            entityId?: string | null;
+            metadata?: Record<string, never> | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Correo del actor; null = sistema */
+            actorEmail?: string | null;
+        };
+        AuditLogsPageDto: {
+            items: components["schemas"]["AuditLogDto"][];
+            total: number;
+            page: number;
+            limit: number;
         };
     };
     responses: never;
@@ -4025,6 +4183,34 @@ export interface operations {
             };
         };
     };
+    AdminOperationalController_cancelAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOperationalAssignmentDto"];
+                };
+            };
+            /** @description The assignment already has a service run */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AdminOperationalController_listCampuses: {
         parameters: {
             query?: never;
@@ -4311,6 +4497,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrailPointDto"][];
+                };
+            };
+        };
+    };
+    AdminController_dashboard: {
+        parameters: {
+            query?: {
+                /** @description Fecha civil de Guayaquil (por defecto hoy) */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardDto"];
+                };
+            };
+        };
+    };
+    AdminController_users: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                role?: "STUDENT" | "ADMIN" | "SUPER_ADMIN" | "DRIVER";
+                /** @description Busca en correo o nombre */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUsersPageDto"];
+                };
+            };
+        };
+    };
+    AdminController_updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAdminUserDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDto"];
+                };
+            };
+            /** @description Own account, or administrator accounts without SUPER_ADMIN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminController_auditLogs: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                entity?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogsPageDto"];
                 };
             };
         };

@@ -43,6 +43,37 @@ export interface NormalizedTrackingReport {
 
 export class HunterPayloadError extends Error {}
 
+/** Campos documentados por Hunter (evento + alerta + CAN). Cualquier otro campo se rechaza. */
+export const HUNTER_ALLOWED_FIELDS = new Set([
+  'AliasEtiqueta', 'FechaHora', 'Id', 'Evento', 'Suceso', 'Latitud', 'Longitud', 'Calle',
+  'NumeroSatelites', 'CalidadGPS', 'EstadoIgnicion', 'Velocidad', 'Rumbo', 'Altitud',
+  'VoltajeAlimentacion', 'VoltajeBateriaDispositivo', 'NivelBateriaDispositivo', 'Odometro', 'Horometro',
+  'IdActivo', 'Alias', 'Etiqueta', 'Descripcion', 'EstadoGPS',
+  'VelocidadCAN', 'rpmCAN', 'PosicionAceleradorCAN', 'OdometroCAN', 'OdometroViajeCAN', 'NivelGasolinaCAN',
+  'CombustibleRestanteCAN', 'EngraneTransmisionCAN', 'TemperaturaRefrigeranteCAN', 'IndiceGasolinaCAN',
+  'VolatajeAlimentacionCAN', 'VoltajeAlimentacionCAN', 'EstadoSenalesGiroCAN', 'GasolinaConsumidaPorViajeCAN',
+  'IndicadoresCAN', 'DTCCAN', 'CheckEngineCAN',
+]);
+
+/** Un reporte no puede venir del futuro (tolerancia de reloj) ni ser demasiado antiguo. */
+export const MAX_CLOCK_SKEW_MS = 10 * 60_000;
+export const MAX_REPORT_AGE_MS = 7 * 86_400_000;
+
+function assertOnlyKnownFields(body: Record<string, unknown>): void {
+  const unknown = Object.keys(body).filter((key) => !HUNTER_ALLOWED_FIELDS.has(key));
+  if (unknown.length > 0) {
+    throw new HunterPayloadError(`Unknown fields: ${unknown.slice(0, 5).join(', ')}`);
+  }
+  for (const [key, value] of Object.entries(body)) {
+    const ok =
+      value === null ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      (typeof value === 'string' && value.length <= 300);
+    if (!ok) throw new HunterPayloadError(`${key} has an invalid value`);
+  }
+}
+
 const HUNTER_DATE = /^(\d{4})(\d{2})(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/;
 
 /** `20221027 17:58:08` (UTC) → Date. También acepta ISO-8601 con zona. */
@@ -117,11 +148,13 @@ export function detectHunterKind(body: Record<string, unknown>): HunterKind {
 export function normalizeHunterPayload(
   input: unknown,
   expectedKind?: HunterKind,
+  now: Date = new Date(),
 ): NormalizedTrackingReport {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new HunterPayloadError('Payload must be a JSON object');
   }
   const body = input as Record<string, unknown>;
+  assertOnlyKnownFields(body);
   const kind = detectHunterKind(body);
   if (expectedKind && expectedKind !== kind) {
     throw new HunterPayloadError(`Expected ${expectedKind} payload but received ${kind}`);
@@ -156,6 +189,14 @@ export function normalizeHunterPayload(
     label = text(body, 'Etiqueta');
   }
 
+  const occurredAt = parseHunterDate(body.FechaHora);
+  if (occurredAt.getTime() > now.getTime() + MAX_CLOCK_SKEW_MS) {
+    throw new HunterPayloadError('FechaHora is in the future');
+  }
+  if (occurredAt.getTime() < now.getTime() - MAX_REPORT_AGE_MS) {
+    throw new HunterPayloadError('FechaHora is too old');
+  }
+
   const hasValidPosition =
     gpsQuality !== HUNTER_NO_GPS_QUALITY && !(latitude === 0 && longitude === 0);
 
@@ -164,7 +205,7 @@ export function normalizeHunterPayload(
     externalId,
     alias,
     label,
-    occurredAt: parseHunterDate(body.FechaHora),
+    occurredAt,
     latitude,
     longitude,
     speedKph: Math.round(speedMph * MPH_TO_KPH * 100) / 100,

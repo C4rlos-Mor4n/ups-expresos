@@ -12,7 +12,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { SkipThrottle } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Public } from '../../../common/decorators/public.decorator';
@@ -26,7 +26,7 @@ import {
 } from './hunter-payload';
 
 /** Máximo de reportes por POST (Hunter envía uno por evento; se toleran lotes pequeños). */
-const MAX_REPORTS_PER_REQUEST = 200;
+const MAX_REPORTS_PER_REQUEST = 50;
 
 function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a);
@@ -34,28 +34,30 @@ function safeEqual(a: string, b: string): boolean {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-function presentedToken(request: Request): string | null {
-  const header = request.headers['x-ups-go-token'];
+/** API key: header `X-API-Key` (recomendado), `Authorization: Bearer` o `?api_key=` si solo se configura una URL. */
+function presentedApiKey(request: Request): string | null {
+  const header = request.headers['x-api-key'];
   if (typeof header === 'string' && header) return header;
   const auth = request.headers.authorization;
   if (auth?.startsWith('Bearer ')) return auth.slice(7);
-  const query = request.query.token;
+  const query = request.query.api_key;
   return typeof query === 'string' && query ? query : null;
 }
 
 /**
  * Webhook server-to-server de Hunter DataForward (eventos y alertas AVL).
  *
- * Seguridad: el documento de Hunter no define autenticación, así que UPS GO exige un secreto
- * compartido (`HUNTER_WEBHOOK_TOKEN`) en el header `X-UPS-GO-Token`, en `Authorization: Bearer` o,
- * si Hunter solo permite configurar una URL, como `?token=` en la URL. Opcionalmente se restringe
- * por IP de origen (`HUNTER_ALLOWED_IPS`). Sin token configurado el endpoint responde 503.
- *
- * No usa JWT de usuarios ni rate limiting por IP (todos los buses llegan desde la misma plataforma).
+ * Seguridad:
+ * - API key (`HUNTER_WEBHOOK_TOKEN`) en `X-API-Key`, `Authorization: Bearer` o `?api_key=`.
+ *   Sin API key configurada el endpoint responde 503.
+ * - IP de origen opcional (`HUNTER_ALLOWED_IPS`).
+ * - Solo se aceptan los campos documentados por Hunter, con tipos válidos y una fecha razonable
+ *   (no futura, no más de 7 días atrás); cualquier otra cosa → 400.
+ * - Límite propio de 1200 solicitudes/min (toda la flota llega desde la plataforma de Hunter).
  */
 @ApiExcludeController()
 @Public()
-@SkipThrottle()
+@Throttle({ default: { limit: 1200, ttl: 60_000 } })
 @Controller('integrations/hunter/dataforward')
 export class HunterWebhookController {
   private readonly logger = new Logger(HunterWebhookController.name);
@@ -89,9 +91,9 @@ export class HunterWebhookController {
       this.logger.warn(`Rejected Hunter webhook from non-allowed IP ${request.ip}`);
       throw new ForbiddenException('Source IP not allowed');
     }
-    const token = presentedToken(request);
+    const token = presentedApiKey(request);
     if (!token || !safeEqual(token, hunterWebhookToken)) {
-      throw new UnauthorizedException('Invalid integration token');
+      throw new UnauthorizedException('Invalid API key');
     }
   }
 

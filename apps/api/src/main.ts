@@ -31,7 +31,7 @@ async function bootstrap(): Promise<void> {
 
   // Hunter DataForward puede enviar el JSON sin `Content-Type: application/json`: los cuerpos
   // text/* se aceptan como texto y el controlador del webhook los parsea.
-  app.useBodyParser('text', { type: 'text/*', limit: '1mb' });
+  app.useBodyParser('text', { type: 'text/*', limit: '256kb' });
 
   app.enableCors({
     origin: cors.origins,

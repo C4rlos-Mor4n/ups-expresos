@@ -9,7 +9,7 @@
  *
  * Opciones:
  *   --url       Base de la API (sin /integrations/...). Obligatorio.
- *   --token     Token del webhook (o variable HUNTER_WEBHOOK_TOKEN).
+ *   --token     API key del webhook (o variable HUNTER_WEBHOOK_TOKEN).
  *   --route     Código de RoutePath del dataset (NORTE_IDA, SUR_RETORNO, …). Por defecto NORTE_IDA.
  *   --device    Id del dispositivo simulado (Hunter `Id`). Por defecto 900001.
  *   --alias     Alias del activo (Hunter AliasEtiqueta = alias/etiqueta). Por defecto SIM-BUS.
@@ -111,7 +111,7 @@ async function main(): Promise<void> {
     };
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-UPS-GO-Token': token, 'ngrok-skip-browser-warning': '1' },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': token, 'ngrok-skip-browser-warning': '1' },
       body: JSON.stringify(body),
     });
     console.log(`${i + 1}/${points.length} ${here[0].toFixed(5)},${here[1].toFixed(5)} → ${response.status} ${await response.text()}`);

@@ -294,10 +294,22 @@ export class AdminOperationalAssignmentDto {
   operation!: AdminOperationalAssignmentOperationDto | null;
 }
 
+export class AdminJourneyTemplateOptionDto {
+  @ApiProperty({ format: "uuid" }) id!: string;
+  @ApiProperty({ format: "uuid" }) routePathId!: string;
+  @ApiProperty() routePathName!: string;
+}
+
 export class AdminOperationalScheduledDepartureDto {
   @ApiProperty({ format: "uuid" }) id!: string;
   @ApiProperty({ example: "06:40" }) scheduledTime!: string;
   @ApiProperty({ enum: Direction }) direction!: Direction;
+  @ApiProperty({
+    type: () => AdminJourneyTemplateOptionDto,
+    isArray: true,
+    description: "Recorridos válidos para asignar un bus a esta salida",
+  })
+  journeyTemplates!: AdminJourneyTemplateOptionDto[];
   @ApiProperty({ type: () => AdminOperationalAssignmentDto, isArray: true })
   assignments!: AdminOperationalAssignmentDto[];
 }

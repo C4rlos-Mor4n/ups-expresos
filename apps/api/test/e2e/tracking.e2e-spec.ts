@@ -69,7 +69,7 @@ describe('Tracking / Hunter DataForward (e2e)', () => {
     return session.body.accessToken as string;
   };
   const post = (body: unknown, path = '') =>
-    http().post(`/integrations/hunter/dataforward${path}?token=${TOKEN}`).send(body as object);
+    http().post(`/integrations/hunter/dataforward${path}`).set('X-API-Key', TOKEN).send(body as object);
   const studentLive = () =>
     http().get(`/student/scheduled-departures/${departureId}/live`).set('Authorization', `Bearer ${student}`).expect(200);
 
@@ -122,10 +122,14 @@ describe('Tracking / Hunter DataForward (e2e)', () => {
 
   it('rejects calls without the integration token', async () => {
     await http().post('/integrations/hunter/dataforward').send(hunterEvent()).expect(401);
-    await http().post('/integrations/hunter/dataforward?token=wrong-token-value').send(hunterEvent()).expect(401);
+    await http().post('/integrations/hunter/dataforward').set('X-API-Key', 'wrong-api-key-value').send(hunterEvent()).expect(401);
+    await http()
+      .post(`/integrations/hunter/dataforward?api_key=${TOKEN}`)
+      .send(hunterEvent({ FechaHora: hunterDate(450) }))
+      .expect(200);
     await http()
       .post('/integrations/hunter/dataforward')
-      .set('X-UPS-GO-Token', TOKEN)
+      .set('Authorization', `Bearer ${TOKEN}`)
       .send(hunterEvent({ FechaHora: hunterDate(400) }))
       .expect(200);
   });
@@ -134,6 +138,11 @@ describe('Tracking / Hunter DataForward (e2e)', () => {
     await post({ ...hunterEvent(), Latitud: 300 }).expect(400);
     await post({ foo: 'bar' }).expect(400);
     await post(hunterEvent(), '/alerts').expect(400);
+    // Campos no documentados por Hunter, fechas futuras o muy antiguas y objetos anidados se rechazan.
+    await post({ ...hunterEvent(), Comando: 'DROP' }).expect(400);
+    await post({ ...hunterEvent(), Calle: { x: 1 } }).expect(400);
+    await post(hunterEvent({ FechaHora: hunterDate(-3600) })).expect(400);
+    await post(hunterEvent({ FechaHora: '20200101 00:00:00' })).expect(400);
   });
 
   it('creates the device on first report and is idempotent on resends', async () => {

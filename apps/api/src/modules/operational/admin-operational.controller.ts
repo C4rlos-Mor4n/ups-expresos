@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -29,6 +29,15 @@ export class AdminOperationalController {
   @ApiConflictResponse({ description: 'Vehicle/driver window conflict or invalid journey template ownership' })
   createAssignment(@Body() dto: CreateServiceAssignmentDto, @CurrentUser('sub') actorId: string): Promise<AdminOperationalAssignmentDto> {
     return this.operationalService.createAssignment(dto, actorId);
+  }
+
+  @Post('service-assignments/:id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancel an assignment that has not started; frees the vehicle and driver window' })
+  @ApiOkResponse({ type: AdminOperationalAssignmentDto })
+  @ApiConflictResponse({ description: 'The assignment already has a service run' })
+  cancelAssignment(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('sub') actorId: string) {
+    return this.operationalService.cancelAssignment(id, actorId);
   }
 
   @Get('campuses')
