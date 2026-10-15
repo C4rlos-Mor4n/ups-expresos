@@ -32,7 +32,7 @@ campus, líneas, recorridos, paradas, horarios, buses, conductores, salidas, asi
 7. **Multibus:** una salida tiene 0..N asignaciones; jamás un único `busId`.
 8. **Desactivar o archivar** entidades con historia operativa; no borrado físico. Confirmación en acciones de impacto.
 9. **El solape de bus/conductor** lo previene la UI, pero la restricción de base de datos es la defensa final: muestra el 409 con un mensaje claro.
-10. Sin GPS/ETA hasta que exista el flujo de tracking ([`../api/tracking-hunter.md`](../api/tracking-hunter.md)).
+10. Monitoreo en vivo: la API ya expone `/admin/tracking/*` (dispositivos, vinculación GPS↔bus, flota, alertas, trayecto) — ver [`../api/tracking-hunter.md`](../api/tracking-hunter.md). Sin ETA.
 
 ## Módulos previstos
 

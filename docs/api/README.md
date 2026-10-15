@@ -19,9 +19,9 @@ estudiantes/conductores y administración. Código en [`apps/api`](../../apps/ap
 | Pruebas | Jest, ts-jest, Supertest; PostgreSQL aislado para integración/E2E |
 | Gestor de paquetes | pnpm 10 |
 
-No hay Redis, colas ni microservicios: el alcance actual no lo requiere. Redis se
-incorporará cuando exista el flujo de posiciones en tiempo real (ver
-[`tracking-hunter.md`](./tracking-hunter.md)).
+No hay Redis, colas ni microservicios: el alcance actual no lo requiere. El tracking en tiempo
+real guarda la última posición por bus en PostgreSQL y las apps consultan por polling; Redis queda
+como evolución si crece la flota o la frecuencia (ver [`tracking-hunter.md`](./tracking-hunter.md)).
 
 ## Arquitectura
 
@@ -46,6 +46,7 @@ src/
     drivers/             CRUD de conductores (Admin)
     calendar/            CalendarResolver, materializador de salidas y API de horarios (Admin)
     operational/         Student, Driver y planificación operativa (Admin)
+    tracking/            Hunter DataForward (webhook), última posición, vistas en vivo, operación automática
 ```
 
 ### Seguridad por defecto
@@ -107,4 +108,4 @@ recibir el código OTP en la respuesta de `POST /auth/request-code` (solo desarr
 - [`deployment.md`](./deployment.md) — Docker, Dokploy, migraciones, respaldo.
 - [`testing.md`](./testing.md) — gates y pruebas.
 - [`conventions.md`](./conventions.md) — reglas para contribuir.
-- [`tracking-hunter.md`](./tracking-hunter.md) — plan de integración GPS (Hunter DataForward).
+- [`tracking-hunter.md`](./tracking-hunter.md) — tracking en tiempo real con Hunter DataForward (webhook, modelo, apps, operación automática, simulador).

@@ -28,6 +28,12 @@ Plantillas: [`apps/api/.env.example`](../../apps/api/.env.example) (desarrollo) 
 | `TRUST_PROXY_HOPS` | No | `0` | Saltos de proxy confiables para identificar la IP del cliente. Con un reverse proxy: `1`. |
 | `THROTTLE_TTL` / `THROTTLE_LIMIT` | No | `60000` / `60` | Ventana (ms) y límite global de rate limiting. |
 | `SWAGGER_ENABLED` | No | `false` | Publica Swagger UI. |
+| `HUNTER_WEBHOOK_TOKEN` | No | vacío | Secreto (≥ 24) del webhook Hunter DataForward. Vacío = webhook deshabilitado (503). |
+| `HUNTER_ALLOWED_IPS` | No | vacío | IPs de origen permitidas para el webhook (coma). |
+| `TRACKING_LIVE_SECONDS` / `TRACKING_STALE_SECONDS` | No | `120` / `900` | Antigüedad para "en vivo" y "última ubicación conocida". |
+| `TRACKING_HISTORY_DAYS` | No | `30` | Días de historial de posiciones. |
+| `OPERATIONS_AUTO_RUN` | No | `off` | `off`, `schedule` o `schedule_with_gps`: inicio/cierre automático de recorridos ([tracking](./tracking-hunter.md)). |
+| `OPERATIONS_AUTO_START_GRACE_MINUTES` / `OPERATIONS_AUTO_FINISH_AFTER_MINUTES` | No | `20` / `30` | Ventana para iniciar automáticamente y margen para cerrar recorridos olvidados. |
 | `SWAGGER_PATH` | No | `docs` | Ruta de Swagger UI. |
 | `APP_PUBLIC_URL` | No | — | URL pública (solo para el selector de servidor de Swagger). Vacío = sin definir. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Solo en producción | — | Envío de OTP. Con host, usuario y contraseña definidos se usa SMTP; si no, el proveedor de desarrollo no envía correo. |

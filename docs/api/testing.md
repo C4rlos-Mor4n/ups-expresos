@@ -16,9 +16,9 @@ Sin esas variables el comando falla sin mensaje claro.
 
 ## Base de referencia
 
-Tras el flujo de conductor y los textos legales: API con 29 suites unitarias y de integración sobre PostgreSQL (205
-pruebas con todas las variables `RUN_*` activas), E2E con 3 suites (20 pruebas, incluye `driver-flow`: vincular cuenta,
-asignar, iniciar y finalizar recorrido); app móvil con 13 suites (79 pruebas).
+Tras el tracking en tiempo real (Hunter): API con 32 suites unitarias y de integración sobre PostgreSQL (237
+pruebas con todas las variables `RUN_*` activas), E2E con 4 suites (30 pruebas, incluye `driver-flow` y `tracking`:
+webhook Hunter, vinculación GPS↔bus, vista en vivo, inicio y cierre automáticos); app móvil con 14 suites (82 pruebas).
 
 ## API
 

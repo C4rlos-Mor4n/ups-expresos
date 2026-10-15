@@ -40,7 +40,8 @@ haya iniciado; una posición GPS no define por sí sola el estado operativo.
 | API de administración de horarios (25 operaciones) | Funcional. |
 | Despliegue de la API con Docker | Listo (`docker-compose.yml` en la raíz). |
 | Panel administrativo web | No construido. |
-| GPS / tiempo real / ETA / notificaciones push | No implementados. Proveedor previsto: Hunter AVL (ver [`api/tracking-hunter.md`](./api/tracking-hunter.md)). |
+| GPS en tiempo real | **Implementado** con Hunter AVL / DataForward: webhook, mapa en vivo en la app (estudiante y conductor), operación automática opcional (ver [`api/tracking-hunter.md`](./api/tracking-hunter.md)). Pendiente: confirmar contrato con Hunter. |
+| ETA dinámica / notificaciones push | No implementados. |
 
 ## Estructura del repositorio
 

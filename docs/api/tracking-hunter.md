@@ -1,85 +1,176 @@
-# Plan de integración GPS — Hunter DataForward (futuro)
+# Tracking en tiempo real — Hunter DataForward (implementado)
 
-> **Estado: no implementado.** Este documento es el plan de diseño y la lista de preguntas abiertas.
-> No se debe congelar el esquema de tracking antes de recibir las respuestas de Hunter.
-
-Hunter operará el servicio AVL/GPS de los buses y entregó la definición de **DataForward**
-("Definición de servicio de replicación de datos AVL — Eventos / Alertas"). Cuando su plataforma recibe un evento o
-alerta de un dispositivo, hace un `HTTP POST` a una URL parametrizada: Hunter es un proveedor *push/webhook*; UPS GO
-no necesita consultar posiciones.
+UPS GO muestra la ubicación real de los buses usando la plataforma AVL de **Hunter**. Hunter envía cada
+reporte/alerta de los GPS instalados en los buses mediante `HTTP POST` (DataForward) a la API; la API los
+valida, normaliza, guarda y los expone a las apps **en contexto del servicio** (salida → asignación → recorrido).
 
 ```text
-GPS del bus → Hunter AVL → HTTP POST (DataForward) → UPS GO → normalización → última posición → tiempo real → Student / Admin
+GPS del bus ──► Hunter AVL ──HTTP POST──► /integrations/hunter/dataforward
+                                             │  token + (IP allowlist)
+                                             ▼
+                                   normalización (hunter-payload.ts)
+                                             │  mph→km/h, FechaHora UTC, Rumbo, CalidadGPS
+                                             ▼
+                              TrackingService.ingest (idempotente)
+                         ┌───────────────────┴───────────────────┐
+              tracking_devices (última posición)       tracking_points (historial, N días)
+                         │
+          ┌──────────────┼───────────────────────────┐
+  Student /live     Driver /live              Admin /admin/tracking/*
+  (mapa en la app)  (GPS del bus)             (vincular GPS, flota, alertas, trayecto)
+                         │
+            OperationsAutoRunService (opcional: inicio/cierre automático)
 ```
 
-## Lo que documenta el PDF
+Código: `apps/api/src/modules/tracking/`. Migración: `20261015050017_add_vehicle_tracking` (solo aditiva).
 
-- **Evento**: `AliasEtiqueta`, `FechaHora` (UTC), `Id` (dispositivo), `Evento`, `Suceso` (código numérico), `Latitud`, `Longitud`,
-  `Calle`, `NumeroSatelites`, `CalidadGPS` (1 = excelente, 9 = sin GPS), `EstadoIgnicion`, `Velocidad` (**millas por hora**),
-  `Rumbo` (0–360), `Altitud` (m), voltajes/baterías, `Odometro`, `Horometro` y campos CAN opcionales.
-- **Alerta**: como el evento, con `IdActivo`, `Alias`, `Etiqueta`, `Descripcion` y `EstadoGPS` en lugar de `Id`, `AliasEtiqueta` y `CalidadGPS`.
-- Catálogo de sucesos (1–35, 1000–1006, 2000–2003): encendido/apagado, batería, pánico, exceso de velocidad, pérdida de GPS,
-  impacto, frenado/aceleración violentos, etc.
-- Campos CAN opcionales (RPM, combustible, DTC, check engine…): útiles para mantenimiento, **fuera del primer alcance**.
+## 1. Recepción (webhook)
 
-## Inconsistencias a confirmar con Hunter
+| Método | Ruta | Uso |
+|---|---|---|
+| `POST` | `/integrations/hunter/dataforward` | Una sola URL para eventos y alertas (se detecta por `Id` / `IdActivo`). |
+| `POST` | `/integrations/hunter/dataforward/events` | Solo eventos (rechaza alertas). |
+| `POST` | `/integrations/hunter/dataforward/alerts` | Solo alertas (rechaza eventos). |
 
-- Versión del documento: el archivo dice **V1.3.0**, el pie de página **V1.2.0**.
-- `FechaHora` se describe como `yyyyMMdd HH:mm:dd`; el ejemplo sugiere `yyyyMMdd HH:mm:ss`. No corregir en silencio.
-- Ejemplo con `Suceso: 0`, ausente en la tabla (empieza en 1).
-- `Id` (evento) vs `IdActivo` (alerta): no asumir que son el mismo identificador.
-- El PDF **no** especifica autenticación del webhook (API key, HMAC, Basic, mTLS, IP allowlist).
+- **Autenticación**: el PDF de Hunter no define ninguna, así que UPS GO exige un secreto compartido
+  `HUNTER_WEBHOOK_TOKEN` (≥ 24 caracteres, comparación en tiempo constante) en cualquiera de:
+  header `X-UPS-GO-Token`, `Authorization: Bearer <token>` o `?token=<token>` en la URL (para cuando Hunter
+  solo permite configurar una URL). Sin token configurado el endpoint responde **503**.
+- **IP allowlist** opcional: `HUNTER_ALLOWED_IPS` (requiere `TRUST_PROXY_HOPS` correcto detrás de proxy).
+- No usa JWT de usuarios ni el rate limiting por IP (`@SkipThrottle`), porque toda la flota llega desde Hunter.
+- Acepta `application/json` y también `text/*` (por si Hunter no envía `Content-Type`), un objeto o una lista
+  (máx. 200 por POST).
+- Respuestas: `200 {"received","accepted","duplicates"}` · `400` payload inválido (no reintentar) ·
+  `401` token inválido · `403` IP no permitida · `503` integración no configurada.
 
-## Preguntas bloqueantes para Hunter
+**URL para entregar a Hunter** (ambiente de pruebas actual):
+`https://<dominio-api>/integrations/hunter/dataforward?token=<HUNTER_WEBHOOK_TOKEN>`
 
-1. ¿Versión contractual vigente (1.2.0 o 1.3.0)? ¿Formato real de `FechaHora`? ¿Es exactamente UTC?
-2. ¿Eventos y Alertas pueden usar URLs distintas?
-3. ¿Cómo autentican el POST (firma HMAC, token/header, IP fijas, mTLS)?
-4. Timeout esperado, código HTTP considerado ACK, política de reintentos (cantidad, backoff) ante 4xx/5xx/timeout.
-5. ¿Pueden duplicar eventos? ¿Existe un ID único por evento? ¿Pueden llegar fuera de orden?
-6. ¿Qué identificador mapea a cada bus (IMEI, `Id`, `IdActivo`, alias, etiqueta)? ¿Qué significa `Suceso = 0`?
-7. Frecuencia de "Reporte de posición" (¿configurable a 5/10/15/30 s?), con ignición apagada, y reenvío al recuperar conectividad
-   conservando el timestamp original.
-8. Valores posibles de `CalidadGPS`/`EstadoGPS` además de 1 y 9; ¿la velocidad siempre llega en mph?
-9. ¿Existe sandbox y payloads de prueba bajo demanda? Volumen máximo estimado por bus/día.
-10. ¿Qué campos CAN estarán realmente disponibles en los buses UPS?
+### Normalización (`hunter/hunter-payload.ts`, funciones puras con tests)
 
-## Arquitectura propuesta (recomendación de UPS GO)
+| Hunter | UPS GO | Regla |
+|---|---|---|
+| `FechaHora` `yyyyMMdd HH:mm:ss` (UTC) | `occurredAt` | También acepta ISO-8601 con zona. Fechas imposibles → 400. |
+| `Id` (evento) / `IdActivo` (alerta) | `externalId` | Texto (no número) para no perder precisión. |
+| `AliasEtiqueta` `"ALIAS/ETIQUETA"` / `Alias`+`Etiqueta` | `alias`, `label` | |
+| `Velocidad` (mph) | `speedKph` | `mph × 1.609344`, redondeo a 2 decimales. Se guarda el payload original en `raw`. |
+| `Rumbo` 0–360 | `heading` | `0` = detenido → `null`; `360` (norte) → `0`. |
+| `CalidadGPS` / `EstadoGPS` | `gpsQuality` | `9` = sin GPS → el punto se guarda pero **no** mueve la última posición. Coordenadas `0,0` igual. |
+| `EstadoIgnicion` 0/1 | `ignition` | |
+| `Evento`, `Suceso` | `eventCode`, `occurrenceCode` | Catálogo de sucesos del PDF (1–35, 1000–1006, 2000–2003). |
+| `Descripcion` (alerta) | `description` | |
 
-```text
-POST /integrations/hunter/dataforward[/events|/alerts]
-  → controlador del webhook (autenticación server-to-server propia, no JWT)
-  → validación estricta del payload
-  → adaptador Hunter → modelo canónico (una sola conversión mph → km/h; el valor crudo no se altera)
-  → deduplicación / idempotencia
-  → servicio de tracking: binding Vehicle ↔ dispositivo, última posición (Redis), historial mínimo (PostgreSQL)
-  → correlación con ServiceAssignment / ServiceRun
-  → pasarela de tiempo real (WebSocket o SSE) → Admin Web y Student
+**Idempotencia**: `tracking_points` tiene `UNIQUE(deviceId, dedupKey)` con
+`dedupKey = tipo|occurredAt|Evento|Suceso|Descripcion`; un reenvío de Hunter no duplica.
+**Fuera de orden**: la última posición del dispositivo solo avanza si el reporte es más nuevo
+(`lastOccurredAt`); los atrasados quedan en el historial.
+
+## 2. Modelo de datos
+
+- `TrackingDevice` — un equipo AVL por `(provider, externalId)`. Se crea solo al llegar su primer reporte.
+  `vehicleId` (único, opcional) lo vincula a un `Vehicle`; guarda la **última posición** (`last*`) para lecturas
+  rápidas. Desacoplado del proveedor (`TrackingProvider` = `HUNTER`; se pueden agregar otros).
+- `TrackingPoint` — historial normalizado (`EVENT`/`ALERT`) con `raw` JSON para diagnóstico. Se purga cada hora
+  lo más antiguo que `TRACKING_HISTORY_DAYS`.
+- `ServiceRun.startSource` / `completionSource` (`DRIVER` | `SYSTEM`) — quién inició/cerró el recorrido.
+
+Redis **no** se introdujo: con decenas de buses y polling cada 10 s, PostgreSQL (fila por dispositivo con la
+última posición) basta. Si la flota o la frecuencia crecen, mover la última posición a Redis es un cambio local
+en `TrackingService`.
+
+## 3. Lo que ven las apps
+
+Regla central: **la posición no define el estado operativo**. El estudiante solo ve el bus:
+
+- `IN_PROGRESS`: recorrido iniciado (por el conductor o automáticamente);
+- `BEFORE_START`: asignado y desde **30 min antes** de la salida planificada hasta su fin planificado
+  ("Aún no inicia el recorrido");
+- nunca fuera de esa ventana ni con el recorrido completado (`NOT_LIVE`).
+
+Frescura (configurable, la frecuencia real de Hunter está por confirmar):
+`LIVE` ≤ `TRACKING_LIVE_SECONDS` (120) · `STALE` ≤ `TRACKING_STALE_SECONDS` (900) → "Última ubicación conocida" ·
+más antiguo → `NO_SIGNAL`, no se dibuja.
+
+| Endpoint | Rol | Respuesta |
+|---|---|---|
+| `GET /student/scheduled-departures/:id/live` | STUDENT | `DepartureLiveDto`: buses de la salida con `phase`, `tracking.status` (`AVAILABLE`, `NO_DEVICE`, `NO_SIGNAL`, `NOT_LIVE`) y `position` (lat, lng, km/h, rumbo, antigüedad, frescura). `refreshAfterSeconds`: 10 con bus en vivo, 60 si no. |
+| `GET /driver/operational/assignments/:id/live` | DRIVER (dueño) | `LiveBusDto` del bus del conductor (lo ve aunque falten más de 30 min). |
+
+Nunca se expone el payload crudo de Hunter (calle, voltajes, odómetro, CAN) a estudiantes.
+
+**App (Expo)**: `LiveBusSection` en el detalle de salida (mapa Leaflet + OpenStreetMap dentro de
+`react-native-webview`, paradas y bus con rumbo, botones "ver bus"/"ver recorrido") y `DriverGpsCard` en el
+detalle del servicio y el recorrido en curso del conductor. Actualización por **polling** (`useLivePolling`),
+que respeta `refreshAfterSeconds` y se pausa con la app en segundo plano. Se eligió polling y no WebSocket/SSE
+porque funciona detrás de ngrok/proxies, no requiere infraestructura adicional y los GPS reportan cada varios
+segundos. La línea entre paradas es **referencial** (no hay geometría de calles).
+
+## 4. Administración (para el futuro portal web)
+
+| Método | Ruta | Uso |
+|---|---|---|
+| `GET` | `/admin/tracking/devices` | Equipos reportando (vinculados y sin vincular) con su última posición. |
+| `PUT` | `/admin/tracking/devices/:id/vehicle` | `{ "vehicleId": "<uuid>" }` vincula; `null` desvincula. 409 si el bus ya tiene otro equipo. Auditado. |
+| `PATCH` | `/admin/tracking/devices/:id` | `{ "isActive": false }` deja de usar un equipo sin borrarlo. |
+| `GET` | `/admin/tracking/fleet` | Flota en vivo: bus, posición, frescura y recorrido en curso (línea, hora, conductor, origen del inicio). |
+| `GET` | `/admin/tracking/alerts?hours=24` | Alertas Hunter + eventos críticos (pánico, exceso de velocidad, pérdida de GPS, jamming, impactos, maniobras violentas). |
+| `GET` | `/admin/tracking/vehicles/:vehicleId/trail?from=&to=` | Trayecto histórico (máx. 24 h, 5000 puntos). |
+
+**Alta de un bus con GPS**: Hunter configura la URL → el equipo envía su primer reporte → aparece en
+`/admin/tracking/devices` con su `externalId`/alias → la administración lo vincula al `Vehicle` correspondiente.
+
+## 5. Operación automática de recorridos (opcional)
+
+`OPERATIONS_AUTO_RUN` (por defecto `off`), revisado cada 60 s por `OperationsAutoRunService`:
+
+| Modo | Inicio automático | Cierre automático |
+|---|---|---|
+| `off` | No (solo el conductor). | No. |
+| `schedule` | A la hora planificada (hasta `OPERATIONS_AUTO_START_GRACE_MINUTES` después), aunque no haya GPS. | Sí. |
+| `schedule_with_gps` | A la hora planificada **solo si** el GPS del bus está `LIVE` y con ignición encendida o en movimiento (≥ 5 km/h). | Sí. |
+
+- El cierre automático completa los recorridos que siguen abiertos `OPERATIONS_AUTO_FINISH_AFTER_MINUTES`
+  después de su fin planificado (evita recorridos "olvidados").
+- El conductor siempre puede iniciar antes o finalizar él mismo; el sistema respeta los mismos bloqueos
+  (conductor/bus con otro recorrido activo → no inicia).
+- Los inicios/cierres del sistema quedan auditados (`SERVICE_RUN_AUTO_START` / `SERVICE_RUN_AUTO_FINISH`) y la
+  app muestra "iniciado automáticamente".
+- Nunca se infiere un recorrido **solo** por GPS fuera de su ventana planificada.
+
+Recomendación: `schedule_with_gps` cuando todos los buses tengan GPS vinculado y la frecuencia de Hunter esté
+confirmada; mientras tanto `off` (o `schedule` si se quiere que el estado cambie a la hora aunque el conductor
+no use la app).
+
+## 6. Pruebas y simulador
+
+- Unitarios: `hunter-payload.spec.ts` (ejemplos literales del PDF), `tracking-rules.spec.ts` (frescura, ventana,
+  reglas de inicio automático).
+- E2E: `test/e2e/tracking.e2e-spec.ts` — token, payloads inválidos, idempotencia, vinculación, vista del
+  estudiante y del conductor, reporte atrasado, inicio y cierre automáticos, alertas, trayecto, permisos.
+- **Simulador** (QA/demo, sin equipos reales): mueve un bus por las paradas de un recorrido del dataset.
+
+```bash
+cd apps/api
+pnpm tracking:simulate -- --url https://<api> --token <HUNTER_WEBHOOK_TOKEN> \
+  --route NORTE_IDA --device 900001 --alias GBA1234 --interval 5 --steps 8
+# en el contenedor: node dist/scripts/hunter-simulate.js --url http://localhost:3000 --token ...
 ```
 
-Principios:
+Luego vincular el dispositivo `900001` a un bus y abrir en la app una salida asignada a ese bus.
 
-- **Desacoplar el proveedor**: nada de campos Hunter dentro de `Vehicle`. Tabla de *binding* (`vehicleId`, proveedor,
-  `externalDeviceId`, alias, activo) y puntos normalizados (`occurredAt`, `receivedAt`, lat/lng, `speedKph`, rumbo,
-  calidad GPS, ignición, códigos de evento). Política de retención para el JSON crudo.
-- **El GPS no reemplaza al `ServiceRun`**. Un bus con telemetría pero sin `ServiceRun IN_PROGRESS` no se muestra como "en ruta".
-  El inicio del recorrido sigue siendo explícito del conductor.
-- **Nunca** exponer el payload de Hunter a la app: se publica un contrato canónico
-  (`vehicleId`, `serviceAssignmentId`, `serviceRunId`, coordenadas, `speedKph`, `headingDegrees`, `occurredAt`, `receivedAt`, `stale`).
-- **Vigencia**: estados `LIVE`, `STALE`, `OFFLINE`; los umbrales se fijan al conocer la frecuencia real de reporte.
-- **Redis** (`tracking:last:<vehicleId>`) para última posición y pub/sub; PostgreSQL no se consulta por cada estudiante.
-- **ETA**: no en la primera fase. Primero posición real + estado real; después heurística con recorrido e histórico.
-- **Alertas** (pánico, exceso de velocidad, jamming…) son para Admin y van después del mapa.
+## 7. Pendiente de confirmar con Hunter
 
-## Fases propuestas
+El código tolera estas dudas, pero deben cerrarse antes de producción:
 
-| Fase | Contenido |
-|---|---|
-| 9A | Contrato e ingestión: autenticación del webhook, DTOs, normalización, mapeo dispositivo-bus, idempotencia, pruebas. |
-| 9B | Estado de tracking: binding, última posición en Redis, historial mínimo, stale/offline. |
-| 9C | Pasarela de tiempo real (WebSocket/SSE), suscripciones, autorización, observabilidad. |
-| 9D | Monitoreo en vivo en el panel Admin. |
-| 9E | Bus en vivo en la app Student (sin ETA falsa). |
-| 9F | Alertas, CAN e inteligencia de flota. |
-
-El panel administrativo no depende de Hunter: se construye en paralelo y suma el módulo "Monitoreo en vivo" cuando la ingestión sea estable.
+- Versión contractual: el archivo dice **V1.3.0**, el pie **V1.2.0**.
+- `FechaHora`: el PDF dice `HH:mm:dd`, el ejemplo muestra segundos (implementado como `HH:mm:ss`, UTC).
+- `Suceso: 0` en el ejemplo, ausente en la tabla.
+- `Id` (evento) vs `IdActivo` (alerta): implementado asumiendo que identifican al mismo equipo; si no, cada uno
+  aparecerá como un dispositivo distinto en `/admin/tracking/devices`.
+- Autenticación que soportan (header/token, HMAC, IP fijas, mTLS) — hoy: token en header o URL.
+- Timeout, códigos que consideran ACK y política de reintentos (UPS GO responde 200 rápido; 400 = no reintentar).
+- Frecuencia de reporte (con ignición encendida/apagada) para ajustar `TRACKING_LIVE_SECONDS`.
+- Valores de `CalidadGPS`/`EstadoGPS` además de 1 y 9; si la velocidad llega siempre en mph.
+- Sandbox o envío de payloads de prueba; campos CAN disponibles en los buses UPS.
+- Tiles del mapa: se usan los de OpenStreetMap (con atribución). Para producción con muchos usuarios conviene
+  un proveedor de tiles con clave (MapTiler, Stadia, Mapbox) por la política de uso de OSM.

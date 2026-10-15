@@ -24,7 +24,7 @@ apps/mobile/
     context/AuthContext.tsx  estado de sesión
     services/         auth, operación (Student/Driver), preferencias de campus y de estudiante, validación de contrato
     components/       UI compartida (operational-ui), UI del estudiante (student-ui), logo, perfil, aviso de actualización
-    hooks/            use-guayaquil-clock (reloj que refresca los "en X min")
+    hooks/            use-guayaquil-clock (reloj que refresca los "en X min"), use-live-polling (consultas en vivo)
     constants/Colors.ts, constants/legal.ts (textos legales versionados), types/, utils/ (operational, schedule)
 ```
 
@@ -94,3 +94,18 @@ DTOs NestJS → OpenAPI → openapi-typescript → src/api/generated/openapi.ts
 - Timeout de 10 s. Los errores se traducen a mensajes para el usuario en `utils/error-message.ts`
   (sin exponer detalles técnicos).
 - Conectividad inestable: el estado de sesión se conserva y nunca se inventan datos de horarios u operación.
+
+## Ubicación en tiempo real
+
+- `components/live-map/` — mapa Leaflet + OpenStreetMap: `live-map.tsx` (WebView nativa,
+  `react-native-webview`) y `live-map.web.tsx` (iframe, para la versión web). La página se carga una vez y se
+  actualiza con `window.__update(...)`, así el mapa no salta mientras el usuario lo mueve.
+- `components/live-bus-section.tsx` — "Tu bus en vivo" en el detalle de salida del estudiante: aparece solo
+  cuando el servicio está por salir (≤ 30 min) o en curso; estado honesto (`En vivo`, `Última ubicación
+  conocida`, `Sin señal GPS`, `Ubicación no disponible`).
+- `components/driver-gps-card.tsx` — "GPS del bus" para el conductor (detalle del servicio y recorrido en curso).
+  El teléfono del conductor **no** envía ubicación: la fuente es el GPS Hunter del bus.
+- `hooks/use-live-polling.ts` — polling que respeta `refreshAfterSeconds` del servidor y se pausa en segundo plano.
+- `utils/live.ts` — textos de estado y antigüedad ("hace 12 s"), con tests.
+
+Backend y reglas: [`../api/tracking-hunter.md`](../api/tracking-hunter.md).

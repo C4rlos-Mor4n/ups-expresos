@@ -52,6 +52,21 @@ Estas rutas **se conservan aunque la app móvil no las use**: son la base del pa
 Ver [`../web/README.md`](../web/README.md) para lo que aún falta (CRUD de campus y líneas, recorridos,
 usuarios, lectura de auditoría, ciclo de vida de asignaciones, tablero).
 
+## Tracking en tiempo real (Hunter)
+
+Detalle completo en [`tracking-hunter.md`](./tracking-hunter.md).
+
+| Método | Ruta | Rol |
+|---|---|---|
+| `POST` | `/integrations/hunter/dataforward` (`/events`, `/alerts`) | Público con token de integración (`HUNTER_WEBHOOK_TOKEN`) |
+| `GET` | `/student/scheduled-departures/:id/live` | STUDENT |
+| `GET` | `/driver/operational/assignments/:id/live` | DRIVER |
+| `GET` | `/admin/tracking/devices` · `PUT /admin/tracking/devices/:id/vehicle` · `PATCH /admin/tracking/devices/:id` | ADMIN, SUPER_ADMIN |
+| `GET` | `/admin/tracking/fleet` · `/admin/tracking/alerts` · `/admin/tracking/vehicles/:vehicleId/trail` | ADMIN, SUPER_ADMIN |
+
+Cambios aditivos en contratos existentes: `run.startSource` / `run.completionSource` (`DRIVER` | `SYSTEM`) en las
+respuestas del conductor, y `latitude`/`longitude` numéricos en las paradas del recorrido del conductor.
+
 ## Errores
 
 Formato uniforme (filtro global): `{ statusCode, message, errors? }`. Códigos habituales: 400 validación,

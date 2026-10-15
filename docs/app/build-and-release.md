@@ -128,5 +128,10 @@ npx eas-cli build -p android --profile preview
 ```
 El proyecto actual es `@c4rlosmor4n/ups-go` (ID en `app.json → extra.eas.projectId`).
 
+### Versión con mapa en vivo (requiere APK nuevo)
+El mapa en tiempo real usa `react-native-webview` (módulo nativo): cambió el `runtimeVersion`, por lo que los
+APK anteriores no reciben esta funcionalidad por OTA; los testers deben instalar el APK nuevo. Las OTA de esta
+versión en adelante se publican solo para el runtime nuevo.
+
 ### Rollback
 `eas update:rollback` o republicar el commit bueno con `npm run update:preview`.
