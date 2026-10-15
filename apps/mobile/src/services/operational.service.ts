@@ -4,8 +4,10 @@ import { operationalContract } from "@/services/operational-contract";
 import type {
   Campus,
   DepartureSummary,
+  DepartureLive,
   Direction,
   DriverAssignment,
+  LiveBus,
   ServiceLine,
   StudentDepartureDetail,
 } from "@/types/operational";
@@ -63,6 +65,18 @@ export const operationalService = {
   async getCurrentDriverRun(): Promise<DriverAssignment | null> {
     const response = await api.get<OpenApiDriverAssignment | null>("/driver/operational/service-runs/current");
     return operationalContract.currentDriverRun(response.data);
+  },
+
+  /** Ubicación en vivo de los buses de una salida (polling: respeta `refreshAfterSeconds`). */
+  async getDepartureLive(departureId: string): Promise<DepartureLive> {
+    const response = await api.get<unknown>(`/student/scheduled-departures/${departureId}/live`);
+    return operationalContract.departureLive(response.data);
+  },
+
+  /** Estado del GPS del bus asignado al conductor. */
+  async getDriverAssignmentLive(assignmentId: string): Promise<LiveBus> {
+    const response = await api.get<unknown>(`/driver/operational/assignments/${assignmentId}/live`);
+    return operationalContract.liveBus(response.data);
   },
 
   async finishDriverRun(runId: string): Promise<DriverAssignment> {

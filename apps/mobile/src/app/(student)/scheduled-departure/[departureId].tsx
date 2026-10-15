@@ -17,6 +17,7 @@ import {
   StatusBadge,
 } from "@/components/operational-ui";
 import { StateChip } from "@/components/student-ui";
+import { LiveBusSection } from "@/components/live-bus-section";
 import { Illustration } from "@/components/visual";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -186,6 +187,9 @@ export default function DepartureDetailScreen() {
             </View>
           ) : null}
         </View>
+
+        {/* Ubicación en tiempo real (solo cuando el servicio está por salir o en curso) */}
+        <LiveBusSection departureId={departure.id} stops={stops} myStopId={myStopId} />
 
         {/* 2. Bus Assignments List */}
         <View style={styles.assignmentsSection}>

@@ -821,6 +821,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/student/scheduled-departures/{id}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live bus positions for a departure (only while the service is about to start or in progress) */
+        get: operations["StudentTrackingController_departureLive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/driver/operational/assignments/{id}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** GPS status of the vehicle assigned to one of the authenticated driver assignments */
+        get: operations["DriverTrackingController_assignmentLive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracking/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List AVL devices reported by Hunter (bound and unbound) with last position */
+        get: operations["AdminTrackingController_devices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracking/devices/{id}/vehicle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Bind an AVL device to a vehicle (or unbind with vehicleId null) */
+        put: operations["AdminTrackingController_bind"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracking/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Enable or disable an AVL device */
+        patch: operations["AdminTrackingController_update"];
+        trace?: never;
+    };
+    "/admin/tracking/fleet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live fleet: tracked vehicles, last position and current run */
+        get: operations["AdminTrackingController_fleet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracking/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hunter alerts and critical events (panic, speeding, jamming, impacts) in the last N hours */
+        get: operations["AdminTrackingController_alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracking/vehicles/{vehicleId}/trail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historical positions of a vehicle (max 24h window) */
+        get: operations["AdminTrackingController_trail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1513,6 +1649,13 @@ export interface components {
             startedAt: string;
             /** Format: date-time */
             completedAt?: string | null;
+            /**
+             * @description Who started the run: the driver app or the automatic operation
+             * @enum {string}
+             */
+            startSource?: "DRIVER" | "SYSTEM";
+            /** @enum {string|null} */
+            completionSource?: "DRIVER" | "SYSTEM" | null;
         };
         StudentAssignmentDto: {
             /** Format: uuid */
@@ -1573,6 +1716,10 @@ export interface components {
             id: string;
             name: string;
             reference?: string | null;
+            /** @example -2.1528 */
+            latitude?: number;
+            /** @example -79.8935 */
+            longitude?: number;
         };
         DriverRouteStopDto: {
             stopOrder: number;
@@ -1811,6 +1958,145 @@ export interface components {
         AdminOperationalAssignmentsResponseDto: {
             data: components["schemas"]["AdminOperationalAssignmentDto"][];
             meta: components["schemas"]["AdminOperationalPaginationMetaDto"];
+        };
+        LiveVehicleDto: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            plate: string;
+        };
+        LivePositionDto: {
+            /** @example -2.1528 */
+            latitude: number;
+            /** @example -79.8935 */
+            longitude: number;
+            /**
+             * @description km/h (convertido desde mph de Hunter)
+             * @example 32.5
+             */
+            speedKph: number;
+            /** @description 0-359 grados; null = detenido/desconocido */
+            heading?: number | null;
+            /**
+             * Format: date-time
+             * @description Hora del reporte GPS (UTC)
+             */
+            occurredAt: string;
+            /**
+             * @description Antigüedad del reporte en segundos
+             * @example 12
+             */
+            ageSeconds: number;
+            /** @enum {string} */
+            freshness: "LIVE" | "STALE" | "OFFLINE";
+        };
+        LiveTrackingDto: {
+            /**
+             * @description AVAILABLE: hay posición; NO_DEVICE: el bus no tiene GPS vinculado; NO_SIGNAL: sin reportes recientes; NOT_LIVE: fuera de la ventana del servicio
+             * @enum {string}
+             */
+            status: "AVAILABLE" | "NO_DEVICE" | "NO_SIGNAL" | "NOT_LIVE";
+            position?: components["schemas"]["LivePositionDto"] | null;
+        };
+        LiveBusDto: {
+            /** Format: uuid */
+            assignmentId: string;
+            vehicle: components["schemas"]["LiveVehicleDto"];
+            /**
+             * @description IN_PROGRESS: recorrido iniciado; BEFORE_START: asignado y a ≤30 min de salir; NOT_LIVE: fuera de ventana
+             * @enum {string}
+             */
+            phase: "IN_PROGRESS" | "BEFORE_START" | "NOT_LIVE";
+            /** Format: date-time */
+            plannedStartAt: string;
+            /** Format: date-time */
+            plannedEndAt: string;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** @enum {string|null} */
+            startSource?: "DRIVER" | "SYSTEM" | null;
+            tracking: components["schemas"]["LiveTrackingDto"];
+        };
+        DepartureLiveDto: {
+            /** Format: uuid */
+            departureId: string;
+            /** Format: date-time */
+            generatedAt: string;
+            /**
+             * @description Segundos sugeridos antes de volver a consultar
+             * @example 10
+             */
+            refreshAfterSeconds: number;
+            buses: components["schemas"]["LiveBusDto"][];
+        };
+        TrackingDeviceDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            provider: "HUNTER";
+            /** @example 4631511939 */
+            externalId: string;
+            alias?: string | null;
+            label?: string | null;
+            isActive: boolean;
+            vehicle?: components["schemas"]["LiveVehicleDto"] | null;
+            position?: components["schemas"]["LivePositionDto"] | null;
+            ignition?: boolean | null;
+            address?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        BindTrackingDeviceDto: {
+            /**
+             * Format: uuid
+             * @description null para desvincular
+             */
+            vehicleId?: Record<string, never> | null;
+        };
+        UpdateTrackingDeviceDto: {
+            isActive: boolean;
+        };
+        FleetVehicleDto: {
+            vehicle: components["schemas"]["LiveVehicleDto"];
+            /** Format: uuid */
+            deviceId: string;
+            position?: components["schemas"]["LivePositionDto"] | null;
+            ignition?: boolean | null;
+            /** @description Recorrido en curso del vehículo (si lo hay) */
+            currentRun?: {
+                /** Format: uuid */
+                assignmentId?: string;
+                /** Format: uuid */
+                runId?: string;
+                serviceLineName?: string;
+                scheduledTime?: string;
+                direction?: string;
+                driverName?: string;
+                startSource?: string;
+            } | null;
+        };
+        TrackingAlertDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "EVENT" | "ALERT";
+            /** Format: date-time */
+            occurredAt: string;
+            description?: string | null;
+            occurrenceCode?: number | null;
+            latitude: number;
+            longitude: number;
+            speedKph: number;
+            vehicle?: components["schemas"]["LiveVehicleDto"] | null;
+            deviceAlias?: string | null;
+        };
+        TrailPointDto: {
+            /** Format: date-time */
+            occurredAt: string;
+            latitude: number;
+            longitude: number;
+            speedKph: number;
+            heading?: number | null;
         };
     };
     responses: never;
@@ -3822,6 +4108,209 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminOperationalAssignmentsResponseDto"];
+                };
+            };
+        };
+    };
+    StudentTrackingController_departureLive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartureLiveDto"];
+                };
+            };
+            /** @description Scheduled departure not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DriverTrackingController_assignmentLive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveBusDto"];
+                };
+            };
+            /** @description Assignment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminTrackingController_devices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackingDeviceDto"][];
+                };
+            };
+        };
+    };
+    AdminTrackingController_bind: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BindTrackingDeviceDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackingDeviceDto"];
+                };
+            };
+            /** @description Device or vehicle not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Vehicle already has another device */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminTrackingController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTrackingDeviceDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackingDeviceDto"];
+                };
+            };
+        };
+    };
+    AdminTrackingController_fleet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetVehicleDto"][];
+                };
+            };
+        };
+    };
+    AdminTrackingController_alerts: {
+        parameters: {
+            query?: {
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackingAlertDto"][];
+                };
+            };
+        };
+    };
+    AdminTrackingController_trail: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                vehicleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrailPointDto"][];
                 };
             };
         };

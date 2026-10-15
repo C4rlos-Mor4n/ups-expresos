@@ -92,6 +92,8 @@ export interface StudentAssignment {
     status: Exclude<OperationalState, "SCHEDULED" | "ASSIGNED">;
     startedAt: string;
     completedAt: string | null;
+    /** Quién inició el recorrido: el conductor o la operación automática. */
+    startSource?: RunSource;
   } | null;
 }
 
@@ -107,6 +109,8 @@ export interface DriverRouteStop {
     id: string;
     name: string;
     reference: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   };
 }
 
@@ -138,5 +142,42 @@ export interface DriverAssignment {
     status: Exclude<OperationalState, "SCHEDULED" | "ASSIGNED">;
     startedAt: string;
     completedAt: string | null;
+    /** Quién inició el recorrido: el conductor o la operación automática. */
+    startSource?: RunSource;
   } | null;
+}
+
+// ── Ubicación en tiempo real (Hunter AVL) ───────────────────────────────────
+
+export type RunSource = "DRIVER" | "SYSTEM";
+export type LiveFreshness = "LIVE" | "STALE" | "OFFLINE";
+export type LivePhase = "IN_PROGRESS" | "BEFORE_START" | "NOT_LIVE";
+export type LiveTrackingStatus = "AVAILABLE" | "NO_DEVICE" | "NO_SIGNAL" | "NOT_LIVE";
+
+export interface LivePosition {
+  latitude: number;
+  longitude: number;
+  speedKph: number;
+  heading: number | null;
+  occurredAt: string;
+  ageSeconds: number;
+  freshness: LiveFreshness;
+}
+
+export interface LiveBus {
+  assignmentId: string;
+  vehicle: { id: string; code: string; plate: string };
+  phase: LivePhase;
+  plannedStartAt: string;
+  plannedEndAt: string;
+  startedAt: string | null;
+  startSource: RunSource | null;
+  tracking: { status: LiveTrackingStatus; position: LivePosition | null };
+}
+
+export interface DepartureLive {
+  departureId: string;
+  generatedAt: string;
+  refreshAfterSeconds: number;
+  buses: LiveBus[];
 }

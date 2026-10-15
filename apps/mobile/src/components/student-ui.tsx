@@ -303,8 +303,14 @@ export function NextBusCard({
           )}
         </View>
         <View style={styles.ticketCta}>
-          <Text style={styles.ticketCtaText}>Ver recorrido</Text>
-          <Ionicons name="arrow-forward" size={16} color={Colors.navy} />
+          <Text style={styles.ticketCtaText}>
+            {departure.state === "IN_PROGRESS" || departure.state === "ASSIGNED" ? "Ver en el mapa" : "Ver recorrido"}
+          </Text>
+          <Ionicons
+            name={departure.state === "IN_PROGRESS" || departure.state === "ASSIGNED" ? "map" : "arrow-forward"}
+            size={16}
+            color={Colors.navy}
+          />
         </View>
       </View>
     </PressableScale>

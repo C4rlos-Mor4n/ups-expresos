@@ -6,6 +6,9 @@ import type {
   Direction,
   DriverAssignment,
   JourneyStop,
+  DepartureLive,
+  LiveBus,
+  LivePosition,
   OperationalState,
   ServiceLine,
   StudentDepartureDetail,
@@ -271,6 +274,8 @@ function driverAssignment(value: unknown): DriverAssignment {
               id: string(nestedStop.id),
               name: string(nestedStop.name),
               reference: nullableString(nestedStop.reference),
+              latitude: optionalNumber(nestedStop.latitude),
+              longitude: optionalNumber(nestedStop.longitude),
             },
           };
         }),
@@ -282,12 +287,67 @@ function driverAssignment(value: unknown): DriverAssignment {
           status: runState(run.status),
           startedAt: string(run.startedAt),
           completedAt: nullableString(run.completedAt),
+          startSource: run.startSource === "SYSTEM" ? "SYSTEM" : "DRIVER",
         }
       : null,
   };
 }
 
+function optionalNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T {
+  if (typeof value !== "string" || !allowed.includes(value as T)) return fail();
+  return value as T;
+}
+
+function livePosition(value: unknown): LivePosition | null {
+  if (value === null || value === undefined) return null;
+  const parsed = record(value);
+  return {
+    latitude: number(parsed.latitude),
+    longitude: number(parsed.longitude),
+    speedKph: number(parsed.speedKph),
+    heading: optionalNumber(parsed.heading),
+    occurredAt: string(parsed.occurredAt),
+    ageSeconds: number(parsed.ageSeconds),
+    freshness: oneOf(parsed.freshness, ["LIVE", "STALE", "OFFLINE"] as const),
+  };
+}
+
+function liveBus(value: unknown): LiveBus {
+  const parsed = record(value);
+  const vehicle = record(parsed.vehicle);
+  const tracking = record(parsed.tracking);
+  return {
+    assignmentId: string(parsed.assignmentId),
+    vehicle: { id: string(vehicle.id), code: string(vehicle.code), plate: string(vehicle.plate) },
+    phase: oneOf(parsed.phase, ["IN_PROGRESS", "BEFORE_START", "NOT_LIVE"] as const),
+    plannedStartAt: string(parsed.plannedStartAt),
+    plannedEndAt: string(parsed.plannedEndAt),
+    startedAt: parsed.startedAt === null || parsed.startedAt === undefined ? null : string(parsed.startedAt),
+    startSource: parsed.startSource === "SYSTEM" ? "SYSTEM" : parsed.startSource === "DRIVER" ? "DRIVER" : null,
+    tracking: {
+      status: oneOf(tracking.status, ["AVAILABLE", "NO_DEVICE", "NO_SIGNAL", "NOT_LIVE"] as const),
+      position: livePosition(tracking.position),
+    },
+  };
+}
+
 export const operationalContract = {
+  liveBus,
+  departureLive(value: unknown): DepartureLive {
+    const parsed = record(value);
+    const refresh = number(parsed.refreshAfterSeconds);
+    return {
+      departureId: string(parsed.departureId),
+      generatedAt: string(parsed.generatedAt),
+      // Nunca más rápido que cada 5 s, aunque el servidor sugiera menos.
+      refreshAfterSeconds: Math.max(5, refresh),
+      buses: array(parsed.buses).map(liveBus),
+    };
+  },
   campuses(value: unknown): Campus[] {
     return array(value).map(campus);
   },
