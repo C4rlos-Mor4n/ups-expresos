@@ -120,8 +120,9 @@ services:
     build:
       context: ./deploy/gateway
     restart: unless-stopped
-    ports:
-      - "${GATEWAY_PORT:-8080}:80"
+    # Solo red interna: ngrok (o el proxy del host/Dokploy) es quien publica el servicio.
+    expose:
+      - "80"
     depends_on:
       - api
       - web
