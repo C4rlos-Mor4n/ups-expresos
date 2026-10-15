@@ -52,13 +52,26 @@ Estas rutas **se conservan aunque la app móvil no las use**: son la base del pa
 Ver [`../web/README.md`](../web/README.md) para lo que aún falta (CRUD de campus y líneas, recorridos,
 usuarios, lectura de auditoría, ciclo de vida de asignaciones, tablero).
 
+## Panel administrativo (ADMIN, SUPER_ADMIN)
+
+| Método | Ruta | Uso |
+|---|---|---|
+| `GET` | `/admin/dashboard?date=` | Resumen del día (salidas, sin bus, recorridos, GPS en vivo, alertas). |
+| `GET` | `/admin/users?role=&search=&page=&limit=` | Cuentas con último ingreso. |
+| `PATCH` | `/admin/users/:id` | `{ isActive?, role? }`. Revoca sesiones. Admins solo por SUPER_ADMIN; no a uno mismo; DRIVER vía conductores. |
+| `GET` | `/admin/audit-logs?entity=&page=&limit=` | Bitácora con correo del actor (`null` = sistema). |
+| `POST` | `/admin/operational/service-assignments/:id/cancel` | Cancela una asignación sin recorrido; libera bus y conductor. |
+
+El horario operativo por línea (`/admin/operational/service-lines/:id/timetable`) incluye ahora `journeyTemplates`
+por salida (recorridos válidos para asignar).
+
 ## Tracking en tiempo real (Hunter)
 
 Detalle completo en [`tracking-hunter.md`](./tracking-hunter.md).
 
 | Método | Ruta | Rol |
 |---|---|---|
-| `POST` | `/integrations/hunter/dataforward` (`/events`, `/alerts`) | Público con token de integración (`HUNTER_WEBHOOK_TOKEN`) |
+| `POST` | `/integrations/hunter/dataforward` (`/events`, `/alerts`) | API key `HUNTER_WEBHOOK_TOKEN` en `X-API-Key` |
 | `GET` | `/student/scheduled-departures/:id/live` | STUDENT |
 | `GET` | `/driver/operational/assignments/:id/live` | DRIVER |
 | `GET` | `/admin/tracking/devices` · `PUT /admin/tracking/devices/:id/vehicle` · `PATCH /admin/tracking/devices/:id` | ADMIN, SUPER_ADMIN |

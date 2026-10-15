@@ -28,7 +28,7 @@ Plantillas: [`apps/api/.env.example`](../../apps/api/.env.example) (desarrollo) 
 | `TRUST_PROXY_HOPS` | No | `0` | Saltos de proxy confiables para identificar la IP del cliente. Con un reverse proxy: `1`. |
 | `THROTTLE_TTL` / `THROTTLE_LIMIT` | No | `60000` / `60` | Ventana (ms) y límite global de rate limiting. |
 | `SWAGGER_ENABLED` | No | `false` | Publica Swagger UI. |
-| `HUNTER_WEBHOOK_TOKEN` | No | vacío | Secreto (≥ 24) del webhook Hunter DataForward. Vacío = webhook deshabilitado (503). |
+| `HUNTER_WEBHOOK_TOKEN` | No | vacío | API key (≥ 24) del webhook Hunter, enviada en `X-API-Key`. Vacío = webhook deshabilitado (503). |
 | `HUNTER_ALLOWED_IPS` | No | vacío | IPs de origen permitidas para el webhook (coma). |
 | `TRACKING_LIVE_SECONDS` / `TRACKING_STALE_SECONDS` | No | `120` / `900` | Antigüedad para "en vivo" y "última ubicación conocida". |
 | `TRACKING_HISTORY_DAYS` | No | `30` | Días de historial de posiciones. |

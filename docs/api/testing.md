@@ -16,9 +16,9 @@ Sin esas variables el comando falla sin mensaje claro.
 
 ## Base de referencia
 
-Tras el tracking en tiempo real (Hunter): API con 32 suites unitarias y de integración sobre PostgreSQL (237
-pruebas con todas las variables `RUN_*` activas), E2E con 4 suites (30 pruebas, incluye `driver-flow` y `tracking`:
-webhook Hunter, vinculación GPS↔bus, vista en vivo, inicio y cierre automáticos); app móvil con 14 suites (82 pruebas).
+Tras el panel administrativo: API con 32 suites unitarias y de integración (238 pruebas con todas las `RUN_*`),
+E2E con 5 suites (34 pruebas: auth, flujo del conductor, tracking Hunter, panel admin y más); panel web con
+vitest (4 pruebas) + `next build`; app móvil con 14 suites (82 pruebas).
 
 ## API
 

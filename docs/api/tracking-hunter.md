@@ -32,19 +32,21 @@ Código: `apps/api/src/modules/tracking/`. Migración: `20261015050017_add_vehic
 | `POST` | `/integrations/hunter/dataforward/events` | Solo eventos (rechaza alertas). |
 | `POST` | `/integrations/hunter/dataforward/alerts` | Solo alertas (rechaza eventos). |
 
-- **Autenticación**: el PDF de Hunter no define ninguna, así que UPS GO exige un secreto compartido
-  `HUNTER_WEBHOOK_TOKEN` (≥ 24 caracteres, comparación en tiempo constante) en cualquiera de:
-  header `X-UPS-GO-Token`, `Authorization: Bearer <token>` o `?token=<token>` en la URL (para cuando Hunter
-  solo permite configurar una URL). Sin token configurado el endpoint responde **503**.
-- **IP allowlist** opcional: `HUNTER_ALLOWED_IPS` (requiere `TRUST_PROXY_HOPS` correcto detrás de proxy).
-- No usa JWT de usuarios ni el rate limiting por IP (`@SkipThrottle`), porque toda la flota llega desde Hunter.
+- **Autenticación: API key** `HUNTER_WEBHOOK_TOKEN` (≥ 24 caracteres, comparación en tiempo constante) en el header
+  **`X-API-Key`**. También se acepta `Authorization: Bearer <key>` o `?api_key=<key>` si Hunter solo permite configurar
+  una URL. Sin API key configurada el endpoint responde **503**.
+- **Solo lo que Hunter documenta**: cualquier campo fuera de la lista del PDF (evento, alerta y CAN), objetos o
+  listas anidadas, textos de más de 300 caracteres, coordenadas fuera de rango, `FechaHora` futura (> 10 min) o de hace
+  más de 7 días → **400** y no se guarda nada. Máximo 50 reportes por POST y cuerpo ≤ 256 KB.
+- **IP allowlist** opcional: `HUNTER_ALLOWED_IPS` (con gateway + ngrok, `TRUST_PROXY_HOPS=2`).
+- Límite propio de 1200 solicitudes/min (toda la flota llega desde Hunter); no usa JWT de usuarios.
 - Acepta `application/json` y también `text/*` (por si Hunter no envía `Content-Type`), un objeto o una lista
   (máx. 200 por POST).
 - Respuestas: `200 {"received","accepted","duplicates"}` · `400` payload inválido (no reintentar) ·
-  `401` token inválido · `403` IP no permitida · `503` integración no configurada.
+  `401` API key inválida · `403` IP no permitida · `503` integración no configurada.
 
 **URL para entregar a Hunter** (ambiente de pruebas actual):
-`https://<dominio-api>/integrations/hunter/dataforward?token=<HUNTER_WEBHOOK_TOKEN>`
+`https://<dominio-api>/integrations/hunter/dataforward` con el header `X-API-Key: <HUNTER_WEBHOOK_TOKEN>`
 
 ### Normalización (`hunter/hunter-payload.ts`, funciones puras con tests)
 
@@ -105,7 +107,7 @@ que respeta `refreshAfterSeconds` y se pausa con la app en segundo plano. Se eli
 porque funciona detrás de ngrok/proxies, no requiere infraestructura adicional y los GPS reportan cada varios
 segundos. La línea entre paradas es **referencial** (no hay geometría de calles).
 
-## 4. Administración (para el futuro portal web)
+## 4. Administración (panel web → sección GPS y Monitoreo en vivo)
 
 | Método | Ruta | Uso |
 |---|---|---|
@@ -167,7 +169,7 @@ El código tolera estas dudas, pero deben cerrarse antes de producción:
 - `Suceso: 0` en el ejemplo, ausente en la tabla.
 - `Id` (evento) vs `IdActivo` (alerta): implementado asumiendo que identifican al mismo equipo; si no, cada uno
   aparecerá como un dispositivo distinto en `/admin/tracking/devices`.
-- Autenticación que soportan (header/token, HMAC, IP fijas, mTLS) — hoy: token en header o URL.
+- Confirmar que Hunter puede enviar el header `X-API-Key` (si no, usar `?api_key=` en la URL) y si tienen IP fijas.
 - Timeout, códigos que consideran ACK y política de reintentos (UPS GO responde 200 rápido; 400 = no reintentar).
 - Frecuencia de reporte (con ignición encendida/apagada) para ajustar `TRACKING_LIVE_SECONDS`.
 - Valores de `CalidadGPS`/`EstadoGPS` además de 1 y 9; si la velocidad llega siempre en mph.
