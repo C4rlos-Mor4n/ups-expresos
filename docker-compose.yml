@@ -131,7 +131,7 @@ services:
     image: ngrok/ngrok:latest
     profiles: ["tunnel"]
     restart: unless-stopped
-    command: ["http", "gateway:80", "--url", "${NGROK_URL:?Define NGROK_URL (dominio ngrok)}"]
+    command: ["http", "gateway:80", "--url", "${NGROK_URL:?Define NGROK_URL (dominio ngrok)}", "--log", "stdout", "--log-level", "info"]
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?Define NGROK_AUTHTOKEN}
     depends_on:

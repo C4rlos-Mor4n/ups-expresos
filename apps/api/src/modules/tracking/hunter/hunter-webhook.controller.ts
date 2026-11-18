@@ -85,6 +85,7 @@ export class HunterWebhookController {
   private authorize(request: Request): void {
     const { hunterWebhookToken, hunterAllowedIps } = this.tracking.settings;
     if (!hunterWebhookToken) {
+      this.logger.error('Hunter webhook llamado pero HUNTER_WEBHOOK_TOKEN no está configurado (503)');
       throw new ServiceUnavailableException('Hunter integration is not configured');
     }
     if (hunterAllowedIps.length > 0 && !hunterAllowedIps.includes((request.ip ?? '').toLowerCase())) {
@@ -93,6 +94,10 @@ export class HunterWebhookController {
     }
     const token = presentedApiKey(request);
     if (!token || !safeEqual(token, hunterWebhookToken)) {
+      // Nunca se registra la clave recibida, solo si faltó o no coincide.
+      this.logger.warn(
+        `Hunter webhook rechazado (401) ip=${request.ip} ${request.method} ${request.path} clave=${token ? 'no coincide' : 'ausente'}`,
+      );
       throw new UnauthorizedException('Invalid API key');
     }
   }
@@ -109,13 +114,18 @@ export class HunterWebhookController {
       reports = items.map((item) => normalizeHunterPayload(item, kind));
     } catch (error) {
       if (error instanceof HunterPayloadError) {
-        this.logger.warn(`Rejected Hunter payload: ${error.message}`);
+        this.logger.warn(`Rejected Hunter payload (400) ip=${request.ip} ${request.path}: ${error.message}`);
         throw new BadRequestException(error.message);
       }
       throw error;
     }
 
     const result = await this.tracking.ingest(reports);
+    const first = reports[0];
+    this.logger.log(
+      `Hunter webhook ok ip=${request.ip} ${request.path} recibidos=${reports.length} aceptados=${result.accepted} repetidos=${result.duplicates}` +
+        (first ? ` equipo=${first.externalId} hora=${first.occurredAt.toISOString()}` : ''),
+    );
     return { received: reports.length, ...result };
   }
 }

@@ -11,6 +11,20 @@
 }
 
 :80 {
+	# Log de acceso en stdout (docker logs / Dokploy): método, ruta, estado, IP real y duración.
+	# No registra cabeceras ni cuerpos, y se oculta ?api_key= de la URL, así que la API key
+	# del webhook no queda en el log.
+	log {
+		output stdout
+		format filter {
+			wrap console
+			request>headers delete
+			request>tls delete
+			request>uri query {
+				replace api_key REDACTED
+			}
+		}
+	}
 	encode gzip
 	request_body {
 		max_size 2MB
